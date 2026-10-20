@@ -38,15 +38,18 @@ frontedge/
 │   ├── src/styles/         tokens.css · base.css · components.css · patterns.css
 │   ├── src/components/     Button · StatusBadge · Search · Sparkline · Tabs · Tooltip
 │   ├── src/patterns/       RunRibbon · RunTimeline · RunsTable · MetricChart · LogStream
+│   ├── src/generated/      TypeScript-типы, сгенерированные из Python-моделей
 │   └── scripts/            check-contrast.mjs — гейт WCAG-контраста
+├── python/frontedge/       Python-пакет: модели, провайдеры, роутеры, генератор типов
 ├── apps/spike/             приложение-спайк Phase 1 (Vite + React + TS)
 │   ├── src/screens/        RunsScreen · RunDetailScreen
-│   ├── src/data/mock.ts    синтетические прогоны, примеры, логи
+│   ├── src/data/           мок-данные и слой источника данных (мок или API)
 │   └── scripts/            verify.mjs (скриншоты + axe) · keyboard-check.mjs
+├── examples/demo-ml/       FastAPI-приложение с фейковым ML-бэкендом и смонтированным frontedge
 └── docs/specs/             дизайн-документ
 ```
 
-Python-пакет (`python/frontedge`) и npm-пакет (`@frontedge/ui`) появятся в Phase 2 и Phase 4.
+npm-пакет собирается из `packages/ui`, Python-пакет — из `python/frontedge`.
 
 ## Команды
 
@@ -56,6 +59,10 @@ pnpm dev                # спайк на http://localhost:5173
 pnpm typecheck          # tsc по всем пакетам
 pnpm check:contrast     # контраст токенов по WCAG 2.2, обе темы
 pnpm build              # продакшн-сборка спайка
+pnpm build:ui           # сборка интерфейса + копирование в Python-пакет
+pnpm gen:types          # перегенерировать TS-типы из Python-моделей
+pnpm demo               # демо на FastAPI: http://127.0.0.1:8000/frontedge
+uv sync --all-packages  # окружение Python
 node apps/spike/scripts/verify.mjs        # скриншоты + axe-аудит (нужен запущенный dev-сервер)
 node apps/spike/scripts/keyboard-check.mjs # клавиатурный прогон таблицы
 ```

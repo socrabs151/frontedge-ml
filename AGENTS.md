@@ -25,12 +25,25 @@ npm-пакет `@frontedge/ui` даёт примитивы и токены. Те
 
 ```bash
 pnpm install
-pnpm dev                          # http://localhost:5173
+pnpm dev                          # http://localhost:5173 (спайк на моках)
 pnpm typecheck                    # обязательно перед коммитом
 pnpm check:contrast               # WCAG-контраст токенов, обе темы; падает при нарушении
+pnpm build:ui                     # сборка интерфейса + копирование в Python-пакет
+pnpm gen:types                    # перегенерировать TS-типы из Python-моделей
+pnpm demo                         # демо на FastAPI: http://127.0.0.1:8000/frontedge
+uv sync --all-packages            # окружение Python
 node apps/spike/scripts/verify.mjs         # скриншоты + axe (нужен запущенный dev-сервер)
-node apps/spike/scripts/keyboard-check.mjs # клавиатура таблицы
+node apps/spike/scripts/keyboard-check.mjs # клавиатурный прогон таблицы
 ```
+
+Проверки против собранного демо: `FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps/spike/scripts/verify.mjs`.
+
+## Типы
+
+Доменные типы **генерируются** из Python-моделей: `packages/ui/src/generated/types.ts`
+(команда `pnpm gen:types`). Руками их не правим: меняем pydantic-модель в
+`python/frontedge/src/frontedge/models.py` — перегенерируем. CI падает, если сгенерированный
+файл разошёлся с моделями.
 
 ## Контракты
 
@@ -55,6 +68,10 @@ node apps/spike/scripts/keyboard-check.mjs # клавиатура таблицы
 **Права в Python-пакете** (Phase 2+) — роли `x-frontedge`: `id · text · status · metric ·
 series · timestamp · duration · dataset · baseline · stage · freshness · code · example ·
 span · image · url`. Словарь публичный: расширять можно, переименовывать — только в мажоре.
+
+**Модель данных** — `python/frontedge/src/frontedge/models.py` (pydantic v2). JSON отдаётся в
+camelCase, даты — ISO 8601. Фронт берёт типы оттуда (генератор), поэтому расхождение
+Python и TypeScript невозможно по построению.
 
 ## Анти-паттерны
 

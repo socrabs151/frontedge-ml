@@ -18,7 +18,8 @@ app.include_router(frontedge.runs(runs_provider=my_repo))
 
 > **Status:** Phase 1 (design spike). The design system and two screens — a runs list and a run
 > detail view — run on synthetic data. Mounting into a real FastAPI app is Phase 2.
-> Full design document: [`docs/specs/2026-10-20-frontedge-design.md`](docs/specs/2026-10-20-frontedge-design.md).
+> Full design document: [`docs/specs/2026-10-20-frontedge-design.md`](docs/specs/2026-10-20-frontedge-design.md)
+> (currently written in Russian).
 
 ## What it is
 
@@ -39,16 +40,18 @@ frontedge/
 │   ├── src/styles/         tokens.css · base.css · components.css · patterns.css
 │   ├── src/components/     Button · StatusBadge · Search · Sparkline · Tabs · Tooltip
 │   ├── src/patterns/       RunRibbon · RunTimeline · RunsTable · MetricChart · LogStream
+│   ├── src/generated/      TypeScript types generated from the Python models
 │   └── scripts/            check-contrast.mjs — WCAG contrast gate
+├── python/frontedge/       the Python package: models, providers, routers, type generator
 ├── apps/spike/             Phase 1 spike app (Vite + React + TS)
 │   ├── src/screens/        RunsScreen · RunDetailScreen
-│   ├── src/data/mock.ts    synthetic runs, examples, logs
+│   ├── src/data/           mock data and the data source (mock or API)
 │   └── scripts/            verify.mjs (screenshots + axe) · keyboard-check.mjs
+├── examples/demo-ml/       FastAPI app with a fake ML backend, frontedge mounted
 └── docs/specs/             design document
 ```
 
-The Python package (`python/frontedge`) and the npm package (`@frontedge/ui`) land in
-Phase 2 and Phase 4.
+The npm package ships from `packages/ui`; the Python package from `python/frontedge`.
 
 ## Commands
 
@@ -58,6 +61,10 @@ pnpm dev                # spike on http://localhost:5173
 pnpm typecheck          # tsc across every package
 pnpm check:contrast     # token contrast per WCAG 2.2, both themes
 pnpm build              # production build of the spike app
+pnpm build:ui           # build the interface and copy it into the Python package
+pnpm gen:types          # regenerate TypeScript types from the Python models
+pnpm demo               # demo on FastAPI: http://127.0.0.1:8000/frontedge
+uv sync --all-packages  # Python workspace
 node apps/spike/scripts/verify.mjs        # screenshots + axe audit (dev server required)
 node apps/spike/scripts/keyboard-check.mjs # keyboard pass over the table
 ```
