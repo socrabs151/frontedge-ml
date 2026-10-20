@@ -6,12 +6,18 @@
 
 from __future__ import annotations
 
+import hashlib
 import random
 from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from frontedge import (
     Artifact,
+    DatasetDetail,
+    DatasetInfo,
+    EvalComparison,
+    EvalSummary,
+    ExampleResult,
     Freshness,
     MetricDirection,
     MetricEvent,
@@ -266,3 +272,203 @@ def make_log_lines(count: int = 80) -> list[dict[str, Any]]:
         lines.append({"id": index, "at": at.isoformat(), "level": level, "text": text})
         at += timedelta(seconds=20 + random_.random() * 40)
     return lines
+
+
+# --- Оценки и датасеты ---------------------------------------------------
+
+EVALS: list[dict[str, Any]] = [
+    {
+        "id": "eval-squad-exact",
+        "name": "Точное совпадение",
+        "dataset": "squad-v2-ru",
+        "scorer": "exact_match",
+        "metric": "accuracy",
+        "direction": "maximize",
+        "aggregate": "fraction",
+    },
+    {
+        "id": "eval-squad-f1",
+        "name": "F1 по токенам",
+        "dataset": "squad-v2-ru",
+        "scorer": "token_f1",
+        "metric": "f1",
+        "direction": "maximize",
+        "aggregate": "mean",
+    },
+    {
+        "id": "eval-support-judge",
+        "name": "LLM-судья: полезность",
+        "dataset": "support-2025",
+        "scorer": "llm_judge",
+        "metric": "helpfulness",
+        "direction": "maximize",
+        "aggregate": "mean",
+    },
+]
+
+DATASHEETS: dict[str, list[tuple[str, str]]] = {
+    "squad-v2-ru": [
+        ("Мотивация", "Проверка извлечения ответов из русскоязычных статей Википедии"),
+        ("Состав", "48 271 вопрос с коротким ответом, 3–4 аннотатора на пример"),
+        ("Сбор", "Перевод SQuAD v2 и ручная вычитка, 2024-11"),
+        ("Применения", "RAG, извлечение фактов, дообучение на коротких ответах"),
+        ("Ограничения", "Только английские аннотации переведены автоматически"),
+    ],
+    "wiki-2024-qa": [
+        ("Мотивация", "Длинный контекст: вопросы по статьям целиком"),
+        ("Состав", "12 400 пар вопрос-статья, статьи до 8 000 слов"),
+        ("Сбор", "Дампы Википедии 2024, дедупликация по заголовку"),
+        ("Применения", "Проверка длинного контекста и цитируемости"),
+    ],
+    "code-repair-v3": [
+        ("Мотивация", "Починка коротких функций по описанию ошибки"),
+        ("Состав", "8 120 задач из issue-трекеров, 3 языка"),
+        ("Сбор", "Открытые issue и pull request, фильтр по воспроизводимости"),
+        ("Применения", "Code LLM, авто-исправление, ревью"),
+    ],
+    "support-2025": [
+        ("Мотивация", "Качество ответов поддержки в диалоге с клиентом"),
+        ("Состав", "31 500 диалогов, оценка LLM-судьёй по шкале 1–5"),
+        ("Сбор", "Обезличенные обращения из тикет-системы, 2025 H1"),
+        ("Применения", "Оценка полезности, детекция отказов"),
+    ],
+    "math-verify": [
+        ("Мотивация", "Проверка арифметики и рассуждений"),
+        ("Состав", "5 600 задач с пошаговым решением"),
+        ("Сбор", "Курируемая подборка, 2025-02"),
+        ("Применения", "Математика, reasoning-трейки"),
+    ],
+}
+
+DATASET_EXAMPLES = 64
+
+
+def _hash_value(*parts: str) -> float:
+    digest = hashlib.sha256("|".join(parts).encode()).digest()
+    return int.from_bytes(digest[:4], "big") / 0xFFFFFFFF
+
+
+def make_evals() -> list[EvalSummary]:
+    return [
+        EvalSummary(
+            id=item["id"],
+            name=item["name"],
+            dataset=item["dataset"],
+            scorer=item["scorer"],
+            metric=item["metric"],
+            direction=MetricDirection(item["direction"]),
+            aggregate=item["aggregate"],
+            runs=24,
+            updated_at=NOW - timedelta(hours=3),
+        )
+        for item in EVALS
+    ]
+
+
+def _score(eval_id: str, run_id: str, example_id: str) -> float:
+    value = _hash_value(eval_id, run_id, example_id)
+    if eval_id.endswith("exact"):
+        return 1.0 if value > 0.32 else 0.0
+    if eval_id.endswith("judge"):
+        return round(2.5 + value * 2.5, 3)
+    return round(0.45 + value * 0.5, 3)
+
+
+def make_comparison(
+    eval_id: str,
+    reference_run: str,
+    comparison_run: str,
+    reference_name: str,
+    comparison_name: str,
+    count: int = 32,
+) -> EvalComparison:
+    spec = next(item for item in EVALS if item["id"] == eval_id)
+    examples: list[ExampleResult] = []
+    reference_total = 0.0
+    comparison_total = 0.0
+    changed = 0
+
+    for index in range(count):
+        example_id = f"ex-{index:03d}"
+        reference_score = _score(eval_id, reference_run, example_id)
+        comparison_score = _score(eval_id, comparison_run, example_id)
+        reference_total += reference_score
+        comparison_total += comparison_score
+        is_changed = reference_score != comparison_score
+        if is_changed:
+            changed += 1
+        examples.append(
+            ExampleResult(
+                id=example_id,
+                input=INPUTS[index % len(INPUTS)],
+                output=OUTPUTS[index % len(OUTPUTS)],
+                expected="—",
+                reference_score=reference_score,
+                comparison_score=comparison_score,
+                changed=is_changed,
+            )
+        )
+
+    return EvalComparison(
+        eval_id=eval_id,
+        name=spec["name"],
+        dataset=spec["dataset"],
+        scorer=spec["scorer"],
+        metric=spec["metric"],
+        direction=MetricDirection(spec["direction"]),
+        aggregate=spec["aggregate"],
+        reference_run=reference_run,
+        comparison_run=comparison_run,
+        reference_name=reference_name,
+        comparison_name=comparison_name,
+        examples=examples,
+        reference_aggregate=round(reference_total / count, 4),
+        comparison_aggregate=round(comparison_total / count, 4),
+        changed=changed,
+    )
+
+
+def make_datasets() -> list[DatasetInfo]:
+    datasets: list[DatasetInfo] = []
+    for index, name in enumerate(DATASETS):
+        datasheet = [
+            ProvenanceEntry(label=label, value=value)
+            for label, value in DATASHEETS.get(name, [])
+        ]
+        datasets.append(
+            DatasetInfo(
+                id=name,
+                name=name,
+                version="v3.1.0",
+                examples_count=[48_271, 12_400, 8_120, 31_500, 5_600][index],
+                created_at=NOW - timedelta(days=90 - index * 11),
+                tags=["production" if index < 3 else "research"],
+                datasheet=datasheet,
+                provenance=[
+                    ProvenanceEntry(label="Версия", value="v3.1.0", mono=True),
+                    ProvenanceEntry(label="Ответственный", value="socrabs"),
+                    ProvenanceEntry(label="Собрано", value="2025-11-04", mono=True),
+                ],
+            )
+        )
+    return datasets
+
+
+def make_dataset_detail(dataset_id: str) -> DatasetDetail | None:
+    info = next((item for item in make_datasets() if item.id == dataset_id), None)
+    if info is None:
+        return None
+
+    examples = [
+        ExampleResult(
+            id=f"ex-{index:03d}",
+            input=INPUTS[index % len(INPUTS)],
+            output=OUTPUTS[index % len(OUTPUTS)],
+            expected="—",
+            reference_score=round(_hash_value(dataset_id, f"ex-{index:03d}") * 0.5 + 0.45, 3),
+            comparison_score=None,
+            changed=False,
+        )
+        for index in range(DATASET_EXAMPLES)
+    ]
+    return DatasetDetail(**info.model_dump(), examples=examples)

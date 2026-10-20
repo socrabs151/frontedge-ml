@@ -13,9 +13,46 @@ from typing import Any, Protocol, runtime_checkable
 
 from fastapi import Request
 
-from .models import LogLine, Run
+from .models import DatasetDetail, DatasetInfo, EvalComparison, EvalSummary, LogLine, Run
 
-__all__ = ["CallableProvider", "FrontedgeProvider", "ProviderInput", "adapt_provider"]
+__all__ = [
+    "CallableProvider",
+    "DatasetProvider",
+    "EvalProvider",
+    "FrontedgeProvider",
+    "ProviderInput",
+    "adapt_provider",
+]
+
+
+@runtime_checkable
+class EvalProvider(Protocol):
+    """Источник данных для экрана сравнения оценок."""
+
+    async def list_evals(self, request: Request) -> Sequence[EvalSummary]:
+        """Все оценки проекта: датасет × скорер × метрика."""
+        ...
+
+    async def compare_evals(
+        self,
+        request: Request,
+        eval_id: str,
+        reference_run: str,
+        comparison_run: str,
+    ) -> EvalComparison | None:
+        """Сравнение двух прогонов по одной оценке."""
+        ...
+
+
+@runtime_checkable
+class DatasetProvider(Protocol):
+    """Источник данных для экрана датасетов."""
+
+    async def list_datasets(self, request: Request) -> Sequence[DatasetInfo]:
+        ...
+
+    async def get_dataset(self, request: Request, dataset_id: str) -> DatasetDetail | None:
+        ...
 
 
 @runtime_checkable

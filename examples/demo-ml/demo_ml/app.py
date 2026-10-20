@@ -14,9 +14,23 @@ import uvicorn
 from fastapi import FastAPI, Request
 
 import frontedge
-from frontedge.models import LogLine, Run
+from frontedge.models import (
+    DatasetDetail,
+    DatasetInfo,
+    EvalComparison,
+    EvalSummary,
+    LogLine,
+    Run,
+)
 
-from .data import make_log_lines, make_runs
+from .data import (
+    make_comparison,
+    make_dataset_detail,
+    make_datasets,
+    make_evals,
+    make_log_lines,
+    make_runs,
+)
 
 
 class DemoRepository:
@@ -51,6 +65,41 @@ class DemoProvider:
             await asyncio.sleep(0.15)
 
 
+class DemoEvalProvider:
+    """Оценки: датасет × скорер × метрика, сравнение двух прогонов."""
+
+    async def list_evals(self, request: Request) -> Sequence[EvalSummary]:
+        return make_evals()
+
+    async def compare_evals(
+        self,
+        request: Request,
+        eval_id: str,
+        reference_run: str,
+        comparison_run: str,
+    ) -> EvalComparison | None:
+        try:
+            return make_comparison(
+                eval_id,
+                reference_run,
+                comparison_run,
+                reference_name=reference_run,
+                comparison_name=comparison_run,
+            )
+        except StopIteration:
+            return None
+
+
+class DemoDatasetProvider:
+    """Датасеты: версии, datasheet, примеры."""
+
+    async def list_datasets(self, request: Request) -> Sequence[DatasetInfo]:
+        return make_datasets()
+
+    async def get_dataset(self, request: Request, dataset_id: str) -> DatasetDetail | None:
+        return make_dataset_detail(dataset_id)
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="frontedge demo", version="0.1.0")
     repository = DemoRepository()
@@ -60,7 +109,15 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    app.include_router(frontedge.runs(provider, mount="/frontedge", title="Frontedge — demo"))
+    app.include_router(
+        frontedge.mount(
+            provider,
+            evals=DemoEvalProvider(),
+            datasets=DemoDatasetProvider(),
+            path="/frontedge",
+            title="Frontedge — demo",
+        )
+    )
     return app
 
 

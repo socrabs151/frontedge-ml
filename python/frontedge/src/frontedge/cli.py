@@ -10,9 +10,33 @@ from pathlib import Path
 
 from . import __version__
 from .gen import generate_client, generate_types
-from .models import Artifact, Example, LogLine, MetricPoint, Run, Stage
+from .models import (
+    Artifact,
+    DatasetDetail,
+    DatasetInfo,
+    EvalComparison,
+    EvalSummary,
+    Example,
+    ExampleResult,
+    LogLine,
+    MetricPoint,
+    Run,
+    Stage,
+)
 
-MODELS = [Run, Stage, MetricPoint, Artifact, Example, LogLine]
+MODELS = [
+    Run,
+    Stage,
+    MetricPoint,
+    Artifact,
+    Example,
+    ExampleResult,
+    LogLine,
+    EvalSummary,
+    EvalComparison,
+    DatasetInfo,
+    DatasetDetail,
+]
 
 
 def main(argv: list[str] | None = None) -> int:

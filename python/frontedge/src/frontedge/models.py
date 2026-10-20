@@ -164,3 +164,72 @@ class LogLine(FrontedgeModel):
 
 
 MetricValue = Annotated[float, Field(json_schema_extra=role("metric"))]
+
+# --- Оценки и датасеты ---------------------------------------------------
+
+
+class EvalSummary(FrontedgeModel):
+    """Оценка: датасет × скорер × метрика.
+
+    Скаляр «score» без скорера бессмыслен: столбец лидерборда — это тройка
+    (датасет, скорер, агрегация).
+    """
+
+    id: str = Field(json_schema_extra=role("id"))
+    name: str = Field(json_schema_extra=role("text"))
+    dataset: str = Field(json_schema_extra=role("dataset"))
+    scorer: str = Field(json_schema_extra=role("text"))
+    metric: str = Field(json_schema_extra=role("text"))
+    direction: MetricDirection
+    aggregate: Literal["mean", "fraction"]
+    runs: int = 0
+    updated_at: datetime | None = None
+
+
+class ExampleResult(FrontedgeModel):
+    """Результат оценки на одном примере."""
+
+    id: str = Field(json_schema_extra=role("id"))
+    input: str = Field(json_schema_extra=role("text"))
+    output: str = Field(json_schema_extra=role("text"))
+    expected: str | None = Field(default=None, json_schema_extra=role("text"))
+    reference_score: float | None = Field(default=None, json_schema_extra=role("metric"))
+    comparison_score: float | None = Field(default=None, json_schema_extra=role("metric"))
+    changed: bool
+
+
+class EvalComparison(FrontedgeModel):
+    """Сравнение двух прогонов по одной оценке: примеры как строки."""
+
+    eval_id: str = Field(json_schema_extra=role("id"))
+    name: str = Field(json_schema_extra=role("text"))
+    dataset: str = Field(json_schema_extra=role("dataset"))
+    scorer: str = Field(json_schema_extra=role("text"))
+    metric: str = Field(json_schema_extra=role("text"))
+    direction: MetricDirection
+    aggregate: Literal["mean", "fraction"]
+    reference_run: str = Field(json_schema_extra=role("id"))
+    comparison_run: str = Field(json_schema_extra=role("id"))
+    reference_name: str = Field(json_schema_extra=role("text"))
+    comparison_name: str = Field(json_schema_extra=role("text"))
+    examples: list[ExampleResult]
+    reference_aggregate: float
+    comparison_aggregate: float
+    changed: int
+
+
+class DatasetInfo(FrontedgeModel):
+    """Датасет: версия, размер, datasheet и провенанс."""
+
+    id: str = Field(json_schema_extra=role("id"))
+    name: str = Field(json_schema_extra=role("text"))
+    version: str = Field(json_schema_extra=role("text"))
+    examples_count: int
+    created_at: datetime | None = None
+    tags: list[str]
+    datasheet: list[ProvenanceEntry]
+    provenance: list[ProvenanceEntry]
+
+
+class DatasetDetail(DatasetInfo):
+    examples: list[ExampleResult]

@@ -9,7 +9,12 @@
 
 from .models import (
     Artifact,
+    DatasetDetail,
+    DatasetInfo,
+    EvalComparison,
+    EvalSummary,
     Example,
+    ExampleResult,
     Freshness,
     LogLine,
     MetricEvent,
@@ -21,15 +26,22 @@ from .models import (
     Stage,
     StageName,
 )
-from .providers import CallableProvider, FrontedgeProvider
-from .screens import run_detail, runs
+from .providers import CallableProvider, DatasetProvider, EvalProvider, FrontedgeProvider
+from .screens import mount, runs
 
 __version__ = "0.1.0"
 
 __all__ = [
     "Artifact",
     "CallableProvider",
+    "DatasetDetail",
+    "DatasetInfo",
+    "DatasetProvider",
+    "EvalComparison",
+    "EvalProvider",
+    "EvalSummary",
     "Example",
+    "ExampleResult",
     "Freshness",
     "FrontedgeProvider",
     "LogLine",
@@ -42,6 +54,6 @@ __all__ = [
     "Stage",
     "StageName",
     "__version__",
-    "run_detail",
+    "mount",
     "runs",
 ]
