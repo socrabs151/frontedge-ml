@@ -1,0 +1,13 @@
+[project]
+name = "frontedge-workspace"
+version = "0.0.0"
+description = "Workspace of the frontedge project: Python package and examples"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv.workspace]
+members = ["python/frontedge", "examples/demo-ml"]
+
+[tool.uv.sources]
+frontedge = { workspace = true }
