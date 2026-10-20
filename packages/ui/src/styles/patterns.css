@@ -1,0 +1,618 @@
+/* ML-паттерны Frontedge: лента прогона, метрики, таблицы, логи, графики. */
+
+/* --- Лента прогона (signature) --------------------------------------- */
+
+.fe-ribbon {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 60px;
+}
+
+.fe-ribbon__bar {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  align-items: stretch;
+  padding: 1px;
+  border-radius: 3px;
+  background: var(--surface-sunken);
+}
+
+.fe-ribbon__seg {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 1px;
+  min-width: 3px;
+  border-radius: 2px;
+  overflow: visible;
+}
+
+/* Провал — штриховка, а не только цвет (WCAG 1.4.1). */
+.fe-ribbon__seg--failed {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--status-danger) 0 2px,
+    transparent 2px 4px
+  );
+  box-shadow: inset 0 0 0 1px var(--status-danger);
+}
+
+.fe-ribbon__seg--cancelled {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--status-neutral) 0 2px,
+    transparent 2px 4px
+  );
+  box-shadow: inset 0 0 0 1px var(--status-neutral);
+}
+
+.fe-ribbon__event {
+  width: 1px;
+  height: 6px;
+  background: var(--text-muted);
+  transform: translateY(3px);
+}
+
+.fe-ribbon__event--regression {
+  background: var(--status-danger);
+  height: 8px;
+}
+
+.fe-ribbon__event--checkpoint {
+  background: var(--text-tertiary);
+}
+
+.fe-ribbon__labels {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.fe-ribbon__label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  font-size: var(--text-11);
+  color: var(--text-tertiary);
+}
+
+.fe-ribbon__label-time {
+  color: var(--text-muted);
+}
+
+/* --- Развёрнутый таймлайн прогона ------------------------------------ */
+
+.fe-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.fe-timeline__bar {
+  display: flex;
+  gap: 3px;
+  width: 100%;
+  height: 10px;
+  padding: 1px;
+  border-radius: 4px;
+  background: var(--surface-sunken);
+}
+
+.fe-timeline__seg {
+  border-radius: 2px;
+  min-width: 4px;
+}
+
+.fe-timeline__seg--failed {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--status-danger) 0 2px,
+    transparent 2px 4px
+  ) !important;
+  box-shadow: inset 0 0 0 1px var(--status-danger);
+}
+
+.fe-timeline__seg--cancelled {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--status-neutral) 0 2px,
+    transparent 2px 4px
+  ) !important;
+  box-shadow: inset 0 0 0 1px var(--status-neutral);
+}
+
+.fe-timeline__labels {
+  display: flex;
+  gap: 3px;
+}
+
+.fe-timeline__label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-left: 2px;
+  border-left: 1px solid var(--border);
+}
+
+.fe-timeline__name {
+  color: var(--text-secondary);
+  font-size: var(--text-12);
+  font-weight: var(--weight-medium);
+}
+
+.fe-timeline__time {
+  color: var(--text-muted);
+  font-size: var(--text-11);
+}
+
+.fe-timeline__status {
+  color: var(--status-danger);
+  font-size: var(--text-11);
+}
+
+.fe-timeline__label:has(.fe-timeline__status) .fe-timeline__name {
+  color: var(--text-primary);
+}
+
+/* --- Метрика -------------------------------------------------------- */
+
+.fe-metric {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.fe-metric__value {
+  font-size: var(--text-13);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.fe-metric__delta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  font-size: var(--text-12);
+  color: var(--text-tertiary);
+}
+
+.fe-metric__word {
+  font-size: var(--text-11);
+  color: var(--text-muted);
+}
+
+.fe-metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  min-width: 168px;
+}
+
+.fe-metric-card__label {
+  font-size: var(--text-11);
+  font-weight: var(--weight-medium);
+  color: var(--text-tertiary);
+  letter-spacing: var(--tracking-wide);
+}
+
+.fe-metric-card__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.fe-metric-card__value {
+  font-size: var(--text-20);
+  font-weight: var(--weight-semibold);
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
+}
+
+.fe-metric-card__delta {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--text-12);
+  color: var(--text-tertiary);
+}
+
+.fe-metric-card__word,
+.fe-metric-card__baseline {
+  color: var(--text-muted);
+  font-size: var(--text-11);
+}
+
+.fe-delta--better {
+  color: var(--text-primary);
+}
+
+.fe-delta--worse {
+  color: var(--text-primary);
+}
+
+/* --- Таблица -------------------------------------------------------- */
+
+.fe-table {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.fe-table__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.fe-table__table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+}
+
+.fe-table__th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: var(--text-12);
+  font-weight: var(--weight-medium);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.fe-table__th--num {
+  text-align: right;
+}
+
+.fe-table__th--sticky {
+  left: 0;
+  z-index: 3;
+}
+
+.fe-table__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.fe-table__sort:hover {
+  color: var(--text-primary);
+}
+
+.fe-table__sort-idle {
+  opacity: 0;
+}
+
+.fe-table__sort:hover .fe-table__sort-idle,
+.fe-table__sort:focus-visible .fe-table__sort-idle {
+  opacity: 0.6;
+}
+
+.fe-table__td {
+  height: var(--row-h);
+  padding: 0 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: var(--text-13);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fe-table__td--num {
+  text-align: right;
+}
+
+.fe-table__td--sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+}
+
+.fe-table__td--ribbon {
+  min-width: 120px;
+  width: 22%;
+}
+
+.fe-table__td--clip {
+  max-width: 260px;
+}
+
+.fe-table__row {
+  cursor: pointer;
+}
+
+.fe-table__row:hover .fe-table__td {
+  background: var(--surface-hover);
+}
+
+.fe-table__row[aria-selected="true"] .fe-table__td {
+  background: var(--surface-selected);
+}
+
+.fe-table__row:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: -2px;
+}
+
+.fe-table__spacer td {
+  padding: 0;
+  border: 0;
+}
+
+.fe-table__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-1) 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-12);
+}
+
+.fe-table__footer-note {
+  color: var(--text-muted);
+}
+
+.fe-run-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fe-run-name__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--data-series-1);
+  flex: none;
+}
+
+.fe-run-name__tag {
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-size: var(--text-11);
+  font-weight: var(--weight-medium);
+}
+
+/* --- Логи ----------------------------------------------------------- */
+
+.fe-logs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fe-logs__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.fe-logs__count {
+  color: var(--text-muted);
+  font-size: var(--text-12);
+}
+
+.fe-logs__jump {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 22px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: var(--text-12);
+  cursor: pointer;
+}
+
+.fe-logs__jump:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.fe-logs__scroll {
+  overflow: auto;
+  padding: var(--space-2) 0;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  font-family: var(--font-mono);
+  font-size: var(--text-12);
+  line-height: 1.6;
+}
+
+.fe-logs__line {
+  display: grid;
+  grid-template-columns: 64px 72px 1fr;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.fe-logs__level {
+  color: var(--text-muted);
+  font-size: var(--text-11);
+  letter-spacing: var(--tracking-wide);
+}
+
+.fe-logs__line--error .fe-logs__level {
+  color: var(--status-danger);
+}
+
+.fe-logs__line--warning .fe-logs__level {
+  color: var(--status-warning);
+}
+
+.fe-logs__line--progress .fe-logs__level {
+  color: var(--text-tertiary);
+}
+
+.fe-logs__time {
+  color: var(--text-muted);
+}
+
+.fe-logs__text {
+  color: var(--text-secondary);
+}
+
+.fe-logs__line--error .fe-logs__text {
+  color: var(--text-primary);
+}
+
+/* --- График --------------------------------------------------------- */
+
+.fe-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.fe-chart__legend {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.fe-chart__key {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-tertiary);
+  font-size: var(--text-12);
+}
+
+.fe-chart__swatch {
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--data-series-1);
+}
+
+.fe-chart__swatch--muted {
+  background: var(--data-ink);
+}
+
+.fe-chart__swatch--dashed {
+  background: repeating-linear-gradient(90deg, var(--text-secondary) 0 4px, transparent 4px 7px);
+}
+
+.fe-chart__host {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+.fe-chart__label {
+  fill: var(--data-ink);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.fe-chart__tip {
+  position: absolute;
+  top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  box-shadow: var(--overlay-shadow-sm);
+  pointer-events: none;
+  font-size: var(--text-12);
+}
+
+.fe-chart__tip-step {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-11);
+}
+
+.fe-chart__tip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Провенанс ------------------------------------------------------ */
+
+.fe-provenance {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0 var(--space-5);
+  margin: 0;
+  padding: var(--space-2) 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.fe-provenance__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.fe-provenance__label {
+  color: var(--text-tertiary);
+  font-size: var(--text-12);
+}
+
+.fe-provenance__value {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-13);
+  text-align: right;
+  word-break: break-all;
+}
+
+/* --- Заметка -------------------------------------------------------- */
+
+.fe-note {
+  padding: var(--space-3);
+  color: var(--text-tertiary);
+  font-size: var(--text-13);
+}

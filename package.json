@@ -1,0 +1,15 @@
+{
+  "name": "frontedge",
+  "private": true,
+  "packageManager": "pnpm@12.11.2",
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  },
+  "scripts": {
+    "dev": "pnpm --filter @frontedge/spike dev",
+    "build": "pnpm --filter @frontedge/spike build",
+    "typecheck": "pnpm -r typecheck",
+    "check:contrast": "node packages/ui/scripts/check-contrast.mjs",
+    "check:contrast:dark": "node packages/ui/scripts/check-contrast.mjs --theme dark"
+  }
+}

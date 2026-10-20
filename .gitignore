@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.log
+
+# Локальные справочные материалы — не в репозитории
+design-prompts-local/
+mockups-local/

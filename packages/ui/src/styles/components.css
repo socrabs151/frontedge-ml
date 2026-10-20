@@ -1,0 +1,597 @@
+/* Примитивы Frontedge. Префикс fe- чтобы не конфликтовать с consuming-приложением. */
+
+/* --- Кнопка -------------------------------------------------------- */
+
+.fe-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--control-h);
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font-size: var(--text-13);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-press) var(--ease-out),
+    border-color var(--duration-press) var(--ease-out),
+    color var(--duration-press) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.fe-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Нажатие: 0.96, 150ms, ease-out. Отключённая кнопка не масштабируется. */
+.fe-btn:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.fe-btn--primary {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.fe-btn--primary:not(:disabled):hover {
+  background: var(--accent-hover);
+}
+
+.fe-btn--secondary {
+  background: var(--surface);
+  border-color: var(--border-input);
+  color: var(--text-primary);
+}
+
+.fe-btn--secondary:not(:disabled):hover {
+  background: var(--surface-hover);
+  border-color: var(--text-tertiary);
+}
+
+.fe-btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.fe-btn--ghost:not(:disabled):hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.fe-btn--danger {
+  background: var(--status-danger);
+  color: #fff;
+}
+
+.fe-btn--sm {
+  height: var(--control-h-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-12);
+}
+
+.fe-btn__icon {
+  flex: none;
+}
+
+/* --- Иконочная кнопка ---------------------------------------------- */
+
+.fe-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-h);
+  height: var(--control-h);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-press) var(--ease-out),
+    color var(--duration-press) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.fe-icon-btn:not(:disabled):hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.fe-icon-btn:not(:disabled):active {
+  transform: scale(0.96);
+}
+
+.fe-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* --- Поле ввода ---------------------------------------------------- */
+
+.fe-input {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-h);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-control);
+  color: var(--text-primary);
+  font-size: var(--text-13);
+  transition: border-color var(--duration-press) var(--ease-out);
+}
+
+.fe-input::placeholder {
+  color: var(--text-muted);
+}
+
+.fe-input:hover {
+  border-color: var(--text-tertiary);
+}
+
+.fe-input:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.fe-input--flush {
+  background: transparent;
+  border-color: transparent;
+}
+
+.fe-input--flush:hover {
+  background: var(--surface-hover);
+  border-color: transparent;
+}
+
+/* --- Статус -------------------------------------------------------- */
+
+.fe-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 20px;
+  padding: 0 var(--space-2) 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-12);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.fe-status--success {
+  background: var(--status-success-wash);
+  color: var(--status-success);
+}
+
+.fe-status--warning {
+  background: var(--status-warning-wash);
+  color: var(--status-warning);
+}
+
+.fe-status--danger {
+  background: var(--status-danger-wash);
+  color: var(--status-danger);
+}
+
+.fe-status--neutral {
+  background: var(--status-neutral-wash);
+  color: var(--status-neutral);
+}
+
+.fe-status--running {
+  background: var(--status-running-wash);
+  color: var(--status-running);
+}
+
+.fe-status__icon {
+  flex: none;
+}
+
+/* Точка свежести данных: цвет + подпись, никогда цвет в одиночку. */
+.fe-freshness {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-11);
+  color: var(--text-tertiary);
+}
+
+.fe-freshness__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.fe-freshness--live .fe-freshness__dot {
+  background: var(--status-success);
+  animation: fe-pulse 1.8s var(--ease-inout) infinite;
+}
+
+.fe-freshness--stale .fe-freshness__dot {
+  background: var(--status-warning);
+}
+
+@keyframes fe-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* --- Сегментированный переключатель -------------------------------- */
+
+.fe-segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.fe-segmented__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  height: 22px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-12);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-press) var(--ease-out),
+    color var(--duration-press) var(--ease-out);
+}
+
+.fe-segmented__item:hover {
+  color: var(--text-primary);
+}
+
+.fe-segmented__item[aria-checked="true"],
+.fe-segmented__item[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--overlay-shadow-sm);
+}
+
+/* --- Вкладки ------------------------------------------------------- */
+
+.fe-tabs__list {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.fe-tabs__trigger {
+  position: relative;
+  height: 34px;
+  padding: 0 var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-size: var(--text-13);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: color var(--duration-press) var(--ease-out);
+}
+
+.fe-tabs__trigger:hover {
+  color: var(--text-primary);
+}
+
+.fe-tabs__trigger[data-state="active"] {
+  color: var(--text-primary);
+}
+
+.fe-tabs__trigger[data-state="active"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 1px 1px 0 0;
+}
+
+.fe-tabs__count {
+  margin-left: var(--space-1);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Тултип -------------------------------------------------------- */
+
+.fe-tooltip {
+  max-width: 260px;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  box-shadow: var(--overlay-shadow-sm);
+  color: var(--text-secondary);
+  font-size: var(--text-12);
+  line-height: var(--leading-snug);
+  animation: fe-tooltip-in var(--duration-popover) var(--ease-out);
+}
+
+@keyframes fe-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Меню и попапы ------------------------------------------------- */
+
+.fe-menu {
+  min-width: 180px;
+  padding: var(--space-1);
+  background: var(--surface-overlay);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--overlay-shadow);
+  animation: fe-popover-in var(--duration-popover) var(--ease-out);
+}
+
+@keyframes fe-popover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-2px);
+    transform-origin: var(--radix-popper-transform-origin, top center);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.fe-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  height: 26px;
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-13);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fe-menu__item[data-highlighted] {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.fe-menu__label {
+  flex: 1;
+}
+
+.fe-menu__hint {
+  color: var(--text-muted);
+  font-size: var(--text-11);
+  font-variant-numeric: tabular-nums;
+}
+
+.fe-menu__separator {
+  height: 1px;
+  margin: var(--space-1) 0;
+  background: var(--border);
+}
+
+/* --- Поиск --------------------------------------------------------- */
+
+.fe-search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--control-h);
+  min-width: 240px;
+  padding: 0 var(--space-2) 0 var(--space-3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-control);
+  transition: border-color var(--duration-press) var(--ease-out);
+}
+
+.fe-search:hover {
+  border-color: var(--text-tertiary);
+}
+
+.fe-search:focus-within {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.fe-search__icon {
+  color: var(--text-muted);
+  flex: none;
+}
+
+.fe-search__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--text-13);
+  outline: none;
+}
+
+.fe-search__input::placeholder {
+  color: var(--text-muted);
+}
+
+.fe-search__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.fe-search__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.fe-search__clear:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* --- Выпадающий список --------------------------------------------- */
+
+.fe-select {
+  height: var(--control-h);
+  padding: 0 var(--space-2);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-control);
+  color: var(--text-primary);
+  font-size: var(--text-13);
+  cursor: pointer;
+}
+
+.fe-select:hover {
+  border-color: var(--text-tertiary);
+}
+
+/* --- Чипы фильтров ------------------------------------------------- */
+
+.fe-chip {
+  height: var(--control-h);
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-12);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-press) var(--ease-out),
+    color var(--duration-press) var(--ease-out);
+}
+
+.fe-chip:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.fe-chip[aria-pressed="true"] {
+  background: var(--surface);
+  border-color: var(--border-input);
+  color: var(--text-primary);
+}
+
+.fe-filterchip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--control-h);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: var(--text-12);
+  cursor: pointer;
+}
+
+.fe-filterchip:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+/* --- Чекбокс ------------------------------------------------------- */
+
+.fe-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--border-input);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--accent-text);
+  flex: none;
+}
+
+.fe-checkbox[data-state="checked"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.fe-checkline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-13);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.fe-checkline input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+}
+
+/* --- Пустое состояние ---------------------------------------------- */
+
+.fe-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-7) var(--space-4);
+  text-align: center;
+}
+
+.fe-empty__icon {
+  color: var(--text-muted);
+}
+
+.fe-empty__title {
+  font-size: var(--text-14);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+}
+
+.fe-empty__text {
+  max-width: 42ch;
+  font-size: var(--text-13);
+  color: var(--text-tertiary);
+}
