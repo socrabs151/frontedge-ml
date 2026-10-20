@@ -1,65 +1,85 @@
 # frontedge
 
-> Фронтенд для ML-инжиниринга: переиспользуемый слой интерфейса, который монтируется в любой
-> FastAPI-проект и знает про природу ML-данных — прогоны, датасеты, оценки, трейсы, артефакты.
+> The frontend layer for ML engineering: a reusable UI layer you mount into any FastAPI
+> application, built to understand ML data — runs, datasets, evals, traces, artifacts.
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-[![Phase](https://img.shields.io/badge/status-phase%201%20%E1%81%AA%D0%BF%D0%B0%D0%B9%D0%BA-informational.svg)](docs/specs/2026-10-20-frontedge-design.md)
+[![license](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![status](https://img.shields.io/badge/status-phase%201%20spike-informational.svg)](docs/specs/2026-10-20-frontedge-design.md)
+[![node](https://img.shields.io/badge/node-22%2B-5FA04E.svg)](package.json)
+[![ci](https://github.com/socrabs151/frontedge-ml/actions/workflows/ci.yml/badge.svg)](https://github.com/socrabs151/frontedge-ml/actions/workflows/ci.yml)
 
-Исходники: **https://github.com/socrabs151/frontedge-ml**
+**English** · [Русский](README.ru.md)
+
+Sources: **https://github.com/socrabs151/frontedge-ml**
 
 ```python
 app.include_router(frontedge.runs(runs_provider=my_repo))
 ```
 
-> **Статус:** Phase 1 (дизайн-спайк). Дизайн-система и два экрана — список прогонов и
-> детали прогона — на мок-данных. Реальный FastAPI-монтаж — Phase 2.
-> Полный дизайн-документ: [`docs/specs/2026-10-20-frontedge-design.md`](docs/specs/2026-10-20-frontedge-design.md).
+> **Status:** Phase 1 (design spike). The design system and two screens — a runs list and a run
+> detail view — run on synthetic data. Mounting into a real FastAPI app is Phase 2.
+> Full design document: [`docs/specs/2026-10-20-frontedge-design.md`](docs/specs/2026-10-20-frontedge-design.md).
 
-## Что внутри
+## What it is
+
+Frontedge is not another admin template. The frontend knows what a run, a baseline, a metric
+delta, a freshness window and a provenance record are, so it can show them without you
+describing them again for every project.
+
+- **Runs** — a table with per-stage timelines, deltas against a pinned baseline, and inline
+  metric sparklines.
+- **Run detail** — metrics over steps, example-level evaluation, live logs, artifacts, provenance.
+- **Evals and datasets** — Phase 3.
+
+## Repository layout
 
 ```
 frontedge/
-├── packages/ui/            @frontedge/ui — токены, примитивы, ML-паттерны
+├── packages/ui/            @frontedge/ui — tokens, primitives, ML patterns
 │   ├── src/styles/         tokens.css · base.css · components.css · patterns.css
 │   ├── src/components/     Button · StatusBadge · Search · Sparkline · Tabs · Tooltip
 │   ├── src/patterns/       RunRibbon · RunTimeline · RunsTable · MetricChart · LogStream
-│   └── scripts/            check-contrast.mjs — гейт WCAG-контраста
-├── apps/spike/             приложение-спайк Phase 1 (Vite + React + TS)
+│   └── scripts/            check-contrast.mjs — WCAG contrast gate
+├── apps/spike/             Phase 1 spike app (Vite + React + TS)
 │   ├── src/screens/        RunsScreen · RunDetailScreen
-│   ├── src/data/mock.ts    синтетические прогоны, примеры, логи
-│   └── scripts/            verify.mjs (скриншоты + axe) · keyboard-check.mjs
-└── docs/                   дизайн-документ и спецификация
+│   ├── src/data/mock.ts    synthetic runs, examples, logs
+│   └── scripts/            verify.mjs (screenshots + axe) · keyboard-check.mjs
+└── docs/specs/             design document
 ```
 
-## Команды
+The Python package (`python/frontedge`) and the npm package (`@frontedge/ui`) land in
+Phase 2 and Phase 4.
+
+## Commands
 
 ```bash
 pnpm install
-pnpm dev                # спайк на http://localhost:5173
-pnpm typecheck          # tsc по всем пакетам
-pnpm check:contrast     # контраст токенов по WCAG 2.2, обе темы
-node apps/spike/scripts/verify.mjs        # скриншоты + axe-аудит (нужен запущенный dev-сервер)
-node apps/spike/scripts/keyboard-check.mjs # клавиатурный прогон таблицы
+pnpm dev                # spike on http://localhost:5173
+pnpm typecheck          # tsc across every package
+pnpm check:contrast     # token contrast per WCAG 2.2, both themes
+pnpm build              # production build of the spike app
+node apps/spike/scripts/verify.mjs        # screenshots + axe audit (dev server required)
+node apps/spike/scripts/keyboard-check.mjs # keyboard pass over the table
 ```
 
-## Дизайн-система
+## Design system
 
-- **Токены** — `packages/ui/src/styles/tokens.css`: цвета, типографика, плотность, радиусы, движение.
-  Светлая тема по умолчанию, тёмная — переключателем; цвета серий графиков не меняются между темами.
-- **Плотность** — строки 28/32/40 px, переключается атрибутом `data-density` на `<html>`.
-- **Иконки** — Lucide, `currentColor`, толщина штриха по весу текста рядом.
-- **Шрифты** — Inter (UI) и JetBrains Mono (данные, логи, идентификаторы), self-hosted, без CDN.
+- **Tokens** live in `packages/ui/src/styles/tokens.css`: color, typography, density, radii,
+  motion. Light theme by default, dark theme on demand; series colors stay identical in both.
+- **Density** — 28 / 32 / 40 px rows, switched by a `data-density` attribute on `<html>`.
+- **Type** — Inter for the interface, JetBrains Mono for data, logs and identifiers. Both
+  self-hosted, no CDN.
+- **Icons** — Lucide, `currentColor`, stroke weight matched to the adjacent text.
 
-Правила, которые нельзя нарушать (см. дизайн-документ, §4):
+Rules that are not negotiable (see §4 of the design document):
 
-- цвет никогда не единственный носитель смысла: статус = иконка + слово + цвет;
-- «лучше/хуже» — это знак и слово, а не зелёный и красный;
-- числа — табличные, выравнивание вправо, пустое значение — тире «–»;
-- таблицы, а не карточки; hairline-разделители, без зебры;
-- глубина — границы и сдвиги поверхностей, тени только у оверлеев;
-- `prefers-reduced-motion` уважается, анимируются только `transform` и `opacity`.
+- color is never the only carrier of meaning — a status is icon + word + color;
+- "better" and "worse" are a sign and a word, not green and red;
+- numbers are tabular and right-aligned, a missing value is an en dash, never a blank cell;
+- tables, not cards; hairline separators, never zebra striping;
+- depth comes from borders and surface shifts, shadows only on overlays;
+- `prefers-reduced-motion` is respected, only `transform` and `opacity` animate.
 
-## Лицензия
+## License
 
-MIT — свободное использование, изменение и распространение, включая коммерческое.
+MIT — free use, modification and distribution, including commercial use.
