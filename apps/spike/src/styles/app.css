@@ -150,6 +150,22 @@
   letter-spacing: var(--tracking-tighter);
 }
 
+.fe-runs__title--small {
+  font-size: var(--text-20);
+  letter-spacing: var(--tracking-tight);
+}
+
+.fe-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.fe-field__label {
+  color: var(--text-tertiary);
+  font-size: var(--text-12);
+}
+
 .fe-runs__subtitle {
   margin-top: 2px;
   color: var(--text-tertiary);

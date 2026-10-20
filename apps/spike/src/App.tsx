@@ -1,4 +1,4 @@
-import { Boxes, Database, GitBranch, Moon, Sun } from "lucide-react";
+import { Boxes, Database, GitBranch, GitCompareArrows, Moon, Sun } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Run, RunStatus, VisibilityState } from "@frontedge/ui";
 import { Segmented, TooltipProvider } from "@frontedge/ui";
@@ -6,10 +6,12 @@ import { DATASET_NAMES, NOW_TIME } from "./data/mock";
 import { errorMessage, source } from "./data/source";
 import { RunsScreen } from "./screens/RunsScreen";
 import { RunDetailScreen, RunDetailPlaceholder } from "./screens/RunDetailScreen";
+import { EvalDiffScreen } from "./screens/EvalDiffScreen";
+import { DatasetScreen } from "./screens/DatasetScreen";
 
 type Theme = "light" | "dark";
 type Density = "compact" | "default" | "comfortable";
-type Route = { name: "runs" } | { name: "run"; id: string };
+type Route = { name: "runs" } | { name: "run"; id: string } | { name: "evals" } | { name: "datasets" };
 
 const ROW_HEIGHT: Record<Density, number> = { compact: 28, default: 32, comfortable: 40 };
 
@@ -100,22 +102,30 @@ export function App() {
             <p className="sidebar__title">Эксперименты</p>
             <button
               type="button"
-              className="sidebar__item sidebar__item--active"
-              aria-current="page"
+              className={`sidebar__item${route.name === "runs" ? " sidebar__item--active" : ""}`}
+              aria-current={route.name === "runs" ? "page" : undefined}
               onClick={() => setRoute({ name: "runs" })}
             >
               <Boxes size={14} aria-hidden />
               Runs
             </button>
-            <button type="button" className="sidebar__item" disabled>
+            <button
+              type="button"
+              className={`sidebar__item${route.name === "evals" ? " sidebar__item--active" : ""}`}
+              aria-current={route.name === "evals" ? "page" : undefined}
+              onClick={() => setRoute({ name: "evals" })}
+            >
+              <GitCompareArrows size={14} aria-hidden />
+              Evals
+            </button>
+            <button
+              type="button"
+              className={`sidebar__item${route.name === "datasets" ? " sidebar__item--active" : ""}`}
+              aria-current={route.name === "datasets" ? "page" : undefined}
+              onClick={() => setRoute({ name: "datasets" })}
+            >
               <Database size={14} aria-hidden />
               Datasets
-              <span className="sidebar__hint">скоро</span>
-            </button>
-            <button type="button" className="sidebar__item" disabled>
-              <Boxes size={14} aria-hidden />
-              Evals
-              <span className="sidebar__hint">скоро</span>
             </button>
           </div>
           <div className="sidebar__foot">
@@ -150,6 +160,10 @@ export function App() {
                 setDataset("all");
               }}
             />
+          ) : route.name === "evals" ? (
+            <EvalDiffScreen runs={runs} baselineId={baseline?.id} />
+          ) : route.name === "datasets" ? (
+            <DatasetScreen />
           ) : (
             <RunDetailScreen
               runId={route.id}

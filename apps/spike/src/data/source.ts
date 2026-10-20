@@ -1,6 +1,22 @@
 import { createClient } from "@frontedge/ui";
-import type { Example, LogLine, Run } from "@frontedge/ui";
-import { makeExamples, makeLogs, makeRuns } from "./mock";
+import type {
+  DatasetDetail,
+  DatasetInfo,
+  EvalComparison,
+  EvalSummary,
+  Example,
+  LogLine,
+  Run,
+} from "@frontedge/ui";
+import {
+  makeComparison,
+  makeDatasets,
+  makeDatasetDetail,
+  makeEvals,
+  makeExamples,
+  makeLogs,
+  makeRuns,
+} from "./mock";
 
 /**
  * Источник данных для экранов.
@@ -14,6 +30,14 @@ export interface RunsSource {
   getRun(runId: string): Promise<Run>;
   examples(runId: string): Promise<Example[]>;
   streamLogs(runId: string): AsyncGenerator<LogLine>;
+  listEvals(): Promise<EvalSummary[]>;
+  compareEval(
+    evalId: string,
+    referenceRun: string,
+    comparisonRun: string,
+  ): Promise<EvalComparison>;
+  listDatasets(): Promise<DatasetInfo[]>;
+  getDataset(datasetId: string): Promise<DatasetDetail>;
 }
 
 const mockRuns = makeRuns(200);
@@ -38,6 +62,18 @@ export const mockSource: RunsSource = {
       yield line;
     }
   },
+  async listEvals() {
+    return makeEvals() as unknown as EvalSummary[];
+  },
+  async compareEval(evalId, referenceRun, comparisonRun) {
+    return makeComparison(evalId, referenceRun, comparisonRun) as unknown as EvalComparison;
+  },
+  async listDatasets() {
+    return makeDatasets() as unknown as DatasetInfo[];
+  },
+  async getDataset(datasetId) {
+    return makeDatasetDetail(datasetId) as unknown as DatasetDetail;
+  },
 };
 
 const client = createClient({ basePath: import.meta.env.VITE_API_BASE ?? "/frontedge/api" });
@@ -47,10 +83,13 @@ export const apiSource: RunsSource = {
   listRuns: () => client.listRuns(),
   getRun: (runId) => client.getRun(runId),
   async examples() {
-    // Примеры появятся в Phase 3 вместе с экраном Eval diff.
     return [];
   },
   streamLogs: (runId) => client.streamLogs(runId),
+  listEvals: () => client.listEvals(),
+  compareEval: (evalId, reference, comparison) => client.compareEval(evalId, reference, comparison),
+  listDatasets: () => client.listDatasets(),
+  getDataset: (datasetId) => client.getDataset(datasetId),
 };
 
 export const source: RunsSource =

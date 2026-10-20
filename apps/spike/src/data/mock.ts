@@ -265,3 +265,215 @@ export function makeLogs(count = 80): LogLine[] {
 
 export const NOW_TIME = NOW;
 export const DATASET_NAMES = DATASETS;
+
+/* --- Оценки и датасеты ------------------------------------------------ */
+
+export interface MockEval {
+  id: string;
+  name: string;
+  dataset: string;
+  scorer: string;
+  metric: string;
+  direction: "maximize" | "minimize" | "none";
+  aggregate: "mean" | "fraction";
+  runs: number;
+  updatedAt: string;
+}
+
+const EVAL_SPECS: MockEval[] = [
+  {
+    id: "eval-squad-exact",
+    name: "Точное совпадение",
+    dataset: "squad-v2-ru",
+    scorer: "exact_match",
+    metric: "accuracy",
+    direction: "maximize",
+    aggregate: "fraction",
+    runs: 24,
+    updatedAt: new Date(NOW - 3 * 3600_000).toISOString(),
+  },
+  {
+    id: "eval-squad-f1",
+    name: "F1 по токенам",
+    dataset: "squad-v2-ru",
+    scorer: "token_f1",
+    metric: "f1",
+    direction: "maximize",
+    aggregate: "mean",
+    runs: 24,
+    updatedAt: new Date(NOW - 5 * 3600_000).toISOString(),
+  },
+  {
+    id: "eval-support-judge",
+    name: "LLM-судья: полезность",
+    dataset: "support-2025",
+    scorer: "llm_judge",
+    metric: "helpfulness",
+    direction: "maximize",
+    aggregate: "mean",
+    runs: 11,
+    updatedAt: new Date(NOW - 26 * 3600_000).toISOString(),
+  },
+];
+
+export function makeEvals(): MockEval[] {
+  return EVAL_SPECS;
+}
+
+function hashValue(...parts: string[]): number {
+  const input = parts.join("|");
+  let hash = 2166136261;
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) % 100000) / 100000;
+}
+
+export interface MockExampleResult {
+  id: string;
+  input: string;
+  output: string;
+  expected: string | null;
+  referenceScore: number | null;
+  comparisonScore: number | null;
+  changed: boolean;
+}
+
+export function makeComparison(
+  evalId: string,
+  referenceRun: string,
+  comparisonRun: string,
+  count = 32,
+) {
+  const spec = EVAL_SPECS.find((item) => item.id === evalId) ?? EVAL_SPECS[0]!;
+  const score = (runId: string, exampleId: string) => {
+    const value = hashValue(evalId, runId, exampleId);
+    if (evalId.endsWith("exact")) return value > 0.32 ? 1 : 0;
+    if (evalId.endsWith("judge")) return Number((2.5 + value * 2.5).toFixed(3));
+    return Number((0.45 + value * 0.5).toFixed(3));
+  };
+
+  const examples: MockExampleResult[] = [];
+  let referenceTotal = 0;
+  let comparisonTotal = 0;
+  let changed = 0;
+
+  for (let index = 0; index < count; index += 1) {
+    const id = `ex-${String(index).padStart(3, "0")}`;
+    const referenceScore = score(referenceRun, id);
+    const comparisonScore = score(comparisonRun, id);
+    referenceTotal += referenceScore;
+    comparisonTotal += comparisonScore;
+    const isChanged = referenceScore !== comparisonScore;
+    if (isChanged) changed += 1;
+    examples.push({
+      id,
+      input: INPUTS[index % INPUTS.length]!,
+      output: OUTPUTS[index % OUTPUTS.length]!,
+      expected: "—",
+      referenceScore,
+      comparisonScore,
+      changed: isChanged,
+    });
+  }
+
+  return {
+    evalId: spec.id,
+    name: spec.name,
+    dataset: spec.dataset,
+    scorer: spec.scorer,
+    metric: spec.metric,
+    direction: spec.direction,
+    aggregate: spec.aggregate,
+    referenceRun,
+    comparisonRun,
+    referenceName: referenceRun,
+    comparisonName: comparisonRun,
+    examples,
+    referenceAggregate: Number((referenceTotal / count).toFixed(4)),
+    comparisonAggregate: Number((comparisonTotal / count).toFixed(4)),
+    changed,
+  };
+}
+
+const DATASHEETS: Record<string, Array<[string, string]>> = {
+  "squad-v2-ru": [
+    ["Мотивация", "Проверка извлечения ответов из русскоязычных статей Википедии"],
+    ["Состав", "48 271 вопрос с коротким ответом, 3–4 аннотатора на пример"],
+    ["Сбор", "Перевод SQuAD v2 и ручная вычитка, 2024-11"],
+    ["Применения", "RAG, извлечение фактов, дообучение на коротких ответах"],
+    ["Ограничения", "Только английские аннотации переведены автоматически"],
+  ],
+  "wiki-2024-qa": [
+    ["Мотивация", "Длинный контекст: вопросы по статьям целиком"],
+    ["Состав", "12 400 пар вопрос-статья, статьи до 8 000 слов"],
+    ["Сбор", "Дампы Википедии 2024, дедупликация по заголовку"],
+    ["Применения", "Проверка длинного контекста и цитируемости"],
+  ],
+  "code-repair-v3": [
+    ["Мотивация", "Починка коротких функций по описанию ошибки"],
+    ["Состав", "8 120 задач из issue-трекеров, 3 языка"],
+    ["Сбор", "Открытые issue и pull request, фильтр по воспроизводимости"],
+    ["Применения", "Code LLM, авто-исправление, ревью"],
+  ],
+  "support-2025": [
+    ["Мотивация", "Качество ответов поддержки в диалоге с клиентом"],
+    ["Состав", "31 500 диалогов, оценка LLM-судьёй по шкале 1–5"],
+    ["Сбор", "Обезличенные обращения из тикет-системы, 2025 H1"],
+    ["Применения", "Оценка полезности, детекция отказов"],
+  ],
+  "math-verify": [
+    ["Мотивация", "Проверка арифметики и рассуждений"],
+    ["Состав", "5 600 задач с пошаговым решением"],
+    ["Сбор", "Курируемая подборка, 2025-02"],
+    ["Применения", "Математика, reasoning-трейки"],
+  ],
+};
+
+export interface MockDataset {
+  id: string;
+  name: string;
+  version: string;
+  examplesCount: number;
+  createdAt: string;
+  tags: string[];
+  datasheet: Array<{ label: string; value: string }>;
+  provenance: Array<{ label: string; value: string; mono: boolean }>;
+}
+
+export function makeDatasets(): MockDataset[] {
+  const counts = [48_271, 12_400, 8_120, 31_500, 5_600];
+  return DATASETS.map((name, index) => ({
+    id: name,
+    name,
+    version: "v3.1.0",
+    examplesCount: counts[index] ?? 0,
+    createdAt: new Date(NOW - (90 - index * 11) * 86_400_000).toISOString(),
+    tags: [index < 3 ? "production" : "research"],
+    datasheet: (DATASHEETS[name] ?? []).map(([label, value]) => ({ label, value })),
+    provenance: [
+      { label: "Версия", value: "v3.1.0", mono: true },
+      { label: "Ответственный", value: "socrabs", mono: false },
+      { label: "Собрано", value: "2025-11-04", mono: true },
+    ],
+  }));
+}
+
+export function makeDatasetDetail(datasetId: string) {
+  const info = makeDatasets().find((item) => item.id === datasetId);
+  if (!info) return undefined;
+  const examples = Array.from({ length: 64 }, (_, index) => {
+    const id = `ex-${String(index).padStart(3, "0")}`;
+    return {
+      id,
+      input: INPUTS[index % INPUTS.length]!,
+      output: OUTPUTS[index % OUTPUTS.length]!,
+      expected: "—",
+      referenceScore: Number((0.45 + hashValue(datasetId, id) * 0.5).toFixed(3)),
+      comparisonScore: null,
+      changed: false,
+    };
+  });
+  return { ...info, examples };
+}
