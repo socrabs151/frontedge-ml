@@ -4,10 +4,11 @@ import { chromium } from "playwright";
 const browser = await chromium.launch({ channel: "msedge" });
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
+const BASE = process.env.FE_BASE_URL ?? "http://localhost:5173";
 const problems = [];
 const wait = (ms) => page.waitForTimeout(ms);
 
-await page.goto("http://localhost:5173/", { waitUntil: "networkidle" });
+await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector(".fe-table__row");
 
 const focusedIndex = () =>
@@ -72,7 +73,7 @@ await page.waitForSelector(".fe-detail__head", { timeout: 8000 }).catch(() => {
 });
 
 // Меню колонок: Escape закрывает
-await page.goto("http://localhost:5173/", { waitUntil: "networkidle" });
+await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector(".fe-table__row");
 await page.getByRole("button", { name: /Колонки/ }).click();
 await page.waitForSelector(".fe-menu");

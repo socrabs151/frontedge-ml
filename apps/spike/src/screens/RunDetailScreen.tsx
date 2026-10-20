@@ -1,22 +1,115 @@
-import { Button, EmptyState, LogStream, MetricCard, MetricChart, ExamplesTable, ProvenanceList, RunTimeline, StatusBadge, Tabs, Tooltip } from "@frontedge/ui";
+import {
+  Button,
+  EmptyState,
+  ExamplesTable,
+  LoadingRows,
+  LogStream,
+  MetricCard,
+  MetricChart,
+  ProvenanceList,
+  RunTimeline,
+  StatusBadge,
+  Tabs,
+  Tooltip,
+} from "@frontedge/ui";
 import { ArrowLeft, Download, GitCompareArrows, Pause, Play, RefreshCw } from "lucide-react";
-import { useMemo, useState } from "react";
-import { makeExamples, makeLogs } from "../data/mock";
-import type { Run } from "@frontedge/ui";
+import { useEffect, useState } from "react";
+import type { Example, LogLine, Run } from "@frontedge/ui";
+import { errorMessage, source } from "../data/source";
 
 export function RunDetailScreen({
-  run,
+  runId,
   baseline,
   onBack,
 }: {
-  run: Run;
+  runId: string;
   baseline?: Run;
   onBack: () => void;
 }) {
+  const [run, setRun] = useState<Run | null>(null);
+  const [examples, setExamples] = useState<Example[]>([]);
+  const [logs, setLogs] = useState<LogLine[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState("metrics");
   const [onlyDiff, setOnlyDiff] = useState(false);
-  const examples = useMemo(() => makeExamples(32), []);
-  const logs = useMemo(() => makeLogs(80), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setError(null);
+    setRun(null);
+
+    source
+      .getRun(runId)
+      .then((loaded) => {
+        if (cancelled) return;
+        setRun(loaded);
+      })
+      .catch((cause) => {
+        if (!cancelled) setError(errorMessage(cause));
+      });
+
+    source
+      .examples(runId)
+      .then((loaded) => {
+        if (!cancelled) setExamples(loaded);
+      })
+      .catch(() => undefined);
+
+    const stream = source.streamLogs(runId);
+    void (async () => {
+      try {
+        for await (const line of stream) {
+          if (cancelled) return;
+          setLogs((current) => [...current, line]);
+        }
+      } catch (cause) {
+        if (!cancelled) setError(errorMessage(cause));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [runId]);
+
+  if (error) {
+    return (
+      <div className="fe-detail">
+        <div className="fe-detail__crumbs">
+          <button type="button" className="fe-linkbtn" onClick={onBack}>
+            <ArrowLeft size={13} aria-hidden />
+            Runs
+          </button>
+        </div>
+        <div className="fe-panel">
+          <EmptyState
+            icon={<RefreshCw size={20} aria-hidden />}
+            title="Не удалось загрузить прогон"
+            text={`Источник данных не ответил: ${error}. Вернитесь к списку и попробуйте снова.`}
+            action={
+              <Button variant="secondary" size="sm" onClick={onBack}>
+                К списку прогонов
+              </Button>
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (!run) {
+    return (
+      <div className="fe-detail">
+        <div className="fe-detail__crumbs">
+          <button type="button" className="fe-linkbtn" onClick={onBack}>
+            <ArrowLeft size={13} aria-hidden />
+            Runs
+          </button>
+        </div>
+        <LoadingRows rows={6} height={40} label="Загружаем прогон" />
+      </div>
+    );
+  }
 
   const accuracySeries = run.series.accuracy ?? [];
   const lossSeries = run.series.loss ?? [];
@@ -103,7 +196,11 @@ export function RunDetailScreen({
               Score считается как доля совпадений; дельта — к baseline.
             </span>
           </div>
-          <ExamplesTable examples={examples} onlyDiff={onlyDiff} />
+          {examples.length === 0 ? (
+            <p className="fe-note">Примеры появятся в Phase 3 вместе с экраном Eval diff.</p>
+          ) : (
+            <ExamplesTable examples={examples} onlyDiff={onlyDiff} />
+          )}
         </div>
       ),
     },
@@ -191,8 +288,7 @@ export function RunDetailScreen({
           <span className="muted">Git</span> <span className="mono">{run.gitSha}</span>
         </span>
         <span className="fe-detail__meta-item">
-          <span className="muted">Baseline</span>{" "}
-          <span className="mono">{baseline?.name ?? "не выбран"}</span>
+          <span className="muted">Baseline</span> <span className="mono">{baseline?.name ?? "не выбран"}</span>
         </span>
         <span className="fe-detail__meta-item">
           <span className="muted">Seed</span> <span className="mono num">{run.seed}</span>

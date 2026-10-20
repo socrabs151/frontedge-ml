@@ -2,12 +2,13 @@ import {
   Button,
   ColumnsMenu,
   EmptyState,
+  LoadingRows,
   RunsTable,
   Search,
   type ColumnOption,
   type VisibilityState,
 } from "@frontedge/ui";
-import { Download, Inbox, SlidersHorizontal, X } from "lucide-react";
+import { Download, Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import { useMemo } from "react";
 import type { Run, RunStatus } from "@frontedge/ui";
 
@@ -33,8 +34,10 @@ const COLUMN_OPTIONS: ColumnOption[] = [
 ];
 
 export interface RunsScreenProps {
-  runs: Run[];
-  baselineId: string;
+  runs: Run[] | null;
+  error: string | null;
+  onRetry: () => void;
+  baselineId?: string;
   datasets: string[];
   now: number;
   rowHeight: number;
@@ -52,6 +55,8 @@ export interface RunsScreenProps {
 
 export function RunsScreen({
   runs,
+  error,
+  onRetry,
   baselineId,
   datasets,
   now,
@@ -67,16 +72,15 @@ export function RunsScreen({
   onOpenRun,
   onResetFilters,
 }: RunsScreenProps) {
-  const filtered = useMemo(
-    () =>
-      runs.filter((run) => {
-        if (status !== "all" && run.status !== status) return false;
-        if (dataset !== "all" && run.dataset !== dataset) return false;
-        if (search.trim() && !run.name.includes(search.trim().toLowerCase())) return false;
-        return true;
-      }),
-    [runs, status, dataset, search],
-  );
+  const filtered = useMemo(() => {
+    if (!runs) return [];
+    return runs.filter((run) => {
+      if (status !== "all" && run.status !== status) return false;
+      if (dataset !== "all" && run.dataset !== dataset) return false;
+      if (search.trim() && !run.name.includes(search.trim().toLowerCase())) return false;
+      return true;
+    });
+  }, [runs, status, dataset, search]);
 
   const activeFilters =
     (status !== "all" ? 1 : 0) + (dataset !== "all" ? 1 : 0) + (search.trim() ? 1 : 0);
@@ -146,7 +150,22 @@ export function RunsScreen({
         />
       </div>
 
-      {filtered.length === 0 ? (
+      {error ? (
+        <div className="fe-panel">
+          <EmptyState
+            icon={<RefreshCw size={20} aria-hidden />}
+            title="Не удалось загрузить прогоны"
+            text={`Источник данных не ответил: ${error}. Проверьте, что API запущен, и повторите попытку.`}
+            action={
+              <Button variant="secondary" size="sm" onClick={onRetry}>
+                Повторить
+              </Button>
+            }
+          />
+        </div>
+      ) : !runs ? (
+        <LoadingRows rows={12} height={rowHeight} label="Загружаем прогоны" />
+      ) : filtered.length === 0 ? (
         <div className="fe-panel">
           <EmptyState
             icon={<Inbox size={20} aria-hidden />}

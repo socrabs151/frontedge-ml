@@ -78,8 +78,8 @@ function makeStages(
     stages.push({
       name,
       status: stageStatus,
-      startedAt: cursor,
-      endedAt: stageStatus === "running" || stageStatus === "queued" ? null : cursor + duration,
+      startedAt: new Date(cursor).toISOString(),
+      endedAt: stageStatus === "running" || stageStatus === "queued" ? null : new Date(cursor + duration).toISOString(),
     });
     cursor += duration;
   });
@@ -131,7 +131,7 @@ export function makeRuns(count = 200): Run[] {
       freshness: status === "running" ? "live" : ageMinutes > 180 ? "stale" : "fresh",
       dataset: DATASETS[index % DATASETS.length]!,
       gitSha: GIT_SHAS[index % GIT_SHAS.length]!,
-      startedAt,
+      startedAt: new Date(startedAt).toISOString(),
       durationMs,
       owner: OWNERS[index % OWNERS.length]!,
       seed: 1000 + index * 7,
@@ -165,21 +165,21 @@ export function makeRuns(count = 200): Run[] {
           name: "checkpoint-2400.bin",
           kind: "checkpoint",
           sizeBytes: 1_483_000_000,
-          createdAt: startedAt + durationMs * 0.8,
+          createdAt: new Date(startedAt + durationMs * 0.8).toISOString(),
         },
         {
           id: `art-${index}-2`,
           name: "eval-report.html",
           kind: "report",
           sizeBytes: 84_000,
-          createdAt: startedAt + durationMs * 0.95,
+          createdAt: new Date(startedAt + durationMs * 0.95).toISOString(),
         },
         {
           id: `art-${index}-3`,
           name: "train.log",
           kind: "log",
           sizeBytes: 1_240_000,
-          createdAt: startedAt + durationMs,
+          createdAt: new Date(startedAt + durationMs).toISOString(),
         },
       ],
       provenance: [
@@ -257,7 +257,7 @@ export function makeLogs(count = 80): LogLine[] {
                 "оценка на eval-наборе: 1024 примера",
                 "размер батча 2048, grad accumulation 4",
               ][index % 6]!;
-    lines.push({ id: index, at, level, text });
+    lines.push({ id: index, at: new Date(at).toISOString(), level, text });
     at += 20_000 + random() * 40_000;
   }
   return lines;

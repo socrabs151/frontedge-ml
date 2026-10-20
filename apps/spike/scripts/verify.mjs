@@ -14,6 +14,7 @@ mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch({ channel: "msedge" });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
+const BASE = process.env.FE_BASE_URL ?? "http://localhost:5173";
 
 async function shoot(name) {
   await page.waitForTimeout(350);
@@ -38,7 +39,7 @@ async function audit(label) {
 
 let seriousTotal = 0;
 
-await page.goto("http://localhost:5173/", { waitUntil: "networkidle" });
+await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector(".fe-table__row");
 await shoot("01-runs-light-1440");
 seriousTotal += await audit("runs light");
@@ -71,7 +72,7 @@ await shoot("06-run-logs-1440");
 
 // 1280
 await page.setViewportSize({ width: 1280, height: 800 });
-await page.goto("http://localhost:5173/", { waitUntil: "networkidle" });
+await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector(".fe-table__row");
 await shoot("07-runs-light-1280");
 

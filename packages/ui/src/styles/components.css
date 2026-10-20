@@ -568,6 +568,38 @@
   accent-color: var(--accent);
 }
 
+/* --- Загрузка ------------------------------------------------------- */
+
+.fe-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+}
+
+.fe-skeleton__row {
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 0%,
+    var(--surface-hover) 50%,
+    var(--surface-sunken) 100%
+  );
+  background-size: 200% 100%;
+  animation: fe-shimmer 1.4s linear infinite;
+}
+
+@keyframes fe-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
 /* --- Пустое состояние ---------------------------------------------- */
 
 .fe-empty {
