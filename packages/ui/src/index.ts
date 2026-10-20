@@ -6,6 +6,7 @@ export { Tabs, type TabItem } from "./components/Tabs";
 export { Sparkline } from "./components/Sparkline";
 export { Search } from "./components/Search";
 export { EmptyState } from "./components/EmptyState";
+export { LoadingRows } from "./components/LoadingRows";
 
 export { RunRibbon, type RunRibbonProps } from "./patterns/RunRibbon";
 export { RunTimeline, type RunTimelineProps } from "./patterns/RunTimeline";
@@ -20,3 +21,5 @@ export { ProvenanceList } from "./patterns/Provenance";
 export * from "./types";
 export * from "./format";
 export type { VisibilityState } from "@tanstack/react-table";
+export { createClient } from "./generated/client";
+export type { FrontedgeClientOptions, FrontedgeMeta } from "./generated/client";

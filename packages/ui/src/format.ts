@@ -2,6 +2,11 @@
 
 export const EMPTY = "–";
 
+/** ISO-строка из API → миллисекунды. Даты приходят из Python как ISO 8601. */
+export function toTime(value: string | number): number {
+  return typeof value === "number" ? value : new Date(value).getTime();
+}
+
 export function formatMetric(value: number | undefined | null, digits = 3): string {
   if (value === undefined || value === null || Number.isNaN(value)) return EMPTY;
   const abs = Math.abs(value);

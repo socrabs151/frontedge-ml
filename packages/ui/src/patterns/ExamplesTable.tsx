@@ -45,7 +45,10 @@ export function ExamplesTable({ examples, direction = "maximize", onlyDiff = fal
         </thead>
         <tbody>
           {rows.map((example) => {
-            const delta = example.score - example.baselineScore;
+            const delta =
+              example.baselineScore === undefined || example.baselineScore === null
+                ? 0
+                : example.score - example.baselineScore;
             const better = direction === "maximize" ? delta > 0 : delta < 0;
             return (
               <tr key={example.id} className="fe-table__row">

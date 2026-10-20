@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { formatDuration } from "../format";
+import { formatDuration, toTime } from "../format";
 import { statusMeta } from "../components/StatusBadge";
 import type { RunStatus, Stage } from "../types";
 
@@ -25,7 +25,7 @@ export interface RunTimelineProps {
  */
 export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelineProps) {
   const measured = stages.filter((stage) => stage.endedAt !== null);
-  const total = measured.reduce((sum, stage) => sum + (stage.endedAt! - stage.startedAt), 0);
+  const total = measured.reduce((sum, stage) => sum + (toTime(stage.endedAt!) - toTime(stage.startedAt)), 0);
 
   if (total <= 0) {
     return <p className="fe-note">Прогон ещё не начал выполняться.</p>;
@@ -35,7 +35,7 @@ export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelinePr
     <div className={clsx("fe-timeline", className)} style={{ maxWidth }}>
       <div className="fe-timeline__bar">
         {measured.map((stage) => {
-          const duration = stage.endedAt! - stage.startedAt;
+          const duration = toTime(stage.endedAt!) - toTime(stage.startedAt);
           const share = (duration / total) * 100;
           const failed = stage.status === "failed" || stage.status === "lost";
           const cancelled = stage.status === "cancelled";
@@ -59,7 +59,7 @@ export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelinePr
       </div>
       <div className="fe-timeline__labels">
         {measured.map((stage) => {
-          const duration = (stage.endedAt ?? stage.startedAt) - stage.startedAt;
+          const duration = toTime(stage.endedAt ?? stage.startedAt) - toTime(stage.startedAt);
           const share = (duration / total) * 100;
           const { label } = statusMeta(stage.status);
           return (

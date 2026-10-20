@@ -11,7 +11,7 @@ import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { StatusBadge } from "../components/StatusBadge";
-import { formatAbsoluteTime, formatDuration, formatMetric, formatRelativeTime } from "../format";
+import { formatAbsoluteTime, formatDuration, formatMetric, formatRelativeTime, toTime } from "../format";
 import { MetricCell } from "./MetricCell";
 import { RunRibbon } from "./RunRibbon";
 import type { Run } from "../types";
@@ -93,8 +93,8 @@ export function RunsTable({
         header: "Начат",
         size: 95,
         cell: (info) => (
-          <span title={formatAbsoluteTime(info.getValue())}>
-            {formatRelativeTime(info.getValue(), now)}
+          <span title={formatAbsoluteTime(toTime(info.getValue()))}>
+            {formatRelativeTime(toTime(info.getValue()), now)}
           </span>
         ),
       }),

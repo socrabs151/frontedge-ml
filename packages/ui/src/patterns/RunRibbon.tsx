@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { formatDuration } from "../format";
+import { formatDuration, toTime } from "../format";
 import type { MetricEvent, RunStatus, Stage } from "../types";
 
 const STATUS_COLOR: Record<RunStatus, string> = {
@@ -32,7 +32,7 @@ export function RunRibbon({
   className,
 }: RunRibbonProps) {
   const measured = stages.filter((stage) => stage.endedAt !== null);
-  const total = measured.reduce((sum, stage) => sum + (stage.endedAt! - stage.startedAt), 0);
+  const total = measured.reduce((sum, stage) => sum + (toTime(stage.endedAt!) - toTime(stage.startedAt)), 0);
 
   if (total <= 0) {
     return (
@@ -46,7 +46,7 @@ export function RunRibbon({
     <div className={clsx("fe-ribbon", className)}>
       <div className="fe-ribbon__bar" style={{ height }}>
         {measured.map((stage) => {
-          const duration = stage.endedAt! - stage.startedAt;
+          const duration = toTime(stage.endedAt!) - toTime(stage.startedAt);
           const share = (duration / total) * 100;
           const stageEvents = events.filter((event) => event.stage === stage.name);
           const failed = stage.status === "failed" || stage.status === "lost";
@@ -88,7 +88,7 @@ export function RunRibbon({
             <span key={stage.name} className="fe-ribbon__label">
               {stage.name}
               <span className="fe-ribbon__label-time num">
-                {formatDuration((stage.endedAt ?? stage.startedAt) - stage.startedAt)}
+                {formatDuration(toTime(stage.endedAt ?? stage.startedAt) - toTime(stage.startedAt))}
               </span>
             </span>
           ))}
