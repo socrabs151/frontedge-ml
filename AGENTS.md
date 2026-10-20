@@ -65,6 +65,11 @@ node apps/spike/scripts/keyboard-check.mjs # клавиатурный прого
 `failed` (ненулевой код выхода) и `lost` (умерла инфраструктура) не сливать.
 Свежесть — отдельное измерение: `live · fresh · stale · partial`.
 
+**Провайдеры** (Python-пакет) — три независимых источника: прогоны (`list_runs` / `get_run` /
+`stream_logs`), оценки (`list_evals` / `compare_evals`) и датасеты (`list_datasets` /
+`get_dataset`). Монтирование: `frontedge.mount(runs, evals=..., datasets=..., path="/frontedge")`.
+Аутентификации в библиотеке нет: `request` передаётся провайдеру.
+
 **Права в Python-пакете** (Phase 2+) — роли `x-frontedge`: `id · text · status · metric ·
 series · timestamp · duration · dataset · baseline · stage · freshness · code · example ·
 span · image · url`. Словарь публичный: расширять можно, переименовывать — только в мажоре.

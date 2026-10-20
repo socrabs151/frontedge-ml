@@ -13,11 +13,12 @@
 Sources: **https://github.com/socrabs151/frontedge-ml**
 
 ```python
-app.include_router(frontedge.runs(runs_provider=my_repo))
+app.include_router(frontedge.mount(runs_provider, evals=eval_provider, datasets=dataset_provider))
 ```
 
-> **Status:** Phase 1 (design spike). The design system and two screens — a runs list and a run
-> detail view — run on synthetic data. Mounting into a real FastAPI app is Phase 2.
+> **Status:** Phase 3. The design system and four screens — a runs list, a run detail view, an
+> eval diff and a dataset explorer — run on synthetic data, mounted into a real FastAPI app.
+> The npm and PyPI packages are published in Phase 4.
 > Full design document: [`docs/specs/2026-10-20-frontedge-design.md`](docs/specs/2026-10-20-frontedge-design.md)
 > (currently written in Russian).
 
@@ -29,8 +30,12 @@ describing them again for every project.
 
 - **Runs** — a table with per-stage timelines, deltas against a pinned baseline, and inline
   metric sparklines.
-- **Run detail** — metrics over steps, example-level evaluation, live logs, artifacts, provenance.
-- **Evals and datasets** — Phase 3.
+- **Run detail** — metrics over steps, example-level evaluation, live logs over SSE, artifacts,
+  provenance.
+- **Eval diff** — two runs compared example by example: examples as rows, columns grouped by
+  role, the reference run pinned left, a "differences only" filter and a switchable number format.
+- **Dataset** — versions, examples, a datasheet (motivation, composition, collection, intended
+  use) and provenance.
 
 ## Repository layout
 
