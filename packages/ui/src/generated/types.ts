@@ -61,11 +61,69 @@ export interface Example {
   score: number;
   baselineScore?: number | null;
 }
+export interface ExampleResult {
+  id: string;
+  input: string;
+  output: string;
+  expected?: string | null;
+  referenceScore?: number | null;
+  comparisonScore?: number | null;
+  changed: boolean;
+}
 export interface LogLine {
   id: number;
   at: string;
   level: "info" | "progress" | "warning" | "error";
   text: string;
+}
+export interface EvalSummary {
+  id: string;
+  name: string;
+  dataset: string;
+  scorer: string;
+  metric: string;
+  direction: MetricDirection;
+  aggregate: "mean" | "fraction";
+  runs?: number;
+  updatedAt?: string | null;
+}
+export interface EvalComparison {
+  evalId: string;
+  name: string;
+  dataset: string;
+  scorer: string;
+  metric: string;
+  direction: MetricDirection;
+  aggregate: "mean" | "fraction";
+  referenceRun: string;
+  comparisonRun: string;
+  referenceName: string;
+  comparisonName: string;
+  examples: ExampleResult[];
+  referenceAggregate: number;
+  comparisonAggregate: number;
+  changed: number;
+}
+export interface DatasetInfo {
+  id: string;
+  name: string;
+  version: string;
+  examplesCount: number;
+  createdAt?: string | null;
+  tags: string[];
+  datasheet: ProvenanceEntry[];
+  provenance: ProvenanceEntry[];
+}
+export interface DatasetDetail {
+  id: string;
+  name: string;
+  version: string;
+  examplesCount: number;
+  createdAt?: string | null;
+  tags: string[];
+  datasheet: ProvenanceEntry[];
+  provenance: ProvenanceEntry[];
+  examples: ExampleResult[];
 }
 
 export const frontedgeRoles = {
@@ -87,5 +145,31 @@ export const frontedgeRoles = {
   "Example.input": "text",
   "Example.output": "text",
   "Example.score": "metric",
+  "ExampleResult.id": "id",
+  "ExampleResult.input": "text",
+  "ExampleResult.output": "text",
+  "ExampleResult.expected": "text",
+  "ExampleResult.referenceScore": "metric",
+  "ExampleResult.comparisonScore": "metric",
   "LogLine.text": "text",
+  "EvalSummary.id": "id",
+  "EvalSummary.name": "text",
+  "EvalSummary.dataset": "dataset",
+  "EvalSummary.scorer": "text",
+  "EvalSummary.metric": "text",
+  "EvalComparison.evalId": "id",
+  "EvalComparison.name": "text",
+  "EvalComparison.dataset": "dataset",
+  "EvalComparison.scorer": "text",
+  "EvalComparison.metric": "text",
+  "EvalComparison.referenceRun": "id",
+  "EvalComparison.comparisonRun": "id",
+  "EvalComparison.referenceName": "text",
+  "EvalComparison.comparisonName": "text",
+  "DatasetInfo.id": "id",
+  "DatasetInfo.name": "text",
+  "DatasetInfo.version": "text",
+  "DatasetDetail.id": "id",
+  "DatasetDetail.name": "text",
+  "DatasetDetail.version": "text",
 } as const;

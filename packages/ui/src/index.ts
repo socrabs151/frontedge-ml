@@ -15,6 +15,13 @@ export { RunsTable, type RunsTableProps } from "./patterns/RunsTable";
 export { MetricChart, type MetricChartProps } from "./patterns/MetricChart";
 export { LogStream } from "./patterns/LogStream";
 export { ExamplesTable, type ExamplesTableProps } from "./patterns/ExamplesTable";
+export {
+  EvalCompareTable,
+  formatScore,
+  type DeltaFormat,
+  type EvalCompareTableProps,
+} from "./patterns/EvalCompareTable";
+export { DatasetTable, type DatasetTableProps } from "./patterns/DatasetTable";
 export { ColumnsMenu, type ColumnOption } from "./patterns/ColumnsMenu";
 export { ProvenanceList } from "./patterns/Provenance";
 

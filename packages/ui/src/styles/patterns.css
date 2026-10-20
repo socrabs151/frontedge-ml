@@ -609,6 +609,158 @@
   word-break: break-all;
 }
 
+/* --- Сравнение оценок ------------------------------------------------ */
+
+.fe-table__group-row th {
+  height: 22px;
+  font-size: var(--text-11);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-wide);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  border-bottom: 0;
+}
+
+.fe-table__th--group {
+  border-bottom: 0 !important;
+}
+
+.fe-table__th--scores {
+  text-align: center;
+  border-left: 1px solid var(--border);
+}
+
+.fe-eval__id {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.fe-eval__changed {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: var(--weight-semibold);
+}
+
+.fe-eval__delta {
+  color: var(--text-primary);
+}
+
+.fe-eval__word {
+  margin-left: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-11);
+  font-weight: var(--weight-regular);
+}
+
+.fe-table__foot-row .fe-table__td {
+  position: sticky;
+  bottom: 0;
+  height: 30px;
+  background: var(--surface-sunken);
+  border-bottom: 0;
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: var(--text-12);
+  font-weight: var(--weight-medium);
+}
+
+.fe-table__foot-row .fe-eval__word {
+  color: var(--text-secondary);
+}
+
+.fe-table__td--empty {
+  height: 44px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+/* --- Датасет -------------------------------------------------------- */
+
+.fe-datasets {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.fe-datasets__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.fe-datasets__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration-press) var(--ease-out);
+}
+
+.fe-datasets__item:hover {
+  background: var(--surface-hover);
+}
+
+.fe-datasets__item[aria-current="true"] {
+  background: var(--surface-selected);
+}
+
+.fe-datasets__name {
+  color: var(--text-primary);
+  font-size: var(--text-13);
+  font-weight: var(--weight-medium);
+}
+
+.fe-datasets__meta {
+  color: var(--text-tertiary);
+  font-size: var(--text-11);
+  font-variant-numeric: tabular-nums;
+}
+
+.fe-datasheet {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 0 var(--space-4);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+}
+
+.fe-datasheet__term {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-tertiary);
+  font-size: var(--text-12);
+}
+
+.fe-datasheet__value {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: var(--text-13);
+}
+
 /* --- Заметка -------------------------------------------------------- */
 
 .fe-note {

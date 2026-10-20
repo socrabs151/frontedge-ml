@@ -5,7 +5,12 @@
  */
 export type {
   Artifact,
+  DatasetDetail,
+  DatasetInfo,
+  EvalComparison,
+  EvalSummary,
   Example,
+  ExampleResult,
   Freshness,
   LogLine,
   MetricDirection,

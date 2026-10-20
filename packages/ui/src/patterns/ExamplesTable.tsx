@@ -23,6 +23,12 @@ export function ExamplesTable({ examples, direction = "maximize", onlyDiff = fal
 
   return (
     <div className="fe-table fe-table--examples">
+      <div
+        className="fe-table__scroll"
+        role="region"
+        aria-label="Примеры оценки"
+        tabIndex={0}
+      >
       <table className="fe-table__table">
         <thead>
           <tr>
@@ -75,6 +81,7 @@ export function ExamplesTable({ examples, direction = "maximize", onlyDiff = fal
           })}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
