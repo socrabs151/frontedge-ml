@@ -6,9 +6,6 @@
     "node": ">=22",
     "pnpm": ">=10"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
-  },
   "scripts": {
     "dev": "pnpm --filter @frontedge/spike dev",
     "build": "pnpm --filter @frontedge/spike build",
