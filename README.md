@@ -1,7 +1,12 @@
 # frontedge
 
-Фронтенд для ML-инжиниринга: переиспользуемый слой интерфейса, который монтируется в любой
-FastAPI-проект и знает про природу ML-данных — прогоны, датасеты, оценки, трейсы, артефакты.
+> Фронтенд для ML-инжиниринга: переиспользуемый слой интерфейса, который монтируется в любой
+> FastAPI-проект и знает про природу ML-данных — прогоны, датасеты, оценки, трейсы, артефакты.
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![Phase](https://img.shields.io/badge/status-phase%201%20%E1%81%AA%D0%BF%D0%B0%D0%B9%D0%BA-informational.svg)](docs/specs/2026-10-20-frontedge-design.md)
+
+Исходники: **https://github.com/socrabs151/frontedge-ml**
 
 ```python
 app.include_router(frontedge.runs(runs_provider=my_repo))
