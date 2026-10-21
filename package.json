@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "pnpm --filter @frontedge/spike dev",
     "build": "pnpm --filter @frontedge/spike build",
-    "build:ui": "pnpm build && node scripts/copy-ui.mjs",
+    "build:ui": "pnpm --filter @frontedge/ui build && pnpm build && node scripts/copy-ui.mjs",
     "gen:types": "uv run --package frontedge frontedge gen --out packages/ui/src/generated",
     "demo": "uv run --package frontedge-demo-ml demo-ml",
     "typecheck": "pnpm -r typecheck",
