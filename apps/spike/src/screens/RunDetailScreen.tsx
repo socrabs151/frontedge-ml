@@ -126,7 +126,7 @@ export function RunDetailScreen({
               label="Accuracy"
               value={run.metrics.accuracy}
               baseline={baseline?.metrics.accuracy}
-              direction={run.metricDirection.accuracy}
+              direction={run.metricDirection?.accuracy ?? "none"}
               series={accuracySeries.map((point) => point.value)}
               color="var(--data-series-1)"
             />
@@ -134,7 +134,7 @@ export function RunDetailScreen({
               label="Loss"
               value={run.metrics.loss}
               baseline={baseline?.metrics.loss}
-              direction={run.metricDirection.loss}
+              direction={run.metricDirection?.loss ?? "none"}
               series={lossSeries.map((point) => point.value)}
               color="var(--data-series-2)"
             />
@@ -142,7 +142,7 @@ export function RunDetailScreen({
               label="F1"
               value={run.metrics.f1}
               baseline={baseline?.metrics.f1}
-              direction={run.metricDirection.f1}
+              direction={run.metricDirection?.f1 ?? "none"}
               series={(run.series.f1 ?? []).map((point) => point.value)}
               color="var(--data-series-3)"
             />
@@ -213,10 +213,10 @@ export function RunDetailScreen({
     {
       value: "artifacts",
       label: "Артефакты",
-      count: run.artifacts.length,
+      count: (run.artifacts ?? []).length,
       content: (
         <ul className="fe-artifacts">
-          {run.artifacts.map((artifact) => (
+          {(run.artifacts ?? []).map((artifact) => (
             <li key={artifact.id} className="fe-artifacts__row">
               <span className="fe-artifacts__name mono">{artifact.name}</span>
               <span className="fe-artifacts__kind">{artifact.kind}</span>
@@ -231,7 +231,7 @@ export function RunDetailScreen({
     {
       value: "provenance",
       label: "Провенанс",
-      content: <ProvenanceList entries={run.provenance} />,
+      content: <ProvenanceList entries={run.provenance ?? []} />,
     },
   ];
 

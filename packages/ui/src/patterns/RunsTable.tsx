@@ -119,7 +119,7 @@ export function RunsTable({
             <MetricCell
               value={run.metrics.accuracy}
               baseline={baseline?.metrics.accuracy}
-              direction={run.metricDirection.accuracy ?? "none"}
+              direction={run.metricDirection?.accuracy ?? "none"}
               series={run.series.accuracy?.map((point) => point.value)}
               color="var(--data-series-1)"
               label="accuracy"
@@ -142,7 +142,7 @@ export function RunsTable({
             <MetricCell
               value={run.metrics.loss}
               baseline={baseline?.metrics.loss}
-              direction={run.metricDirection.loss ?? "none"}
+              direction={run.metricDirection?.loss ?? "none"}
               series={run.series.loss?.map((point) => point.value)}
               color="var(--data-series-2)"
               label="loss"

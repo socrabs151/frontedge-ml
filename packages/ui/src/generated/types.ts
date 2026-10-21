@@ -37,7 +37,7 @@ export interface Run {
   id: string;
   name: string;
   status: RunStatus;
-  freshness: Freshness;
+  freshness?: Freshness;
   dataset: string;
   gitSha: string;
   startedAt: string;
@@ -46,12 +46,12 @@ export interface Run {
   seed?: number | null;
   metrics: Record<string, number>;
   series: Record<string, MetricPoint[]>;
-  baselineSeries: Record<string, MetricPoint[]>;
-  metricDirection: Record<string, MetricDirection>;
+  baselineSeries?: Record<string, MetricPoint[]>;
+  metricDirection?: Record<string, MetricDirection>;
   stages: Stage[];
-  events: MetricEvent[];
-  artifacts: Artifact[];
-  provenance: ProvenanceEntry[];
+  events?: MetricEvent[];
+  artifacts?: Artifact[];
+  provenance?: ProvenanceEntry[];
 }
 export interface Example {
   id: string;
@@ -112,7 +112,7 @@ export interface DatasetInfo {
   createdAt?: string | null;
   tags: string[];
   datasheet: ProvenanceEntry[];
-  provenance: ProvenanceEntry[];
+  provenance?: ProvenanceEntry[];
 }
 export interface DatasetDetail {
   id: string;
@@ -122,7 +122,7 @@ export interface DatasetDetail {
   createdAt?: string | null;
   tags: string[];
   datasheet: ProvenanceEntry[];
-  provenance: ProvenanceEntry[];
+  provenance?: ProvenanceEntry[];
   examples: ExampleResult[];
 }
 

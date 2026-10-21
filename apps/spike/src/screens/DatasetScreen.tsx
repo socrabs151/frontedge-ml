@@ -120,7 +120,7 @@ export function DatasetScreen() {
     {
       value: "provenance",
       label: "Провенанс",
-      content: detail ? <ProvenanceList entries={detail.provenance} /> : null,
+      content: detail ? <ProvenanceList entries={detail.provenance ?? []} /> : null,
     },
   ];
 
