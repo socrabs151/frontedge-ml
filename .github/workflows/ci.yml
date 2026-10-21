@@ -29,8 +29,11 @@ jobs:
       - name: Token contrast
         run: pnpm check:contrast
 
-      - name: Build
-        run: pnpm build
+      - name: Build the npm package
+        run: pnpm --filter @frontedge/ui build
+
+      - name: Build the interface
+        run: pnpm build:ui
 
       - uses: astral-sh/setup-uv@v5
         with:
@@ -46,3 +49,48 @@ jobs:
         run: |
           uv run --package frontedge frontedge gen --out packages/ui/src/generated
           git diff --exit-code packages/ui/src/generated
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.11.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.17"
+
+      - name: Install
+        run: |
+          pnpm install --frozen-lockfile
+          uv sync --all-packages
+          pnpm build:ui
+
+      - name: Install browser
+        run: pnpm --filter @frontedge/spike exec playwright install --with-deps chromium
+
+      - name: Start the demo
+        run: |
+          nohup uv run --package frontedge-demo-ml demo-ml > demo.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000/frontedge/api/meta > /dev/null && break
+            sleep 1
+          done
+
+      - name: Axe and screenshots
+        env:
+          FE_BASE_URL: http://127.0.0.1:8000/frontedge
+        run: node apps/spike/scripts/verify.mjs
+
+      - name: Keyboard pass
+        env:
+          FE_BASE_URL: http://127.0.0.1:8000/frontedge
+        run: node apps/spike/scripts/keyboard-check.mjs

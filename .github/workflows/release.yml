@@ -1,0 +1,69 @@
+name: Release
+
+# Публикация по тегу: git tag v0.1.0 && git push origin v0.1.0
+# Требуются секреты репозитория: PYPI_API_TOKEN, NPM_TOKEN.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.11.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.17"
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --all-packages
+      - run: pnpm typecheck
+      - run: pnpm check:contrast
+      - run: pnpm build:ui
+      - run: uv run --package frontedge pytest python/frontedge/tests -q
+      - run: uv run --package frontedge frontedge gen --out packages/ui/src/generated
+      - run: git diff --exit-code packages/ui/src/generated
+
+  publish-npm:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.11.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @frontedge/ui build
+      - run: pnpm --filter @frontedge/ui publish --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-pypi:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.17"
+      - run: uv sync --all-packages
+      - name: Собрать и опубликовать колесо
+        run: uv build --package frontedge
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      - run: uv publish --package frontedge
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
