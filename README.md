@@ -1,97 +1,171 @@
 # frontedge
 
-> The frontend layer for ML engineering: a reusable UI layer you mount into any FastAPI
-> application, built to understand ML data — runs, datasets, evals, traces, artifacts.
+**The frontend layer for ML engineering.** A ready-made interface — runs, metrics, evals,
+datasets, logs, artifacts, provenance — that you mount into your own FastAPI app and feed with
+your own data.
+
+```python
+from fastapi import FastAPI
+import frontedge
+
+app = FastAPI()
+app.include_router(frontedge.mount(my_runs_provider))
+```
 
 [![license](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-[![status](https://img.shields.io/badge/status-phase%201%20spike-informational.svg)](docs/specs/2026-10-20-frontedge-design.md)
+[![pypi](https://img.shields.io/pypi/v/frontedge.svg)](https://pypi.org/project/frontedge/)
+[![npm](https://img.shields.io/npm/v/@frontedge/ui.svg)](https://www.npmjs.com/package/@frontedge/ui)
+[![python](https://img.shields.io/pypi/pyversions/frontedge.svg)](https://pypi.org/project/frontedge/)
 [![node](https://img.shields.io/badge/node-22%2B-5FA04E.svg)](package.json)
 [![ci](https://github.com/socrabs151/frontedge-ml/actions/workflows/ci.yml/badge.svg)](https://github.com/socrabs151/frontedge-ml/actions/workflows/ci.yml)
 
 **English** · [Русский](README.ru.md)
 
-Sources: **https://github.com/socrabs151/frontedge-ml**
+---
+
+## The problem
+
+Every ML project rebuilds the same interface: a table of runs, a detail view with metric
+curves, a comparison of two evaluations, a dataset browser. The screens are never the hard
+part — the plumbing is. Fetching runs, keeping a baseline pinned, streaming logs, aligning
+examples between two runs, showing a metric delta *with its direction*, and doing all of that
+without a designer in the loop.
+
+Frontedge is that layer, packaged.
+
+![Runs list](docs/images/runs.png)
+
+## What you get
+
+| | |
+|---|---|
+| **Runs** | a dense table with per-stage timelines, deltas against a pinned baseline and inline metric sparklines |
+| **Run detail** | metrics over steps, example-level evaluation, live logs over SSE, artifacts, provenance |
+| **Eval diff** | two runs compared example by example: examples as rows, columns grouped by role, reference run pinned left |
+| **Dataset** | versions, examples, a datasheet (motivation, composition, collection, intended use) and provenance |
+| **A design system** | tokens, primitives and ML patterns — density, dark theme, keyboard navigation, WCAG-checked contrast |
+
+![Run detail](docs/images/run-detail.png)
+
+## Quick start
+
+```bash
+pip install frontedge          # or: uv add frontedge
+```
 
 ```python
-app.include_router(frontedge.mount(runs_provider, evals=eval_provider, datasets=dataset_provider))
+from datetime import UTC, datetime
+from fastapi import FastAPI, Request
+import frontedge
+
+app = FastAPI()
+
+
+async def my_runs_provider(request: Request) -> list[frontedge.Run]:
+    # Your authorisation lives here: the library passes the request through.
+    return [
+        frontedge.Run(
+            id=str(row.id),
+            name=row.name,
+            status=frontedge.RunStatus(row.status),
+            dataset=row.dataset,
+            git_sha=row.git_sha,
+            started_at=row.started_at,
+            duration_ms=row.duration_ms,
+            owner=row.owner,
+            metrics={"accuracy": row.accuracy, "loss": row.loss},
+            series={"accuracy": row.accuracy_curve},
+            metric_direction={"accuracy": "maximize", "loss": "minimize"},
+            stages=row.stages,
+        )
+        for row in await my_repository.fetch_runs(request.user)
+    ]
+
+
+app.include_router(frontedge.mount(my_runs_provider))
 ```
 
-> **Status:** Phase 3. The design system and four screens — a runs list, a run detail view, an
-> eval diff and a dataset explorer — run on synthetic data, mounted into a real FastAPI app.
-> The npm and PyPI packages are published in Phase 4.
-> Full design document: [`docs/specs/2026-10-20-frontedge-design.md`](docs/specs/2026-10-20-frontedge-design.md)
-> (currently written in Russian).
+One process, one port: the interface and the API are served by the same app.
 
-## What it is
+## Extending it
 
-Frontedge is not another admin template. The frontend knows what a run, a baseline, a metric
-delta, a freshness window and a provenance record are, so it can show them without you
-describing them again for every project.
+The interface never invents what a button does. A project declares what it can do, and the
+library calls it:
 
-- **Runs** — a table with per-stage timelines, deltas against a pinned baseline, and inline
-  metric sparklines.
-- **Run detail** — metrics over steps, example-level evaluation, live logs over SSE, artifacts,
-  provenance.
-- **Eval diff** — two runs compared example by example: examples as rows, columns grouped by
-  role, the reference run pinned left, a "differences only" filter and a switchable number format.
-- **Dataset** — versions, examples, a datasheet (motivation, composition, collection, intended
-  use) and provenance.
-
-## Repository layout
-
-```
-frontedge/
-├── packages/ui/            @frontedge/ui — tokens, primitives, ML patterns
-│   ├── src/styles/         tokens.css · base.css · components.css · patterns.css
-│   ├── src/components/     Button · StatusBadge · Search · Sparkline · Tabs · Tooltip
-│   ├── src/patterns/       RunRibbon · RunTimeline · RunsTable · MetricChart · LogStream
-│   ├── src/generated/      TypeScript types generated from the Python models
-│   └── scripts/            check-contrast.mjs — WCAG contrast gate
-├── python/frontedge/       the Python package: models, providers, routers, type generator
-├── apps/spike/             Phase 1 spike app (Vite + React + TS)
-│   ├── src/screens/        RunsScreen · RunDetailScreen
-│   ├── src/data/           mock data and the data source (mock or API)
-│   └── scripts/            verify.mjs (screenshots + axe) · keyboard-check.mjs
-├── examples/demo-ml/       FastAPI app with a fake ML backend, frontedge mounted
-└── docs/specs/             design document
+```toml
+# frontedge.toml
+[[actions]]
+id = "stop"
+label = "Stop"
+placement = "run"
+danger = true
 ```
 
-The npm package ships from `packages/ui`; the Python package from `python/frontedge`.
+```python
+async def stop_run(request, payload) -> frontedge.ActionResult:
+    await my_repository.stop(payload["runId"])
+    return frontedge.ActionResult(ok=True, message=f"Run {payload['runId']} stopped")
 
-## Commands
+app.include_router(frontedge.mount(provider, actions={"stop": stop_run}, config="frontedge.toml"))
+```
+
+Buttons appear only for declared actions, so there are no dead controls. Column sets, tabs and
+actions live in configuration — data, not code — so the same file can be edited by hand or by a
+tool later.
+
+For your own screens, use the components directly:
+
+```tsx
+import "@frontedge/ui/styles.css";
+import { RunsTable, StatusBadge } from "@frontedge/ui";
+```
+
+Full contract: **[docs/integration.md](docs/integration.md)**. If you are an agent working in a
+user's repository, **[AGENTS.md](AGENTS.md)** has the same contract in short form.
+
+## Two packages
+
+| | |
+|---|---|
+| [`frontedge`](python/frontedge) (PyPI) | the Python package: models, providers, routers, the type generator |
+| [`@frontedge/ui`](packages/ui) (npm) | the design system: tokens, primitives, ML patterns, generated types |
+
+TypeScript types are generated from the Python models, so the two can never drift:
+
+```bash
+pnpm gen:types     # pydantic -> types.ts + client.ts
+```
+
+## Design principles
+
+- **Data over decoration.** Status is icon + word + colour, never colour alone. "Better" and
+  "worse" are a sign and a word, because only the metric's owner knows the direction.
+- **Tables, not cards.** Adjacent values have to be comparable without moving your eyes.
+- **Dense but calm.** 4px spacing grid, hairline separators, one accent, no shadows on
+  surfaces.
+- **Accessible by construction.** Every token pair is checked against WCAG 2.2 in CI; the
+  browser gates run axe and a keyboard pass on every pull request.
+
+## Development
 
 ```bash
 pnpm install
-pnpm dev                # spike on http://localhost:5173
-pnpm typecheck          # tsc across every package
-pnpm check:contrast     # token contrast per WCAG 2.2, both themes
-pnpm build              # production build of the spike app
-pnpm build:ui           # build the interface and copy it into the Python package
-pnpm gen:types          # regenerate TypeScript types from the Python models
-pnpm demo               # demo on FastAPI: http://127.0.0.1:8000/frontedge
-uv sync --all-packages  # Python workspace
-node apps/spike/scripts/verify.mjs        # screenshots + axe audit (dev server required)
-node apps/spike/scripts/keyboard-check.mjs # keyboard pass over the table
+pnpm dev                # the spike app on http://localhost:5173
+pnpm demo               # the demo on FastAPI: http://127.0.0.1:8000/frontedge
+pnpm typecheck
+pnpm check:contrast     # WCAG contrast of every token pair, both themes
+pnpm build:ui           # build the interface into the Python package
+uv sync --all-packages
+uv run --package frontedge pytest python/frontedge/tests -q
 ```
 
-## Design system
+Design document (in Russian): [docs/specs/2026-10-20-frontedge-design.md](docs/specs/2026-10-20-frontedge-design.md).
 
-- **Tokens** live in `packages/ui/src/styles/tokens.css`: color, typography, density, radii,
-  motion. Light theme by default, dark theme on demand; series colors stay identical in both.
-- **Density** — 28 / 32 / 40 px rows, switched by a `data-density` attribute on `<html>`.
-- **Type** — Inter for the interface, JetBrains Mono for data, logs and identifiers. Both
-  self-hosted, no CDN.
-- **Icons** — Lucide, `currentColor`, stroke weight matched to the adjacent text.
+## Status
 
-Rules that are not negotiable (see §4 of the design document):
-
-- color is never the only carrier of meaning — a status is icon + word + color;
-- "better" and "worse" are a sign and a word, not green and red;
-- numbers are tabular and right-aligned, a missing value is an en dash, never a blank cell;
-- tables, not cards; hairline separators, never zebra striping;
-- depth comes from borders and surface shifts, shadows only on overlays;
-- `prefers-reduced-motion` is respected, only `transform` and `opacity` animate.
+Phase 3 of 5. The screens, the design system, the Python package and the type generator work
+and are covered by gates; publication to PyPI and npm is the next step.
 
 ## License
 
-MIT — free use, modification and distribution, including commercial use.
+MIT.

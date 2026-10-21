@@ -1,0 +1,51 @@
+name: Bug report
+description: Something in the interface or the package behaves wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The more concrete the reproduction, the faster it gets fixed.
+
+        Please do not include secrets, tokens or private data.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: frontedge / @frontedge/ui version, or commit
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Python package
+        - Design system / components
+        - Type generator
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: The smallest snippet that shows the problem
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors or logs
+      description: Traceback, browser console, axe output
+      render: shell
