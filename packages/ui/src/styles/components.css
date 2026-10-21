@@ -65,7 +65,7 @@
 
 .fe-btn--danger {
   background: var(--status-danger);
-  color: #fff;
+  color: var(--status-danger-text);
 }
 
 .fe-btn--sm {

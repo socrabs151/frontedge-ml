@@ -39,6 +39,7 @@
   --status-danger: #b0402f;
   --status-neutral: #6b6b62;
   --status-running: #2f56d9;
+  --status-danger-text: #ffffff;
   --status-success-wash: #e9f4ee;
   --status-warning-wash: #f8f1e2;
   --status-danger-wash: #f9ecea;
@@ -151,6 +152,7 @@
   --status-danger: #d4695a;
   --status-neutral: #9a9a92;
   --status-running: #7d9cff;
+  --status-danger-text: #12121a;
   --status-success-wash: #17251d;
   --status-warning-wash: #2a2214;
   --status-danger-wash: #2b1a17;
