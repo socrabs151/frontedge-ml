@@ -16,9 +16,9 @@
   --surface-selected: #eef2fd;
 
   /* --- Границы ------------------------------------------------------- */
-  --border: #e5e5e0;
+  --border: #dadad2; /* разделители: 1.41:1 к surface, 1.31:1 к canvas — их должно быть видно */
   --border-strong: #d3d3cb;
-  --border-input: #8a8a83; /* 3.25:1 к surface — WCAG 1.4.11 для полей ввода */
+  --border-input: #8a8a83; /* 3.07:1 к surface — WCAG 1.4.11 для полей ввода */
 
   /* --- Текст --------------------------------------------------------- */
   --text-primary: #1a1a17;
@@ -131,8 +131,8 @@
   --surface-hover: #212120;
   --surface-selected: #1c2437;
 
-  --border: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.16);
+  --border: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.2);
   --border-input: #6f6f66; /* 3.44:1 к surface — WCAG 1.4.11 */
 
   --text-primary: #f2f2ee;

@@ -97,6 +97,13 @@ const checks = [
   ["accent", "surface", 3, "кольцо фокуса (2.4.13)"],
 ];
 
+/**
+ * Разделители не подпадают под WCAG (1.4.11 — это про границы интерактивных элементов),
+ * но в плотной таблице hairline — это и есть структура. Поэтому отдельный «порог
+ * легибельности»: разделитель должен быть виден на фоне и на карточке.
+ */
+const LEGIBILITY = [["border", "surface", 1.35], ["border", "canvas", 1.25]];
+
 let failures = 0;
 const rows = [];
 
@@ -129,5 +136,24 @@ console.log(
     ? `\nКонтраст: все ${rows.length} проверок пройдены.`
     : `\nКонтраст: провалено ${failures} проверок из ${rows.length}.`,
 );
+
+// --- Порог легибельности разделителей ------------------------------------
+
+for (const [theme, tokens] of Object.entries(themes)) {
+  for (const [fgName, bgName, min] of LEGIBILITY) {
+    const fg = tokens.get(fgName);
+    const bg = tokens.get(bgName);
+    if (!fg || !bg || !fg.startsWith("#") || !bg.startsWith("#")) {
+      console.log(`· [${theme.padEnd(5)}] разделитель ${fgName} — полупрозрачный, проверяется глазами`);
+      continue;
+    }
+    const ratio = contrast(fg, bg);
+    const status = ratio >= min ? "✓" : "✗";
+    if (status === "✗") failures += 1;
+    console.log(
+      `${status} [${theme.padEnd(5)}] разделитель ${fgName} на ${bgName} — ${ratio.toFixed(2)}:1 (нужно ${min}:1)`,
+    );
+  }
+}
 
 process.exit(failures === 0 ? 0 : 1);
