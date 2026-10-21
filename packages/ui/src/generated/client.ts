@@ -16,6 +16,19 @@ export interface FrontedgeClientOptions {
   fetch?: typeof globalThis.fetch;
 }
 
+export interface RunsQuery {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  status?: string;
+  dataset?: string;
+}
+
+export interface RunsPage {
+  items: Run[];
+  total: number;
+}
+
 export interface FrontedgeMeta {
   name: string;
   version: string;
@@ -52,8 +65,27 @@ export function createClient(options: FrontedgeClientOptions = {
   }
 
   return {
-    listRuns: () => json<Run[]>("/runs"),
+    listRuns: async (query: RunsQuery = {}): Promise<RunsPage> => {
+      const params = new URLSearchParams();
+      if (query.limit !== undefined) params.set("limit", String(query.limit));
+      if (query.offset) params.set("offset", String(query.offset));
+      if (query.search) params.set("search", query.search);
+      if (query.status) params.set("status", query.status);
+      if (query.dataset) params.set("dataset", query.dataset);
+      const search = params.toString();
+      const response = await doFetch(`${basePath}/runs${search ? `?${search}` : ""}`, {
+        headers: { accept: "application/json" },
+      });
+      if (!response.ok) {
+        throw new Error(`frontedge: ${response.status} ${response.statusText} (/runs)`);
+      }
+      const items = (await response.json()) as Run[];
+      const total = Number(response.headers.get("X-Frontedge-Total") ?? items.length);
+      return { items, total };
+    },
     getRun: (runId: string) => json<Run>(`/runs/${runId}`),
+    artifactUrl: (artifactId: string) =>
+      `${basePath}/artifacts/${encodeURIComponent(artifactId)}/content`,
     listEvals: () => json<EvalSummary[]>("/evals"),
     compareEval: (evalId: string, reference: string, comparison: string) =>
       json<EvalComparison>(

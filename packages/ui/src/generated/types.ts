@@ -44,6 +44,8 @@ export interface Run {
   durationMs: number;
   owner: string;
   seed?: number | null;
+  error?: string | null;
+  exitCode?: number | null;
   metrics: Record<string, number>;
   series: Record<string, MetricPoint[]>;
   baselineSeries?: Record<string, MetricPoint[]>;
@@ -138,6 +140,9 @@ export interface UiConfig {
   runColumns?: string[];
   evalTabs?: string[];
   actions?: ActionSpec[];
+  liveRefreshSeconds?: number;
+  baselineRun?: string | null;
+  pageSize?: number;
 }
 export interface ActionResult {
   ok?: boolean;
@@ -154,6 +159,7 @@ export const frontedgeRoles = {
   "Run.gitSha": "code",
   "Run.startedAt": "timestamp",
   "Run.durationMs": "duration",
+  "Run.error": "text",
   "Run.metrics": "metric",
   "Run.stages": "stage",
   "MetricPoint.step": "series",

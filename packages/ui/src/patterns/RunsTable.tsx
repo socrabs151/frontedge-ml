@@ -4,9 +4,11 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
+  type ColumnDef,
   type SortingState,
   type VisibilityState,
-} from "@tanstack/react-table";import { useVirtualizer } from "@tanstack/react-virtual";
+} from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import clsx from "clsx";
@@ -35,7 +37,21 @@ export interface RunsTableProps {
   onOpenRun: (run: Run) => void;
   /** Действия в строке — объявляются проектом, а не библиотекой. */
   rowActions?: RowAction[];
+  /** Порядок и состав колонок: известные id или имена метрик. */
+  columnIds?: string[];
 }
+
+const KNOWN_COLUMNS = [
+  "name",
+  "status",
+  "ribbon",
+  "dataset",
+  "gitSha",
+  "startedAt",
+  "durationMs",
+  "accuracy",
+  "loss",
+] as const;
 
 export function RunsTable({
   runs,
@@ -46,17 +62,23 @@ export function RunsTable({
   onColumnVisibilityChange,
   onOpenRun,
   rowActions = [],
+  columnIds,
 }: RunsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "startedAt", desc: true }]);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor("name", {
+  const baseline = useMemo(
+    () => runs.find((candidate) => candidate.id === baselineId),
+    [runs, baselineId],
+  );
+
+  const columns = useMemo(() => {
+    const fixed: Record<string, ColumnDef<Run, unknown>> = {
+      name: columnHelper.accessor("name", {
         id: "name",
         header: "Run",
-        size: 165,
+        size: 140,
         cell: (info) => (
           <span className="fe-run-name">
             <span className="fe-run-name__dot" aria-hidden />
@@ -66,144 +88,149 @@ export function RunsTable({
             ) : null}
           </span>
         ),
-      }),
-      columnHelper.accessor("status", {
+      }) as ColumnDef<Run, unknown>,
+
+      status: columnHelper.accessor("status", {
         id: "status",
         header: "Статус",
-        size: 112,
+        size: 110,
         cell: (info) => <StatusBadge status={info.getValue()} />,
-      }),
-      columnHelper.display({
+      }) as ColumnDef<Run, unknown>,
+
+      ribbon: columnHelper.display({
         id: "ribbon",
         header: "Ход",
-        size: 100,
+        size: 85,
         enableSorting: false,
         cell: (info) => (
-          <RunRibbon
-            stages={info.row.original.stages}
-            events={info.row.original.events}
-            height={6}
-          />
+          <RunRibbon stages={info.row.original.stages} events={info.row.original.events} height={6} />
         ),
-      }),
-      columnHelper.accessor("dataset", {
+      }) as ColumnDef<Run, unknown>,
+
+      dataset: columnHelper.accessor("dataset", {
         id: "dataset",
         header: "Dataset",
-        size: 115,
+        size: 120,
         cell: (info) => <span className="mono">{info.getValue()}</span>,
-      }),
-      columnHelper.accessor("gitSha", {
+      }) as ColumnDef<Run, unknown>,
+
+      gitSha: columnHelper.accessor("gitSha", {
         id: "gitSha",
         header: "Git",
-        size: 76,
+        size: 70,
         cell: (info) => <span className="mono dim">{info.getValue().slice(0, 7)}</span>,
-      }),
-      columnHelper.accessor("startedAt", {
+      }) as ColumnDef<Run, unknown>,
+
+      startedAt: columnHelper.accessor("startedAt", {
         id: "startedAt",
         header: "Начат",
-        size: 95,
+        size: 110,
         cell: (info) => (
           <span title={formatAbsoluteTime(toTime(info.getValue()))}>
             {formatRelativeTime(toTime(info.getValue()), now)}
           </span>
         ),
-      }),
-      columnHelper.accessor("durationMs", {
+      }) as ColumnDef<Run, unknown>,
+
+      durationMs: columnHelper.accessor("durationMs", {
         id: "durationMs",
         header: "Длительность",
         size: 85,
         cell: (info) => <span className="num">{formatDuration(info.getValue())}</span>,
-      }),
-      columnHelper.accessor((row) => row.metrics.accuracy ?? -Infinity, {
-        id: "accuracy",
-        header: () => (
-          <span title="Больше — лучше">
-            Accuracy <span aria-hidden>↑</span>
-          </span>
-        ),
-        size: 165,
-        cell: (info) => {
-          const run = info.row.original;
-          const baseline = runs.find((candidate) => candidate.id === baselineId);
-          return (
-            <MetricCell
-              value={run.metrics.accuracy}
-              baseline={baseline?.metrics.accuracy}
-              direction={run.metricDirection?.accuracy ?? "none"}
-              series={run.series.accuracy?.map((point) => point.value)}
-              color="var(--data-series-1)"
-              label="accuracy"
-            />
-          );
-        },
-      }),
-      columnHelper.accessor((row) => row.metrics.loss ?? -Infinity, {
-        id: "loss",
-        header: () => (
-          <span title="Меньше — лучше">
-            Loss <span aria-hidden>↓</span>
-          </span>
-        ),
-        size: 165,
-        cell: (info) => {
-          const run = info.row.original;
-          const baseline = runs.find((candidate) => candidate.id === baselineId);
-          return (
-            <MetricCell
-              value={run.metrics.loss}
-              baseline={baseline?.metrics.loss}
-              direction={run.metricDirection?.loss ?? "none"}
-              series={run.series.loss?.map((point) => point.value)}
-              color="var(--data-series-2)"
-              label="loss"
-            />
-          );
-        },
-      }),
-    ],
-    [baselineId, runs],
-  );
+      }) as ColumnDef<Run, unknown>,
+    };
 
-  const columnsWithActions = useMemo(
-    () =>
-      rowActions.length > 0
-        ? [
-            ...columns,
-            columnHelper.display({
-              id: "actions",
-              header: "Действия",
-              size: 120,
-              enableSorting: false,
-              cell: (info) => (
-                <span className="fe-table__actions">
-                  {rowActions.map((action) => (
-                    <button
-                      key={action.id}
-                      type="button"
-                      className={clsx(
-                        "fe-table__action",
-                        action.danger && "fe-table__action--danger",
-                      )}
-                      aria-label={`${action.label}: ${info.row.original.name}`}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        action.onClick(info.row.original);
-                      }}
-                    >
-                      {action.label}
-                    </button>
-                  ))}
-                </span>
-              ),
-            }),
-          ]
-        : columns,
-    [columns, rowActions],
-  );
+    // Метрики accuracy и loss: значение, дельта к эталону, спарклайн.
+    const metric = (id: "accuracy" | "loss", label: string, color: string) =>
+      columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
+        id,
+        header: () => (
+          <span title={id === "accuracy" ? "Больше — лучше" : "Меньше — лучше"}>
+            {label} <span aria-hidden>{id === "accuracy" ? "↑" : "↓"}</span>
+          </span>
+        ),
+        size: 150,
+        cell: (info) => {
+          const run = info.row.original;
+          return (
+            <MetricCell
+              value={run.metrics[id]}
+              baseline={baseline?.metrics[id]}
+              direction={run.metricDirection?.[id] ?? "none"}
+              series={run.series?.[id]?.map((point) => point.value)}
+              color={color}
+              label={id}
+            />
+          );
+        },
+      }) as ColumnDef<Run, unknown>;
+
+    fixed.accuracy = metric("accuracy", "Accuracy", "var(--data-series-1)");
+    fixed.loss = metric("loss", "Loss", "var(--data-series-2)");
+
+    // Любая другая метрика проекта: колонка строится из данных.
+    const custom = (id: string) =>
+      columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
+        id,
+        header: () => (
+          <span title="Направление метрики задаёт владелец">
+            {id} <span aria-hidden>·</span>
+          </span>
+        ),
+        size: 140,
+        cell: (info) => {
+          const run = info.row.original;
+          return (
+            <MetricCell
+              value={run.metrics[id]}
+              baseline={baseline?.metrics[id]}
+              direction={run.metricDirection?.[id] ?? "none"}
+              series={run.series?.[id]?.map((point) => point.value)}
+              color="var(--data-series-3)"
+              label={id}
+            />
+          );
+        },
+      }) as ColumnDef<Run, unknown>;
+
+    const ids = columnIds && columnIds.length > 0 ? columnIds : [...KNOWN_COLUMNS];
+    const built = ids.map((id) => fixed[id] ?? custom(id));
+
+    if (rowActions.length > 0) {
+      built.push(
+        columnHelper.display({
+          id: "actions",
+          header: "Действия",
+          size: 100,
+          enableSorting: false,
+          cell: (info) => (
+            <span className="fe-table__actions">
+              {rowActions.map((action) => (
+                <button
+                  key={action.id}
+                  type="button"
+                  className={clsx("fe-table__action", action.danger && "fe-table__action--danger")}
+                  aria-label={`${action.label}: ${info.row.original.name}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    action.onClick(info.row.original);
+                  }}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </span>
+          ),
+        }) as ColumnDef<Run, unknown>,
+      );
+    }
+
+    return built;
+  }, [baseline, baselineId, columnIds, now, rowActions]);
 
   const table = useReactTable({
     data: runs,
-    columns: columnsWithActions,
+    columns,
     state: { sorting, columnVisibility },
     onSortingChange: setSorting,
     onColumnVisibilityChange: (updater) => {
@@ -282,6 +309,7 @@ export function RunsTable({
                 {headerGroup.headers.map((header) => {
                   const sorted = header.column.getIsSorted();
                   const canSort = header.column.getCanSort();
+                  const isNumeric = ["accuracy", "loss", "durationMs"].includes(header.column.id);
                   return (
                     <th
                       key={header.id}
@@ -290,9 +318,7 @@ export function RunsTable({
                       className={clsx(
                         "fe-table__th",
                         header.column.id === "name" && "fe-table__th--sticky",
-                        header.column.id === "accuracy" && "fe-table__th--num",
-                        header.column.id === "loss" && "fe-table__th--num",
-                        header.column.id === "durationMs" && "fe-table__th--num",
+                        isNumeric && "fe-table__th--num",
                       )}
                       aria-sort={
                         sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none"
@@ -339,6 +365,7 @@ export function RunsTable({
                   className="fe-table__row"
                   tabIndex={virtualRow.index === activeRowIndex ? 0 : -1}
                   aria-selected={run.id === baselineId}
+                  title={run.error ?? undefined}
                   onFocus={() => setActiveRowIndex(virtualRow.index)}
                   onClick={() => onOpenRun(run)}
                   onKeyDown={(event) => onRowKeyDown(event, virtualRow.index)}
@@ -350,9 +377,7 @@ export function RunsTable({
                       className={clsx(
                         "fe-table__td",
                         cell.column.id === "name" && "fe-table__td--sticky",
-                        (cell.column.id === "accuracy" ||
-                          cell.column.id === "loss" ||
-                          cell.column.id === "durationMs") &&
+                        ["accuracy", "loss", "durationMs"].includes(cell.column.id) &&
                           "fe-table__td--num",
                         cell.column.id === "ribbon" && "fe-table__td--ribbon",
                       )}
@@ -375,7 +400,8 @@ export function RunsTable({
         <span className="num">{runs.length}</span> прогонов
         {baselineId ? (
           <span className="fe-table__footer-note">
-            дельты считаются к baseline · {formatMetric(runs.find((r) => r.id === baselineId)?.metrics.accuracy)}
+            дельты считаются к baseline
+            {baseline ? ` · ${formatMetric(baseline.metrics.accuracy)}` : ""}
           </span>
         ) : null}
       </div>
