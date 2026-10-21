@@ -18,6 +18,13 @@ import type { Run } from "../types";
 
 const columnHelper = createColumnHelper<Run>();
 
+export interface RowAction {
+  id: string;
+  label: string;
+  danger?: boolean;
+  onClick: (run: Run) => void;
+}
+
 export interface RunsTableProps {
   runs: Run[];
   baselineId?: string;
@@ -26,6 +33,8 @@ export interface RunsTableProps {
   columnVisibility: VisibilityState;
   onColumnVisibilityChange: (visibility: VisibilityState) => void;
   onOpenRun: (run: Run) => void;
+  /** Действия в строке — объявляются проектом, а не библиотекой. */
+  rowActions?: RowAction[];
 }
 
 export function RunsTable({
@@ -36,6 +45,7 @@ export function RunsTable({
   columnVisibility,
   onColumnVisibilityChange,
   onOpenRun,
+  rowActions = [],
 }: RunsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: "startedAt", desc: true }]);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
@@ -154,9 +164,46 @@ export function RunsTable({
     [baselineId, runs],
   );
 
+  const columnsWithActions = useMemo(
+    () =>
+      rowActions.length > 0
+        ? [
+            ...columns,
+            columnHelper.display({
+              id: "actions",
+              header: "Действия",
+              size: 120,
+              enableSorting: false,
+              cell: (info) => (
+                <span className="fe-table__actions">
+                  {rowActions.map((action) => (
+                    <button
+                      key={action.id}
+                      type="button"
+                      className={clsx(
+                        "fe-table__action",
+                        action.danger && "fe-table__action--danger",
+                      )}
+                      aria-label={`${action.label}: ${info.row.original.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        action.onClick(info.row.original);
+                      }}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </span>
+              ),
+            }),
+          ]
+        : columns,
+    [columns, rowActions],
+  );
+
   const table = useReactTable({
     data: runs,
-    columns,
+    columns: columnsWithActions,
     state: { sorting, columnVisibility },
     onSortingChange: setSorting,
     onColumnVisibilityChange: (updater) => {

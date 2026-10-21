@@ -4,6 +4,8 @@
  * Правим модель в Python и перегенерируем — руками типы не меняем.
  */
 export type {
+  ActionResult,
+  ActionSpec,
   Artifact,
   DatasetDetail,
   DatasetInfo,
@@ -21,6 +23,7 @@ export type {
   RunStatus,
   Stage,
   StageName,
+  UiConfig,
 } from "./generated/types";
 
 export { frontedgeRoles } from "./generated/types";

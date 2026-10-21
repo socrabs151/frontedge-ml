@@ -10,20 +10,21 @@ import {
   RunTimeline,
   StatusBadge,
   Tabs,
-  Tooltip,
 } from "@frontedge/ui";
-import { ArrowLeft, Download, GitCompareArrows, Pause, Play, RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { Example, LogLine, Run } from "@frontedge/ui";
+import type { Example, LogLine, Run, UiConfig } from "@frontedge/ui";
 import { errorMessage, source } from "../data/source";
 
 export function RunDetailScreen({
   runId,
   baseline,
+  config,
   onBack,
 }: {
   runId: string;
   baseline?: Run;
+  config: UiConfig | null;
   onBack: () => void;
 }) {
   const [run, setRun] = useState<Run | null>(null);
@@ -32,6 +33,23 @@ export function RunDetailScreen({
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState("metrics");
   const [onlyDiff, setOnlyDiff] = useState(false);
+  const [actionNote, setActionNote] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+
+  const runActions = (config?.actions ?? []).filter((action) => action.placement === "run");
+
+  const onAction = async (actionId: string) => {
+    setPendingAction(actionId);
+    setActionNote(null);
+    try {
+      const result = await source.runAction(actionId, { runId });
+      setActionNote(result.message ?? (result.ok ? "Готово" : "Не выполнено"));
+    } catch (cause) {
+      setActionNote(errorMessage(cause));
+    } finally {
+      setPendingAction(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -171,8 +189,8 @@ export function RunDetailScreen({
           </div>
 
           <p className="fe-note">
-            Показан один сид. Полосы других сидов и доверительные интервалы появятся в Phase 3 —
-            среднее по двум сидам скрывает выбросы.
+            Показан один сид. Другие сиды появятся, когда провайдер отдаст
+            их в series: среднее по двум сидам скрывает выбросы.
           </p>
         </div>
       ),
@@ -197,7 +215,10 @@ export function RunDetailScreen({
             </span>
           </div>
           {examples.length === 0 ? (
-            <p className="fe-note">Примеры появятся в Phase 3 вместе с экраном Eval diff.</p>
+            <p className="fe-note">
+              Эндпоинт примеров ещё не подключён: добавьте GET /api/runs/{id}/examples в
+              провайдера — и вкладка наполнится.
+            </p>
           ) : (
             <ExamplesTable examples={examples} onlyDiff={onlyDiff} />
           )}
@@ -256,29 +277,26 @@ export function RunDetailScreen({
           ) : null}
         </div>
         <div className="fe-detail__actions">
-          <Tooltip label="Сравнить с baseline">
-            <button type="button" className="fe-btn fe-btn--secondary fe-btn--sm">
-              <GitCompareArrows size={13} aria-hidden />
-              Сравнить
-            </button>
-          </Tooltip>
-          <Tooltip label="Скачать артефакты прогона">
-            <button type="button" className="fe-btn fe-btn--secondary fe-btn--sm">
-              <Download size={13} aria-hidden />
-              Экспорт
-            </button>
-          </Tooltip>
-          {run.status === "running" ? (
-            <Button variant="ghost" size="sm" icon={<Pause size={13} aria-hidden />}>
-              Остановить
+          {runActions.map((action) => (
+            <Button
+              key={action.id}
+              variant={action.danger ? "danger" : "secondary"}
+              size="sm"
+              disabled={pendingAction !== null}
+              onClick={() => onAction(action.id)}
+              title={action.description ?? undefined}
+            >
+              {action.label}
             </Button>
-          ) : (
-            <Button variant="ghost" size="sm" icon={<Play size={13} aria-hidden />}>
-              Перезапустить
-            </Button>
-          )}
+          ))}
         </div>
       </header>
+
+      {actionNote ? (
+        <p className="fe-note fe-note--action" role="status">
+          {actionNote}
+        </p>
+      ) : null}
 
       <div className="fe-detail__meta">
         <span className="fe-detail__meta-item">

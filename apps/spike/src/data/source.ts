@@ -1,5 +1,6 @@
 import { createClient } from "@frontedge/ui";
 import type {
+  ActionResult,
   DatasetDetail,
   DatasetInfo,
   EvalComparison,
@@ -7,6 +8,7 @@ import type {
   Example,
   LogLine,
   Run,
+  UiConfig,
 } from "@frontedge/ui";
 import {
   makeComparison,
@@ -38,6 +40,10 @@ export interface RunsSource {
   ): Promise<EvalComparison>;
   listDatasets(): Promise<DatasetInfo[]>;
   getDataset(datasetId: string): Promise<DatasetDetail>;
+  /** Конфигурация интерфейса: колонки, вкладки, объявленные действия. */
+  config(): Promise<UiConfig>;
+  /** Выполнить действие проекта на бэкенде. */
+  runAction(actionId: string, payload: Record<string, unknown>): Promise<ActionResult>;
 }
 
 const mockRuns = makeRuns(200);
@@ -74,6 +80,22 @@ export const mockSource: RunsSource = {
   async getDataset(datasetId) {
     return makeDatasetDetail(datasetId) as unknown as DatasetDetail;
   },
+  async config() {
+    return {
+      density: "default",
+      theme: "light",
+      runColumns: ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss"],
+      evalTabs: [],
+      actions: [
+        { id: "stop", label: "Остановить", placement: "run", danger: true },
+        { id: "export", label: "Экспорт CSV", placement: "run" },
+        { id: "rerun", label: "Перезапустить", placement: "runs" },
+      ],
+    };
+  },
+  async runAction(actionId) {
+    return { ok: true, message: `Действие «${actionId}» выполнено (мок)`, data: {} };
+  },
 };
 
 const client = createClient({ basePath: import.meta.env.VITE_API_BASE ?? "/frontedge/api" });
@@ -90,6 +112,8 @@ export const apiSource: RunsSource = {
   compareEval: (evalId, reference, comparison) => client.compareEval(evalId, reference, comparison),
   listDatasets: () => client.listDatasets(),
   getDataset: (datasetId) => client.getDataset(datasetId),
+  config: () => client.config(),
+  runAction: (actionId, payload) => client.runAction(actionId, payload),
 };
 
 export const source: RunsSource =

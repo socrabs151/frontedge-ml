@@ -10,7 +10,8 @@ import {
 } from "@frontedge/ui";
 import { Download, Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import { useMemo } from "react";
-import type { Run, RunStatus } from "@frontedge/ui";
+import { errorMessage, source } from "../data/source";
+import type { Run, RunStatus, UiConfig } from "@frontedge/ui";
 
 const STATUS_FILTERS: Array<{ value: RunStatus | "all"; label: string }> = [
   { value: "all", label: "Все" },
@@ -51,6 +52,7 @@ export interface RunsScreenProps {
   onColumnVisibilityChange: (visibility: VisibilityState) => void;
   onOpenRun: (run: Run) => void;
   onResetFilters: () => void;
+  config: UiConfig | null;
 }
 
 export function RunsScreen({
@@ -71,7 +73,33 @@ export function RunsScreen({
   onColumnVisibilityChange,
   onOpenRun,
   onResetFilters,
+  config,
 }: RunsScreenProps) {
+  const effectiveVisibility = useMemo(() => {
+    if (!config?.runColumns?.length) return columnVisibility;
+    const wanted = new Set(config.runColumns);
+    const next: VisibilityState = {};
+    for (const option of COLUMN_OPTIONS) next[option.id] = wanted.has(option.id);
+    return next;
+  }, [config, columnVisibility]);
+
+  const rowActions = useMemo(
+    () =>
+      (config?.actions ?? [])
+        .filter((action) => action.placement === "runs")
+        .map((action) => ({
+          id: action.id,
+          label: action.label,
+          danger: action.danger,
+          onClick: (run: Run) => {
+            void source
+              .runAction(action.id, { runId: run.id })
+              .catch((cause) => console.error(errorMessage(cause)));
+          },
+        })),
+    [config],
+  );
+
   const filtered = useMemo(() => {
     if (!runs) return [];
     return runs.filter((run) => {
@@ -184,9 +212,10 @@ export function RunsScreen({
           baselineId={baselineId}
           now={now}
           rowHeight={rowHeight}
-          columnVisibility={columnVisibility}
+          columnVisibility={effectiveVisibility}
           onColumnVisibilityChange={onColumnVisibilityChange}
           onOpenRun={onOpenRun}
+          rowActions={rowActions}
         />
       )}
     </div>

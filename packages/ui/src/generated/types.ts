@@ -125,6 +125,25 @@ export interface DatasetDetail {
   provenance?: ProvenanceEntry[];
   examples: ExampleResult[];
 }
+export interface ActionSpec {
+  id: string;
+  label: string;
+  placement?: "runs" | "run" | "evals" | "datasets";
+  danger?: boolean;
+  description?: string | null;
+}
+export interface UiConfig {
+  density?: "compact" | "default" | "comfortable" | null;
+  theme?: "light" | "dark" | null;
+  runColumns?: string[];
+  evalTabs?: string[];
+  actions?: ActionSpec[];
+}
+export interface ActionResult {
+  ok?: boolean;
+  message?: string | null;
+  data?: Record<string, unknown>;
+}
 
 export const frontedgeRoles = {
   "Run.id": "id",

@@ -1,6 +1,6 @@
 import { Boxes, Database, GitBranch, GitCompareArrows, Moon, Sun } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { Run, RunStatus, VisibilityState } from "@frontedge/ui";
+import type { Run, RunStatus, UiConfig, VisibilityState } from "@frontedge/ui";
 import { Segmented, TooltipProvider } from "@frontedge/ui";
 import { DATASET_NAMES, NOW_TIME } from "./data/mock";
 import { errorMessage, source } from "./data/source";
@@ -33,6 +33,7 @@ export function App() {
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     gitSha: false,
   });
+  const [config, setConfig] = useState<UiConfig | null>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -58,6 +59,17 @@ export function App() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    source
+      .config()
+      .then((loaded) => {
+        setConfig(loaded);
+        if (loaded.density) setDensity(loaded.density);
+        if (loaded.theme) setTheme(loaded.theme);
+      })
+      .catch(() => setConfig(null));
+  }, []);
 
   const baseline = useMemo(() => {
     if (!runs) return undefined;
@@ -153,6 +165,7 @@ export function App() {
               onDatasetChange={setDataset}
               columnVisibility={columnVisibility}
               onColumnVisibilityChange={setColumnVisibility}
+              config={config}
               onOpenRun={(run) => setRoute({ name: "run", id: run.id })}
               onResetFilters={() => {
                 setSearch("");
@@ -168,6 +181,7 @@ export function App() {
             <RunDetailScreen
               runId={route.id}
               baseline={baseline}
+              config={config}
               onBack={() => setRoute({ name: "runs" })}
             />
           )}

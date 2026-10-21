@@ -609,6 +609,42 @@
   word-break: break-all;
 }
 
+/* --- Действия в строке ---------------------------------------------- */
+
+.fe-table__actions {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.fe-table__action {
+  height: var(--control-h-sm);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: var(--text-12);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-press) var(--ease-out),
+    color var(--duration-press) var(--ease-out);
+}
+
+.fe-table__action:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+}
+
+.fe-table__action--danger {
+  color: var(--status-danger);
+}
+
+.fe-table__action--danger:hover {
+  background: var(--status-danger-wash);
+  color: var(--status-danger);
+}
+
 /* --- Сравнение оценок ------------------------------------------------ */
 
 .fe-table__group-row th {
