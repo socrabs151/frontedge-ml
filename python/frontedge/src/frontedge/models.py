@@ -135,6 +135,8 @@ class Run(FrontedgeModel):
     duration_ms: int = Field(json_schema_extra=role("duration"))
     owner: str
     seed: int | None = None
+    error: str | None = Field(default=None, json_schema_extra=role("text"))
+    exit_code: int | None = None
     metrics: dict[str, float] = Field(json_schema_extra=role("metric"))
     series: dict[str, list[MetricPoint]]
     baseline_series: dict[str, list[MetricPoint]] = Field(default_factory=dict)
@@ -216,6 +218,28 @@ class EvalComparison(FrontedgeModel):
     reference_aggregate: float
     comparison_aggregate: float
     changed: int
+
+
+class RunsQuery(FrontedgeModel):
+    """Параметры выборки прогонов.
+
+    Провайдер может принять их вторым аргументом ``list_runs(request, query)`` и
+    отфильтровать на своей стороне. Если не принимает — библиотека применяет
+    выборку сама.
+    """
+
+    limit: int | None = None
+    offset: int = 0
+    search: str | None = None
+    status: list[str] = Field(default_factory=list)
+    dataset: str | None = None
+
+
+class RunsPage(FrontedgeModel):
+    """Страница прогонов вместе с общим числом — когда провайдер фильтрует сам."""
+
+    items: list[Run]
+    total: int
 
 
 class DatasetInfo(FrontedgeModel):

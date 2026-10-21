@@ -127,6 +127,56 @@ class TestHttp:
         assert "failed" in meta["statuses"]
         assert "lost" in meta["statuses"]
 
+    def test_runs_support_pagination(self) -> None:
+        response = client_for().get("/frontedge/api/runs?limit=5&offset=0")
+        assert response.status_code == 200
+        assert len(response.json()) == 1
+        assert response.headers["X-Frontedge-Total"] == "1"
+
+    def test_runs_filter_by_status(self) -> None:
+        payload = client_for().get("/frontedge/api/runs?status=succeeded").json()
+        assert all(run["status"] == "succeeded" for run in payload)
+
+    def test_artifact_content_requires_provider_support(self) -> None:
+        response = client_for().get("/frontedge/api/artifacts/art-1/content")
+        assert response.status_code == 404
+
+    def test_artifact_content_is_served(self) -> None:
+        async def read_artifact(request: Any, artifact_id: str) -> bytes:
+            return f"bytes of {artifact_id}".encode()
+
+        class WithArtifacts:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+            async def read_artifact(self, request: Any, artifact_id: str) -> bytes:
+                return await read_artifact(request, artifact_id)
+
+        app = FastAPI()
+        app.include_router(frontedge.mount(WithArtifacts()))
+        response = TestClient(app).get("/frontedge/api/artifacts/art-1/content")
+        assert response.status_code == 200
+        assert b"art-1" in response.content
+
+    def test_error_reason_reaches_the_client(self) -> None:
+        failed = make_run(status=RunStatus.failed, error="CUDA out of memory", exit_code=1)
+
+        class Failing:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [failed]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return failed
+
+        app = FastAPI()
+        app.include_router(frontedge.mount(Failing()))
+        payload = TestClient(app).get("/frontedge/api/runs").json()[0]
+        assert payload["error"] == "CUDA out of memory"
+        assert payload["exitCode"] == 1
+
 
 class TestSse:
     def test_stream_survives_keepalive(self) -> None:

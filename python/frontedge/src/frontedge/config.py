@@ -62,6 +62,12 @@ class UiConfig(BaseModel):
     run_columns: list[str] = Field(default_factory=list)
     eval_tabs: list[str] = Field(default_factory=list)
     actions: list[ActionSpec] = Field(default_factory=list)
+    #: Как часто обновлять список прогонов, секунды. 0 — не обновлять.
+    live_refresh_seconds: int = 5
+    #: Прогон по умолчанию для сравнения (baseline).
+    baseline_run: str | None = None
+    #: Сколько прогонов запрашивать за раз (пагинация на сервере).
+    page_size: int = 50
 
     def actions_for(self, placement: Placement) -> list[ActionSpec]:
         return [action for action in self.actions if action.placement == placement]

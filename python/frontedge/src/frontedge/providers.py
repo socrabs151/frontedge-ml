@@ -71,7 +71,6 @@ class FrontedgeProvider(Protocol):
         """Поток логов прогона."""
         ...
 
-
 class CallableProvider:
     """Адаптер: async-функция ``(request) -> Sequence[Run]``.
 
@@ -117,6 +116,31 @@ class _ProviderAdapter:
             return
         async for line in stream(request, run_id):
             yield line
+
+    async def read_artifact(self, request: Request, artifact_id: str) -> bytes | None:
+        reader = getattr(self._provider, "read_artifact", None)
+        if reader is None:
+            return None
+        return await reader(request, artifact_id)
+
+
+def provider_accepts_query(provider: Any) -> bool:
+    """Умеет ли провайдер фильтровать выборку сам: ``list_runs(request, query)``."""
+    import inspect
+
+    target = getattr(provider, "list_runs", None)
+    if target is None:
+        return False
+    try:
+        parameters = inspect.signature(target).parameters
+    except (TypeError, ValueError):  # pragma: no cover
+        return False
+    return len(parameters) >= 2
+
+
+def provider_reads_artifacts(provider: Any) -> bool:
+    """Умеет ли провайдер отдавать содержимое артефакта."""
+    return callable(getattr(provider, "read_artifact", None))
 
 
 def adapt_provider(provider: ProviderInput) -> FrontedgeProvider:
