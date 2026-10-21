@@ -7,11 +7,14 @@
 import { chromium } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-const OUT = "C:\\Users\\socra\\AppData\\Local\\Temp\\opencode\\fe-shots";
+const OUT = process.env.FE_SHOTS_DIR ?? join(tmpdir(), "frontedge-shots");
 mkdirSync(OUT, { recursive: true });
 
-const browser = await chromium.launch({ channel: "msedge" });
+/** Edge установлен у разработчика; в CI — стандартный Chromium. */
+const browser = await chromium.launch({ channel: "msedge" }).catch(() => chromium.launch());
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
 const BASE = process.env.FE_BASE_URL ?? "http://localhost:5173";
@@ -78,3 +81,4 @@ await shoot("07-runs-light-1280");
 
 await browser.close();
 console.log(seriousTotal === 0 ? "\naxe: critical/serious нет." : `\naxe: critical/serious — ${seriousTotal}`);
+process.exit(seriousTotal === 0 ? 0 : 1);

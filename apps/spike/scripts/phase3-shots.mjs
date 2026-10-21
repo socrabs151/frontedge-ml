@@ -1,11 +1,13 @@
 /** Скриншоты и axe-аудит экранов Phase 3 (Eval diff, Dataset) на собранном демо. */
 import { chromium } from "playwright";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 
 const BASE = process.env.FE_BASE_URL ?? "http://127.0.0.1:8000/frontedge";
-const OUT = "C:\\Users\\socra\\AppData\\Local\\Temp\\opencode\\fe-shots";
+const OUT = process.env.FE_SHOTS_DIR ?? join(tmpdir(), "frontedge-shots");
 
-const browser = await chromium.launch({ channel: "msedge" });
+const browser = await chromium.launch({ channel: "msedge" }).catch(() => chromium.launch());
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
 

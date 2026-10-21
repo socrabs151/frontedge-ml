@@ -39,6 +39,9 @@ jobs:
       - name: Install Python workspace
         run: uv sync --all-packages
 
+      - name: Python contract tests
+        run: uv run --package frontedge pytest python/frontedge/tests -q
+
       - name: Check generated types are up to date
         run: |
           uv run --package frontedge frontedge gen --out packages/ui/src/generated

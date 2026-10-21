@@ -1,7 +1,9 @@
 /** Клавиатурный прогон таблицы (гейт качества §8.1 п.3). */
 import { chromium } from "playwright";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-const browser = await chromium.launch({ channel: "msedge" });
+const browser = await chromium.launch({ channel: "msedge" }).catch(() => chromium.launch());
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
 const BASE = process.env.FE_BASE_URL ?? "http://localhost:5173";
