@@ -9,9 +9,9 @@ import {
   type VisibilityState,
 } from "@frontedge/ui";
 import { Download, Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
-import { useMemo } from "react";
-import { errorMessage, source } from "../data/source";
+import { useEffect, useMemo, useState } from "react";
 import type { Run, RunStatus, UiConfig } from "@frontedge/ui";
+import { errorMessage, source, type RunsQuery } from "../data/source";
 
 const STATUS_FILTERS: Array<{ value: RunStatus | "all"; label: string }> = [
   { value: "all", label: "Все" },
@@ -36,52 +36,60 @@ const COLUMN_OPTIONS: ColumnOption[] = [
 
 export interface RunsScreenProps {
   runs: Run[] | null;
+  total: number;
   error: string | null;
   onRetry: () => void;
+  onRefresh: () => void;
+  updatedAt: number | null;
+  query: RunsQuery;
+  onQueryChange: (query: RunsQuery) => void;
   baselineId?: string;
+  onBaselineChange: (runId: string | undefined) => void;
+  config: UiConfig | null;
   datasets: string[];
   now: number;
   rowHeight: number;
-  search: string;
-  onSearchChange: (value: string) => void;
-  status: RunStatus | "all";
-  onStatusChange: (value: RunStatus | "all") => void;
-  dataset: string;
-  onDatasetChange: (value: string) => void;
   columnVisibility: VisibilityState;
   onColumnVisibilityChange: (visibility: VisibilityState) => void;
   onOpenRun: (run: Run) => void;
-  onResetFilters: () => void;
-  config: UiConfig | null;
 }
 
 export function RunsScreen({
   runs,
+  total,
   error,
   onRetry,
+  onRefresh,
+  updatedAt,
+  query,
+  onQueryChange,
   baselineId,
+  onBaselineChange,
+  config,
   datasets,
   now,
   rowHeight,
-  search,
-  onSearchChange,
-  status,
-  onStatusChange,
-  dataset,
-  onDatasetChange,
   columnVisibility,
   onColumnVisibilityChange,
   onOpenRun,
-  onResetFilters,
-  config,
 }: RunsScreenProps) {
-  const effectiveVisibility = useMemo(() => {
-    if (!config?.runColumns?.length) return columnVisibility;
-    const wanted = new Set(config.runColumns);
-    const next: VisibilityState = {};
-    for (const option of COLUMN_OPTIONS) next[option.id] = wanted.has(option.id);
-    return next;
-  }, [config, columnVisibility]);
+  const [search, setSearch] = useState(query.search ?? "");
+  const pageSize = config?.pageSize ?? 50;
+  const offset = query.offset ?? 0;
+
+  // Поиск не должен дёргать сервер на каждую букву.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const next = search.trim();
+      if ((query.search ?? "") !== next) {
+        onQueryChange({ ...query, search: next || undefined, offset: 0 });
+      }
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search, query, onQueryChange]);
+
+  const activeFilters =
+    (query.status ? 1 : 0) + (query.dataset ? 1 : 0) + (query.search ? 1 : 0);
 
   const rowActions = useMemo(
     () =>
@@ -100,18 +108,15 @@ export function RunsScreen({
     [config],
   );
 
-  const filtered = useMemo(() => {
-    if (!runs) return [];
-    return runs.filter((run) => {
-      if (status !== "all" && run.status !== status) return false;
-      if (dataset !== "all" && run.dataset !== dataset) return false;
-      if (search.trim() && !run.name.includes(search.trim().toLowerCase())) return false;
-      return true;
-    });
-  }, [runs, status, dataset, search]);
-
-  const activeFilters =
-    (status !== "all" ? 1 : 0) + (dataset !== "all" ? 1 : 0) + (search.trim() ? 1 : 0);
+  const baselineOptions = useMemo(
+    () =>
+      (runs ?? []).map((run) => (
+        <option key={run.id} value={run.id}>
+          {run.name}
+        </option>
+      )),
+    [runs],
+  );
 
   return (
     <div className="fe-runs">
@@ -124,6 +129,32 @@ export function RunsScreen({
           </p>
         </div>
         <div className="fe-runs__actions">
+          <label className="fe-field">
+            <span className="fe-field__label">Эталон</span>
+            <select
+              className="fe-select"
+              value={baselineId ?? ""}
+              onChange={(event) => onBaselineChange(event.target.value || undefined)}
+              aria-label="Эталонный прогон"
+            >
+              {baselineOptions}
+            </select>
+          </label>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<RefreshCw size={13} aria-hidden />}
+            onClick={onRefresh}
+            title="Обновить список"
+          >
+            {updatedAt
+              ? `обновлено ${new Date(updatedAt).toLocaleTimeString("ru-RU", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}`
+              : "обновить"}
+          </Button>
           <Button variant="secondary" size="sm" icon={<Download size={13} aria-hidden />}>
             Экспорт CSV
           </Button>
@@ -133,7 +164,7 @@ export function RunsScreen({
       <div className="fe-toolbar">
         <Search
           value={search}
-          onValueChange={onSearchChange}
+          onValueChange={setSearch}
           placeholder="Найти по имени прогона"
           ariaLabel="Поиск по прогонам"
         />
@@ -143,8 +174,14 @@ export function RunsScreen({
               key={option.value}
               type="button"
               className="fe-chip"
-              aria-pressed={status === option.value}
-              onClick={() => onStatusChange(option.value)}
+              aria-pressed={(query.status ?? "all") === option.value}
+              onClick={() =>
+                onQueryChange({
+                  ...query,
+                  status: option.value === "all" ? undefined : option.value,
+                  offset: 0,
+                })
+              }
             >
               {option.label}
             </button>
@@ -152,8 +189,14 @@ export function RunsScreen({
         </div>
         <select
           className="fe-select"
-          value={dataset}
-          onChange={(event) => onDatasetChange(event.target.value)}
+          value={query.dataset ?? "all"}
+          onChange={(event) =>
+            onQueryChange({
+              ...query,
+              dataset: event.target.value === "all" ? undefined : event.target.value,
+              offset: 0,
+            })
+          }
           aria-label="Фильтр по датасету"
         >
           <option value="all">Все датасеты</option>
@@ -164,7 +207,14 @@ export function RunsScreen({
           ))}
         </select>
         {activeFilters > 0 ? (
-          <button type="button" className="fe-filterchip" onClick={onResetFilters}>
+          <button
+            type="button"
+            className="fe-filterchip"
+            onClick={() => {
+              setSearch("");
+              onQueryChange({ offset: 0 });
+            }}
+          >
             <SlidersHorizontal size={12} aria-hidden />
             {activeFilters} {activeFilters === 1 ? "фильтр" : "фильтра"}
             <X size={12} aria-hidden />
@@ -193,30 +243,64 @@ export function RunsScreen({
         </div>
       ) : !runs ? (
         <LoadingRows rows={12} height={rowHeight} label="Загружаем прогоны" />
-      ) : filtered.length === 0 ? (
+      ) : runs.length === 0 ? (
         <div className="fe-panel">
           <EmptyState
             icon={<Inbox size={20} aria-hidden />}
             title="Под фильтр ничего не попало"
             text="Снимите фильтры или измените запрос — показываем только то, что подходит под условия."
             action={
-              <Button variant="secondary" size="sm" onClick={onResetFilters}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setSearch("");
+                  onQueryChange({ offset: 0 });
+                }}
+              >
                 Сбросить фильтры
               </Button>
             }
           />
         </div>
       ) : (
-        <RunsTable
-          runs={filtered}
-          baselineId={baselineId}
-          now={now}
-          rowHeight={rowHeight}
-          columnVisibility={effectiveVisibility}
-          onColumnVisibilityChange={onColumnVisibilityChange}
-          onOpenRun={onOpenRun}
-          rowActions={rowActions}
-        />
+        <>
+          <RunsTable
+            runs={runs}
+            baselineId={baselineId}
+            now={now}
+            rowHeight={rowHeight}
+            columnVisibility={columnVisibility}
+            onColumnVisibilityChange={onColumnVisibilityChange}
+            onOpenRun={onOpenRun}
+            rowActions={rowActions}
+            columnIds={config?.runColumns}
+          />
+          {total > runs.length || offset > 0 ? (
+            <div className="fe-toolbar fe-toolbar--pagination">
+              <span className="fe-note fe-note--inline">
+                показано {offset + 1}–{offset + runs.length} из {total}
+              </span>
+              <div className="fe-toolbar__spacer" />
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={offset === 0}
+                onClick={() => onQueryChange({ ...query, offset: Math.max(0, offset - pageSize) })}
+              >
+                Назад
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={offset + runs.length >= total}
+                onClick={() => onQueryChange({ ...query, offset: offset + pageSize })}
+              >
+                Вперёд
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
     </div>
   );

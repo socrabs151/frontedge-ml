@@ -1,11 +1,11 @@
 import { Boxes, Database, GitBranch, GitCompareArrows, Moon, Sun } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import type { Run, RunStatus, UiConfig, VisibilityState } from "@frontedge/ui";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { Run, UiConfig, VisibilityState } from "@frontedge/ui";
 import { Segmented, TooltipProvider } from "@frontedge/ui";
 import { DATASET_NAMES, NOW_TIME } from "./data/mock";
-import { errorMessage, source } from "./data/source";
+import { errorMessage, source, type RunsQuery } from "./data/source";
 import { RunsScreen } from "./screens/RunsScreen";
-import { RunDetailScreen, RunDetailPlaceholder } from "./screens/RunDetailScreen";
+import { RunDetailScreen } from "./screens/RunDetailScreen";
 import { EvalDiffScreen } from "./screens/EvalDiffScreen";
 import { DatasetScreen } from "./screens/DatasetScreen";
 
@@ -15,8 +15,6 @@ type Route = { name: "runs" } | { name: "run"; id: string } | { name: "evals" } 
 
 const ROW_HEIGHT: Record<Density, number> = { compact: 28, default: 32, comfortable: 40 };
 
-const BASELINE_ID = "run-039";
-
 export function App() {
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem("fe-theme") as Theme | null) ?? "light",
@@ -25,15 +23,16 @@ export function App() {
     () => (localStorage.getItem("fe-density") as Density | null) ?? "default",
   );
   const [route, setRoute] = useState<Route>({ name: "runs" });
+  const [query, setQuery] = useState<RunsQuery>({});
   const [runs, setRuns] = useState<Run[] | null>(null);
+  const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<RunStatus | "all">("all");
-  const [dataset, setDataset] = useState("all");
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [config, setConfig] = useState<UiConfig | null>(null);
+  const [baselineId, setBaselineId] = useState<string | undefined>(undefined);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     gitSha: false,
   });
-  const [config, setConfig] = useState<UiConfig | null>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -45,16 +44,17 @@ export function App() {
     localStorage.setItem("fe-density", density);
   }, [density]);
 
-  const load = useMemo(
-    () => () => {
-      setError(null);
-      source
-        .listRuns()
-        .then((list) => setRuns(list))
-        .catch((cause) => setError(errorMessage(cause)));
-    },
-    [],
-  );
+  const load = useCallback(() => {
+    setError(null);
+    source
+      .listRuns(query)
+      .then((page) => {
+        setRuns(page.items);
+        setTotal(page.total);
+        setUpdatedAt(Date.now());
+      })
+      .catch((cause) => setError(errorMessage(cause)));
+  }, [query]);
 
   useEffect(() => {
     load();
@@ -67,14 +67,27 @@ export function App() {
         setConfig(loaded);
         if (loaded.density) setDensity(loaded.density);
         if (loaded.theme) setTheme(loaded.theme);
+        if (loaded.baselineRun) {
+          setBaselineId((current) => current ?? loaded.baselineRun ?? undefined);
+        }
       })
       .catch(() => setConfig(null));
   }, []);
 
+  // Живое обновление: пока вкладка видима, список обновляется сам.
+  useEffect(() => {
+    const seconds = config?.liveRefreshSeconds ?? 0;
+    if (!seconds) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") load();
+    }, seconds * 1000);
+    return () => window.clearInterval(timer);
+  }, [config, load]);
+
   const baseline = useMemo(() => {
     if (!runs) return undefined;
-    return runs.find((run) => run.id === BASELINE_ID) ?? runs.find((run) => run.status === "succeeded");
-  }, [runs]);
+    return runs.find((run) => run.id === baselineId) ?? runs.find((run) => run.status === "succeeded");
+  }, [runs, baselineId]);
 
   return (
     <TooltipProvider>
@@ -151,27 +164,22 @@ export function App() {
           {route.name === "runs" ? (
             <RunsScreen
               runs={runs}
+              total={total}
               error={error}
               onRetry={load}
+              onRefresh={load}
+              updatedAt={updatedAt}
+              query={query}
+              onQueryChange={setQuery}
               baselineId={baseline?.id}
+              onBaselineChange={setBaselineId}
+              config={config}
               datasets={DATASET_NAMES}
               now={NOW_TIME}
               rowHeight={ROW_HEIGHT[density]}
-              search={search}
-              onSearchChange={setSearch}
-              status={status}
-              onStatusChange={setStatus}
-              dataset={dataset}
-              onDatasetChange={setDataset}
               columnVisibility={columnVisibility}
               onColumnVisibilityChange={setColumnVisibility}
-              config={config}
               onOpenRun={(run) => setRoute({ name: "run", id: run.id })}
-              onResetFilters={() => {
-                setSearch("");
-                setStatus("all");
-                setDataset("all");
-              }}
             />
           ) : route.name === "evals" ? (
             <EvalDiffScreen runs={runs} baselineId={baseline?.id} />
@@ -189,8 +197,4 @@ export function App() {
       </div>
     </TooltipProvider>
   );
-}
-
-export function RunListPlaceholder() {
-  return <RunDetailPlaceholder />;
 }

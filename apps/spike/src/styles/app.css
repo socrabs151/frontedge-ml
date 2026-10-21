@@ -315,12 +315,50 @@
 
 .fe-artifacts__row {
   display: grid;
-  grid-template-columns: 1fr 160px 120px;
+  grid-template-columns: 1fr 160px 120px 120px;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--border);
   font-size: var(--text-13);
+}
+
+.fe-artifacts__download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  color: var(--accent);
+  font-size: var(--text-12);
+}
+
+.fe-artifacts__download:hover {
+  text-decoration: underline;
+}
+
+.fe-run-error {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--status-danger-wash);
+  border-radius: var(--radius-control);
+  background: var(--status-danger-wash);
+  font-size: var(--text-13);
+}
+
+.fe-run-error__label {
+  color: var(--status-danger);
+  font-weight: var(--weight-medium);
+}
+
+.fe-run-error__text {
+  color: var(--text-primary);
+}
+
+.fe-run-error__code {
+  color: var(--text-tertiary);
+  font-size: var(--text-12);
 }
 
 .fe-artifacts__row:last-child {

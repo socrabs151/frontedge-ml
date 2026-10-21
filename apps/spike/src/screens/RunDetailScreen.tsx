@@ -11,7 +11,7 @@ import {
   StatusBadge,
   Tabs,
 } from "@frontedge/ui";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Example, LogLine, Run, UiConfig } from "@frontedge/ui";
 import { errorMessage, source } from "../data/source";
@@ -245,6 +245,14 @@ export function RunDetailScreen({
               <span className="fe-artifacts__size num">
                 {(artifact.sizeBytes / 1_000_000).toFixed(1)} МБ
               </span>
+              <a
+                className="fe-artifacts__download"
+                href={source.artifactUrl(artifact.id)}
+                download={artifact.name}
+              >
+                <Download size={13} aria-hidden />
+                Скачать
+              </a>
             </li>
           ))}
         </ul>
@@ -296,6 +304,16 @@ export function RunDetailScreen({
       {actionNote ? (
         <p className="fe-note fe-note--action" role="status">
           {actionNote}
+        </p>
+      ) : null}
+
+      {run.error ? (
+        <p className="fe-run-error" role="note">
+          <span className="fe-run-error__label">Причина</span>
+          <span className="fe-run-error__text">{run.error}</span>
+          {run.exitCode !== null && run.exitCode !== undefined ? (
+            <span className="fe-run-error__code mono">код выхода {run.exitCode}</span>
+          ) : null}
         </p>
       ) : null}
 

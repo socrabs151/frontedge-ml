@@ -20,6 +20,20 @@ import {
   makeRuns,
 } from "./mock";
 
+/** Параметры выборки списка прогонов. */
+export interface RunsQuery {
+  limit?: number;
+  offset?: number;
+  search?: string;
+  status?: string;
+  dataset?: string;
+}
+
+export interface RunsPage {
+  items: Run[];
+  total: number;
+}
+
 /**
  * Источник данных для экранов.
  *
@@ -28,7 +42,7 @@ import {
  */
 export interface RunsSource {
   readonly kind: "mock" | "api";
-  listRuns(): Promise<Run[]>;
+  listRuns(query?: RunsQuery): Promise<RunsPage>;
   getRun(runId: string): Promise<Run>;
   examples(runId: string): Promise<Example[]>;
   streamLogs(runId: string): AsyncGenerator<LogLine>;
@@ -44,6 +58,8 @@ export interface RunsSource {
   config(): Promise<UiConfig>;
   /** Выполнить действие проекта на бэкенде. */
   runAction(actionId: string, payload: Record<string, unknown>): Promise<ActionResult>;
+  /** Адрес содержимого артефакта. */
+  artifactUrl(artifactId: string): string;
 }
 
 const mockRuns = makeRuns(200);
@@ -52,8 +68,23 @@ const mockLogs = makeLogs(80);
 
 export const mockSource: RunsSource = {
   kind: "mock",
-  async listRuns() {
-    return mockRuns;
+  async listRuns(query: RunsQuery = {}) {
+    let runs = mockRuns;
+    if (query.search) {
+      const needle = query.search.trim().toLowerCase();
+      runs = runs.filter((run) => run.name.toLowerCase().includes(needle));
+    }
+    if (query.status) {
+      const wanted = new Set(query.status.split(","));
+      runs = runs.filter((run) => wanted.has(run.status));
+    }
+    if (query.dataset) {
+      runs = runs.filter((run) => run.dataset === query.dataset);
+    }
+    const total = runs.length;
+    const offset = query.offset ?? 0;
+    const page = query.limit === undefined ? runs.slice(offset) : runs.slice(offset, offset + query.limit);
+    return { items: page, total };
   },
   async getRun(runId) {
     const run = mockRuns.find((candidate) => candidate.id === runId);
@@ -96,6 +127,9 @@ export const mockSource: RunsSource = {
   async runAction(actionId) {
     return { ok: true, message: `Действие «${actionId}» выполнено (мок)`, data: {} };
   },
+  artifactUrl(artifactId) {
+    return `/frontedge/api/artifacts/${encodeURIComponent(artifactId)}/content`;
+  },
 };
 
 /**
@@ -114,7 +148,7 @@ const client = createClient({ basePath: apiBasePath() });
 
 export const apiSource: RunsSource = {
   kind: "api",
-  listRuns: () => client.listRuns(),
+  listRuns: (query) => client.listRuns(query ?? {}),
   getRun: (runId) => client.getRun(runId),
   async examples() {
     return [];
@@ -126,6 +160,7 @@ export const apiSource: RunsSource = {
   getDataset: (datasetId) => client.getDataset(datasetId),
   config: () => client.config(),
   runAction: (actionId, payload) => client.runAction(actionId, payload),
+  artifactUrl: (artifactId) => client.artifactUrl(artifactId),
 };
 
 export const source: RunsSource =
