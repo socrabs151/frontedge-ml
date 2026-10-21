@@ -23,6 +23,8 @@ from frontedge.models import (
     EvalSummary,
     LogLine,
     Run,
+    RunsPage,
+    RunsQuery,
 )
 
 from .data import (
@@ -54,8 +56,24 @@ class DemoProvider:
     def __init__(self, repository: DemoRepository) -> None:
         self.repository = repository
 
-    async def list_runs(self, request: Request) -> Sequence[Run]:
-        return self.repository.runs
+    async def list_runs(self, request: Request, query: RunsQuery | None = None) -> RunsPage:
+        """Фильтрация и пагинация на стороне демо — как у настоящего бэкенда."""
+        runs = list(self.repository.runs)
+        if query is not None:
+            if query.search:
+                needle = query.search.strip().lower()
+                runs = [run for run in runs if needle in run.name.lower()]
+            if query.status:
+                runs = [run for run in runs if run.status in query.status]
+            if query.dataset:
+                runs = [run for run in runs if run.dataset == query.dataset]
+            total = len(runs)
+            if query.offset:
+                runs = runs[query.offset :]
+            if query.limit is not None:
+                runs = runs[: query.limit]
+            return RunsPage(items=runs, total=total)
+        return RunsPage(items=runs, total=len(runs))
 
     async def get_run(self, request: Request, run_id: str) -> Run | None:
         return next((run for run in self.repository.runs if run.id == run_id), None)
@@ -65,6 +83,12 @@ class DemoProvider:
         for line in self.repository.logs_for(run_id):
             yield LogLine.model_validate(line)
             await asyncio.sleep(0.15)
+
+    async def read_artifact(self, request: Request, artifact_id: str) -> bytes | None:
+        """Содержимое артефакта — в демо это текстовая заглушка."""
+        if not artifact_id:
+            return None
+        return f"Демо-артефакт {artifact_id}\n".encode("utf-8")
 
 
 class DemoEvalProvider:
