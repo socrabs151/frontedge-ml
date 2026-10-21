@@ -216,8 +216,9 @@ export function RunDetailScreen({
           </div>
           {examples.length === 0 ? (
             <p className="fe-note">
-              Эндпоинт примеров ещё не подключён: добавьте GET /api/runs/{id}/examples в
-              провайдера — и вкладка наполнится.
+              Эндпоинт примеров ещё не подключён: добавьте в провайдера
+              <span className="mono"> GET /api/runs/&lt;id&gt;/examples</span> — и вкладка
+              наполнится.
             </p>
           ) : (
             <ExamplesTable examples={examples} onlyDiff={onlyDiff} />
