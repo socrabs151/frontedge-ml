@@ -7,6 +7,7 @@
     app.include_router(frontedge.mount(my_runs_provider))
 """
 
+from .config import ActionResult, ActionSpec, UiConfig, load_config
 from .models import (
     Artifact,
     DatasetDetail,
@@ -33,6 +34,8 @@ from .screens import mount, runs
 __version__ = "0.1.0"
 
 __all__ = [
+    "ActionResult",
+    "ActionSpec",
     "Artifact",
     "CallableProvider",
     "DatasetDetail",
@@ -54,6 +57,8 @@ __all__ = [
     "RunStatus",
     "Stage",
     "StageName",
+    "UiConfig",
+    "load_config",
     "__version__",
     "mount",
     "role",

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from . import __version__
 from .gen import generate_client, generate_types
+from .config import ActionResult, ActionSpec, UiConfig
 from .models import (
     Artifact,
     DatasetDetail,
@@ -36,6 +37,9 @@ MODELS = [
     EvalComparison,
     DatasetInfo,
     DatasetDetail,
+    UiConfig,
+    ActionSpec,
+    ActionResult,
 ]
 
 

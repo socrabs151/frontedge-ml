@@ -8,12 +8,14 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator, Sequence
+from pathlib import Path
 from typing import Any
 
 import uvicorn
 from fastapi import FastAPI, Request
 
 import frontedge
+from frontedge.config import ActionResult
 from frontedge.models import (
     DatasetDetail,
     DatasetInfo,
@@ -100,6 +102,29 @@ class DemoDatasetProvider:
         return make_dataset_detail(dataset_id)
 
 
+# --- Действия проекта ----------------------------------------------------
+# Обработчик получает request и payload (здесь — id прогона) и возвращает
+# ActionResult. Библиотека только вызывает его и показывает результат.
+
+
+async def stop_run(request: Request, payload: dict[str, Any]) -> ActionResult:
+    run_id = payload.get("runId")
+    return ActionResult(ok=True, message=f"Прогон {run_id} остановлен")
+
+
+async def export_run(request: Request, payload: dict[str, Any]) -> ActionResult:
+    run_id = payload.get("runId")
+    return ActionResult(ok=True, message=f"Метрики прогона {run_id} выгружены в CSV")
+
+
+async def rerun(request: Request, payload: dict[str, Any]) -> ActionResult:
+    run_id = payload.get("runId")
+    return ActionResult(ok=True, message=f"Прогон {run_id} поставлен в очередь")
+
+
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "frontedge.toml"
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="frontedge demo", version="0.1.0")
     repository = DemoRepository()
@@ -114,6 +139,12 @@ def create_app() -> FastAPI:
             provider,
             evals=DemoEvalProvider(),
             datasets=DemoDatasetProvider(),
+            actions={
+                "stop": stop_run,
+                "export": export_run,
+                "rerun": rerun,
+            },
+            config=CONFIG_PATH,
             path="/frontedge",
             title="Frontedge — demo",
         )

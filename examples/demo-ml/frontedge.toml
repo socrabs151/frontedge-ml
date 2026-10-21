@@ -1,0 +1,30 @@
+# Конфигурация интерфейса frontedge для этого демо.
+# Файл читается при старте: /frontedge/api/config отдаёт его интерфейсу.
+
+density = "default"
+theme = "light"
+
+# Какие колонки показывать в списке прогонов. Пустой список — показывать все.
+run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss"]
+
+# Действия — то, что проект умеет делать со своим прогоном.
+# Обработчики регистрируются в коде: demo_ml/app.py -> actions={...}
+
+[[actions]]
+id = "stop"
+label = "Остановить"
+placement = "run"
+danger = true
+description = "Останавливает прогон и освобождает GPU"
+
+[[actions]]
+id = "export"
+label = "Экспорт CSV"
+placement = "run"
+description = "Выгружает метрики прогона в CSV"
+
+[[actions]]
+id = "rerun"
+label = "Перезапустить"
+placement = "runs"
+description = "Перезапускает прогон с тем же seed"

@@ -146,5 +146,61 @@ class TestSse:
         assert any('"i": 1' in chunk for chunk in chunks), "события после keepalive не дошли"
 
 
+class TestConfigAndActions:
+    def test_config_is_served(self) -> None:
+        app = FastAPI()
+        app.include_router(
+            frontedge.mount(
+                runs_provider,
+                config={
+                    "density": "compact",
+                    "run_columns": ["name", "status"],
+                    "actions": [
+                        {"id": "stop", "label": "Остановить", "placement": "run", "danger": True}
+                    ],
+                },
+            )
+        )
+        payload = TestClient(app).get("/frontedge/api/config").json()
+        assert payload["density"] == "compact"
+        assert payload["runColumns"] == ["name", "status"]
+        assert payload["actions"][0]["id"] == "stop"
+
+    def test_action_runs_the_handler(self) -> None:
+        seen: dict[str, Any] = {}
+
+        async def stop(request: Any, payload: dict[str, Any]) -> Any:
+            seen.update(payload)
+            return frontedge.ActionResult(ok=True, message="остановлен")
+
+        app = FastAPI()
+        app.include_router(frontedge.mount(runs_provider, actions={"stop": stop}))
+        response = TestClient(app).post("/frontedge/api/actions/stop", json={"runId": "run-000"})
+        assert response.status_code == 200
+        assert response.json()["message"] == "остановлен"
+        assert seen["runId"] == "run-000"
+
+    def test_unknown_action_returns_404(self) -> None:
+        app = FastAPI()
+        app.include_router(frontedge.mount(runs_provider))
+        response = TestClient(app).post("/frontedge/api/actions/nope", json={})
+        assert response.status_code == 404
+
+    def test_config_from_toml_file(self, tmp_path: Any) -> None:
+        file = tmp_path / "frontedge.toml"
+        file.write_text(
+            'density = "compact"\n\n'
+            "[[actions]]\n"
+            'id = "export"\n'
+            'label = "Экспорт"\n'
+            'placement = "runs"\n',
+            encoding="utf-8",
+        )
+        app = FastAPI()
+        app.include_router(frontedge.mount(runs_provider, config=file))
+        payload = TestClient(app).get("/frontedge/api/config").json()
+        assert payload["actions"][0]["placement"] == "runs"
+
+
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(pytest.main([__file__]))

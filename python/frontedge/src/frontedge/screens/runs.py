@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from itertools import count
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
+from ..config import ActionResult, UiConfig, load_config
 from ..models import LogLine, Run
 from ..providers import (
     DatasetProvider,
@@ -19,9 +21,11 @@ from ..providers import (
 from ..runtime.sse import sse_response
 from ..runtime.static import static_router
 
-__all__ = ["mount", "runs"]
+__all__ = ["ActionHandler", "mount", "runs"]
 
 _log_ids = count(1)
+
+ActionHandler = Callable[[Request, dict[str, Any]], Awaitable[Any]]
 
 
 def _json_model(model: Any) -> Any:
@@ -58,12 +62,16 @@ def _build_router(
     *,
     evals: EvalProvider | None = None,
     datasets: DatasetProvider | None = None,
+    actions: dict[str, ActionHandler] | None = None,
+    config: UiConfig | str | Path | dict[str, Any] | None = None,
     path: str = "/frontedge",
     title: str = "Frontedge",
 ) -> APIRouter:
     """Сборка роутера. Имя функции намеренно не ``mount``: параметр ``path`` не должен
     перекрывать одноимённую функцию (такая ошибка ломала ``frontedge.runs()``)."""
     source = adapt_provider(runs)
+    ui_config = load_config(config)
+    handlers = actions or {}
     router = APIRouter(prefix=path)
 
     # --- Прогоны ---------------------------------------------------------
@@ -138,6 +146,22 @@ def _build_router(
     async def get_meta() -> dict[str, Any]:
         return meta()
 
+    @router.get("/api/config", tags=["frontedge"])
+    async def get_config() -> dict[str, Any]:
+        """Конфигурация интерфейса: колонки, вкладки, объявленные действия."""
+        return _json_model(ui_config)
+
+    @router.post("/api/actions/{action_id}", tags=["frontedge"])
+    async def run_action(action_id: str, request: Request, payload: dict[str, Any] | None = None) -> Any:
+        """Выполнить действие проекта. Библиотека знает только идентификатор."""
+        handler = handlers.get(action_id)
+        if handler is None:
+            raise HTTPException(status_code=404, detail=f"Действие не объявлено: {action_id}")
+        result = await handler(request, payload or {})
+        if isinstance(result, ActionResult):
+            return _json_model(result)
+        return {"ok": True, "message": None, "data": result if isinstance(result, dict) else {}}
+
     @router.api_route(
         "/api/{rest:path}",
         methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
@@ -157,6 +181,8 @@ def mount(
     *,
     evals: EvalProvider | None = None,
     datasets: DatasetProvider | None = None,
+    actions: dict[str, ActionHandler] | None = None,
+    config: UiConfig | str | Path | dict[str, Any] | None = None,
     path: str = "/frontedge",
     title: str = "Frontedge",
 ) -> APIRouter:
@@ -166,18 +192,32 @@ def mount(
     (и опционально ``stream_logs``) либо async-функция ``(request) -> Sequence[Run]``.
     ``evals`` и ``datasets`` — необязательные источники для экранов сравнения оценок
     и датасетов; без них соответствующие разделы не появятся.
+    ``actions`` — обработчики действий проекта: ``{"stop": async def stop(request, payload)}``.
+    ``config`` — конфигурация интерфейса: путь к TOML/JSON, словарь или готовый объект.
     """
-    return _build_router(runs_provider, evals=evals, datasets=datasets, path=path, title=title)
+    return _build_router(
+        runs_provider,
+        evals=evals,
+        datasets=datasets,
+        actions=actions,
+        config=config,
+        path=path,
+        title=title,
+    )
 
 
 def runs(
     runs_provider: ProviderInput,
     *,
+    actions: dict[str, ActionHandler] | None = None,
+    config: UiConfig | str | Path | dict[str, Any] | None = None,
     path: str = "/frontedge",
     title: str = "Frontedge",
 ) -> APIRouter:
     """Только экран прогонов — короткая запись для :func:`mount`."""
-    return _build_router(runs_provider, path=path, title=title)
+    return _build_router(
+        runs_provider, actions=actions, config=config, path=path, title=title
+    )
 
 
 def log_line(text: str, level: str = "info") -> LogLine:
