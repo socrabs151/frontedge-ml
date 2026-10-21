@@ -4,7 +4,7 @@
     import frontedge
 
     app = FastAPI()
-    app.include_router(frontedge.runs(runs_provider=my_provider))
+    app.include_router(frontedge.mount(my_runs_provider))
 """
 
 from .models import (
@@ -25,6 +25,7 @@ from .models import (
     RunStatus,
     Stage,
     StageName,
+    role,
 )
 from .providers import CallableProvider, DatasetProvider, EvalProvider, FrontedgeProvider
 from .screens import mount, runs
@@ -55,5 +56,6 @@ __all__ = [
     "StageName",
     "__version__",
     "mount",
+    "role",
     "runs",
 ]

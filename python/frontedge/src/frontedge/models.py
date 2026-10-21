@@ -128,7 +128,7 @@ class Run(FrontedgeModel):
     id: str = Field(json_schema_extra=role("id"))
     name: str = Field(json_schema_extra=role("text"))
     status: RunStatus = Field(json_schema_extra=role("status"))
-    freshness: Freshness = Field(json_schema_extra=role("freshness"))
+    freshness: Freshness = Field(default=Freshness.fresh, json_schema_extra=role("freshness"))
     dataset: str = Field(json_schema_extra=role("dataset"))
     git_sha: str = Field(json_schema_extra=role("code"))
     started_at: datetime = Field(json_schema_extra=role("timestamp"))
@@ -137,12 +137,12 @@ class Run(FrontedgeModel):
     seed: int | None = None
     metrics: dict[str, float] = Field(json_schema_extra=role("metric"))
     series: dict[str, list[MetricPoint]]
-    baseline_series: dict[str, list[MetricPoint]]
-    metric_direction: dict[str, MetricDirection]
+    baseline_series: dict[str, list[MetricPoint]] = Field(default_factory=dict)
+    metric_direction: dict[str, MetricDirection] = Field(default_factory=dict)
     stages: list[Stage] = Field(json_schema_extra=role("stage"))
-    events: list[MetricEvent]
-    artifacts: list[Artifact]
-    provenance: list[ProvenanceEntry]
+    events: list[MetricEvent] = Field(default_factory=list)
+    artifacts: list[Artifact] = Field(default_factory=list)
+    provenance: list[ProvenanceEntry] = Field(default_factory=list)
 
 
 class Example(FrontedgeModel):
@@ -228,7 +228,7 @@ class DatasetInfo(FrontedgeModel):
     created_at: datetime | None = None
     tags: list[str]
     datasheet: list[ProvenanceEntry]
-    provenance: list[ProvenanceEntry]
+    provenance: list[ProvenanceEntry] = Field(default_factory=list)
 
 
 class DatasetDetail(DatasetInfo):

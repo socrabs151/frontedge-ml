@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from itertools import count
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -20,6 +21,8 @@ from ..runtime.static import static_router
 
 __all__ = ["mount", "runs"]
 
+_log_ids = count(1)
+
 
 def _json_model(model: Any) -> Any:
     """Сериализация в camelCase, как в сгенерированных TypeScript-типах."""
@@ -31,9 +34,9 @@ async def _empty_logs() -> AsyncIterator[tuple[str, Any]]:
     yield  # pragma: no cover
 
 
-def _run_payload(run: Run) -> dict[str, Any]:
+def _run_payload(run: Run, path: str) -> dict[str, Any]:
     payload = _json_model(run)
-    payload["logStreamUrl"] = f"/frontedge/api/runs/{run.id}/logs/stream"
+    payload["logStreamUrl"] = f"{path}/api/runs/{run.id}/logs/stream"
     return payload
 
 
@@ -50,7 +53,7 @@ def meta() -> dict[str, Any]:
     }
 
 
-def mount(
+def _build_router(
     runs: ProviderInput,
     *,
     evals: EvalProvider | None = None,
@@ -58,13 +61,8 @@ def mount(
     path: str = "/frontedge",
     title: str = "Frontedge",
 ) -> APIRouter:
-    """Смонтировать интерфейс Frontedge в приложение.
-
-    ``runs`` — источник прогонов: объект с методами ``list_runs`` / ``get_run`` /
-    ``stream_logs`` либо async-функция ``(request) -> Sequence[Run]``.
-    ``evals`` и ``datasets`` — необязательные источники для экранов сравнения
-    оценок и датасетов; без них соответствующие разделы не появятся.
-    """
+    """Сборка роутера. Имя функции намеренно не ``mount``: параметр ``path`` не должен
+    перекрывать одноимённую функцию (такая ошибка ломала ``frontedge.runs()``)."""
     source = adapt_provider(runs)
     router = APIRouter(prefix=path)
 
@@ -72,14 +70,14 @@ def mount(
 
     @router.get("/api/runs", tags=["frontedge"])
     async def list_runs(request: Request) -> list[dict[str, Any]]:
-        return [_run_payload(run) for run in await source.list_runs(request)]
+        return [_run_payload(run, path) for run in await source.list_runs(request)]
 
     @router.get("/api/runs/{run_id}", tags=["frontedge"])
     async def get_run(request: Request, run_id: str) -> dict[str, Any]:
         run = await source.get_run(request, run_id)
         if run is None:
             raise HTTPException(status_code=404, detail="Прогон не найден")
-        return _run_payload(run)
+        return _run_payload(run, path)
 
     @router.get("/api/runs/{run_id}/logs/stream", tags=["frontedge"])
     async def stream_logs(request: Request, run_id: str) -> Response:
@@ -140,23 +138,55 @@ def mount(
     async def get_meta() -> dict[str, Any]:
         return meta()
 
+    @router.api_route(
+        "/api/{rest:path}",
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        include_in_schema=False,
+    )
+    async def api_not_found(rest: str) -> Response:
+        """Несуществующий путь API — 404 в JSON, а не HTML-страница SPA."""
+        raise HTTPException(status_code=404, detail=f"Неизвестный эндпоинт API: /{rest}")
+
     router.include_router(static_router(path))
     router.title = title
     return router
 
 
-def runs(
-    provider: ProviderInput,
+def mount(
+    runs_provider: ProviderInput,
     *,
-    mount: str = "/frontedge",
+    evals: EvalProvider | None = None,
+    datasets: DatasetProvider | None = None,
+    path: str = "/frontedge",
     title: str = "Frontedge",
 ) -> APIRouter:
-    """Только экран прогонов — короткая запись для ``mount``."""
-    return mount(provider, path=mount, title=title)
+    """Смонтировать интерфейс Frontedge в приложение.
+
+    ``runs_provider`` — источник прогонов: объект с методами ``list_runs`` / ``get_run``
+    (и опционально ``stream_logs``) либо async-функция ``(request) -> Sequence[Run]``.
+    ``evals`` и ``datasets`` — необязательные источники для экранов сравнения оценок
+    и датасетов; без них соответствующие разделы не появятся.
+    """
+    return _build_router(runs_provider, evals=evals, datasets=datasets, path=path, title=title)
+
+
+def runs(
+    runs_provider: ProviderInput,
+    *,
+    path: str = "/frontedge",
+    title: str = "Frontedge",
+) -> APIRouter:
+    """Только экран прогонов — короткая запись для :func:`mount`."""
+    return _build_router(runs_provider, path=path, title=title)
 
 
 def log_line(text: str, level: str = "info") -> LogLine:
-    """Помощник для провайдеров логов."""
+    """Помощник для провайдеров логов: строка с уникальным идентификатором."""
     from datetime import UTC, datetime
 
-    return LogLine(at=datetime.now(UTC), level=level, text=text)  # type: ignore[arg-type]
+    return LogLine(
+        id=next(_log_ids),
+        at=datetime.now(UTC),
+        level=level,  # type: ignore[arg-type]
+        text=text,
+    )

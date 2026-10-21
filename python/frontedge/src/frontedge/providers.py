@@ -99,18 +99,46 @@ class CallableProvider:
 ProviderInput = FrontedgeProvider | Callable[[Request], Awaitable[Sequence[Run]]]
 
 
+class _ProviderAdapter:
+    """Обёртка над провайдером, у которого может не быть ``stream_logs``."""
+
+    def __init__(self, provider: Any) -> None:
+        self._provider = provider
+
+    async def list_runs(self, request: Request) -> Sequence[Run]:
+        return await self._provider.list_runs(request)
+
+    async def get_run(self, request: Request, run_id: str) -> Run | None:
+        return await self._provider.get_run(request, run_id)
+
+    async def stream_logs(self, request: Request, run_id: str) -> AsyncIterator[LogLine]:
+        stream = getattr(self._provider, "stream_logs", None)
+        if stream is None:
+            return
+        async for line in stream(request, run_id):
+            yield line
+
+
 def adapt_provider(provider: ProviderInput) -> FrontedgeProvider:
-    """Привести вход к протоколу."""
+    """Привести вход к протоколу.
+
+    Принимает объект с ``list_runs`` и ``get_run`` (метод ``stream_logs`` необязателен —
+    без него поток логов будет пустым) либо async-функцию ``(request) -> Sequence[Run]``.
+    """
     if isinstance(provider, FrontedgeProvider):
         return provider
-    if callable(provider):
+    if callable(provider) and not hasattr(provider, "list_runs"):
         return CallableProvider(provider)
+    if hasattr(provider, "list_runs") and hasattr(provider, "get_run"):
+        return _ProviderAdapter(provider)
     raise TypeError(
-        "provider должен быть объектом с методами list_runs/get_run/stream_logs "
+        "provider должен быть объектом с методами list_runs/get_run "
         "или async-функцией (request) -> Sequence[Run]"
     )
 
 
 def provider_has_logs(provider: Any) -> bool:
     """Есть ли у провайдера поток логов (у адаптера callable — нет)."""
-    return not isinstance(provider, CallableProvider)
+    if isinstance(provider, CallableProvider):
+        return False
+    return callable(getattr(provider, "stream_logs", None))

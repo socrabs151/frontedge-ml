@@ -22,17 +22,36 @@ async def event_stream(
     *,
     keepalive: int = KEEPALIVE_SECONDS,
 ) -> AsyncIterator[str]:
-    """Превращает пары (тип, данные) в поток SSE с keepalive-комментариями."""
-    iterator = events.__aiter__()
-    while True:
+    """Превращает пары (тип, данные) в поток SSE с keepalive-комментариями.
+
+    Источник читается отдельной задачей: таймаут ожидания не должен отменять
+    ``__anext__`` генератора — иначе провайдер, который молчит дольше keepalive
+    (обычная пауза между строками лога), потерял бы поток навсегда.
+    """
+    queue: asyncio.Queue[Any] = asyncio.Queue()
+    done = object()
+
+    async def pump() -> None:
         try:
-            event_type, payload = await asyncio.wait_for(iterator.__anext__(), timeout=keepalive)
-        except TimeoutError:
-            yield ": keepalive\n\n"
-            continue
-        except StopAsyncIteration:
-            break
-        yield _format(event_type, payload)
+            async for item in events:
+                await queue.put(item)
+        finally:
+            await queue.put(done)
+
+    task = asyncio.create_task(pump())
+    try:
+        while True:
+            try:
+                item = await asyncio.wait_for(queue.get(), timeout=keepalive)
+            except TimeoutError:
+                yield ": keepalive\n\n"
+                continue
+            if item is done:
+                break
+            event_type, payload = item
+            yield _format(event_type, payload)
+    finally:
+        task.cancel()
 
 
 def sse_response(
