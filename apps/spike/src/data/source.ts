@@ -98,7 +98,19 @@ export const mockSource: RunsSource = {
   },
 };
 
-const client = createClient({ basePath: import.meta.env.VITE_API_BASE ?? "/frontedge/api" });
+/**
+ * Базовый путь API. Сервер подставляет путь монтирования в HTML
+ * (window.__FRONTEDGE_MOUNT__), поэтому интерфейс работает под любым префиксом.
+ */
+function apiBasePath(): string {
+  const mount = (globalThis as { __FRONTEDGE_MOUNT__?: string }).__FRONTEDGE_MOUNT__;
+  if (mount && mount !== "@@FRONTEDGE_MOUNT@@") {
+    return `${mount.replace(/\/$/, "")}/api`;
+  }
+  return "/frontedge/api";
+}
+
+const client = createClient({ basePath: apiBasePath() });
 
 export const apiSource: RunsSource = {
   kind: "api",

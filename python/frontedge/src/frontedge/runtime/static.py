@@ -12,6 +12,8 @@ __all__ = ["STATIC_DIR", "static_router", "static_root"]
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 _INDEX = "index.html"
+# Плейсхолдер значения (не ключа!) — иначе замена съела бы и имя переменной.
+_MOUNT_PLACEHOLDER = "@@FRONTEDGE_MOUNT@@"
 
 
 def static_root() -> Path:
@@ -20,7 +22,11 @@ def static_root() -> Path:
 
 
 def static_router(mount: str = "/frontedge") -> APIRouter:
-    """Роутер, отдающий собранный интерфейс с fallback на index.html."""
+    """Роутер, отдающий собранный интерфейс с fallback на index.html.
+
+    Путь монтирования подставляется в HTML, поэтому интерфейс знает, где искать
+    свой API, и работает под любым префиксом.
+    """
     router = APIRouter()
 
     @router.get("/{path:path}", include_in_schema=False)
@@ -41,6 +47,7 @@ def static_router(mount: str = "/frontedge") -> APIRouter:
                 status_code=503,
                 detail="Интерфейс не собран: выполните `pnpm build` и скопируйте dist в frontedge/static",
             )
-        return FileResponse(index, headers={"Cache-Control": "no-cache"})
+        html = index.read_text(encoding="utf-8").replace(_MOUNT_PLACEHOLDER, mount)
+        return Response(html, media_type="text/html", headers={"Cache-Control": "no-cache"})
 
     return router

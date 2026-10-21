@@ -101,6 +101,12 @@ class TestHttp:
         assert response.status_code == 404
         assert "application/json" in response.headers["content-type"]
 
+    def test_mount_path_is_substituted_into_html(self) -> None:
+        """Интерфейс должен знать свой префикс: иначе ассеты и API ищутся в /frontedge."""
+        response = client_for(path="/ml").get("/ml/")
+        assert response.status_code == 200
+        assert '__FRONTEDGE_MOUNT__ = "/ml"' in response.text
+
     def test_log_stream_url_follows_mount_path(self) -> None:
         payload = client_for(path="/ml").get("/ml/api/runs").json()[0]
         assert payload["logStreamUrl"] == "/ml/api/runs/run-000/logs/stream"
