@@ -1,11 +1,12 @@
 import { useId } from "react";
+import { useT } from "../i18n/I18nProvider";
 
 interface SparklineProps {
   values: number[];
   color?: string;
   width?: number;
   height?: number;
-  /** Значение, от которого считается «хорошо» — рисуется пунктиром. */
+  /** The value that counts as good - drawn as a dashed line. */
   reference?: number;
   label?: string;
 }
@@ -18,6 +19,7 @@ export function Sparkline({
   reference,
   label,
 }: SparklineProps) {
+  const t = useT();
   const gradientId = useId();
   if (values.length < 2) {
     return <span style={{ display: "inline-block", width, height }} aria-hidden />;
@@ -47,7 +49,7 @@ export function Sparkline({
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       role="img"
-      aria-label={label ?? "График значения"}
+      aria-label={label ?? t("sparkline.default")}
       style={{ display: "block", overflow: "visible" }}
     >
       <defs>

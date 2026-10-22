@@ -5,13 +5,13 @@ import type { MetricPoint } from "../types";
 export interface MetricChartProps {
   series: MetricPoint[];
   baselineSeries?: MetricPoint[];
-  /** Дополнительные тонкие ряды (другие сиды/фолды). */
+  /** Extra thin series (other seeds or folds). */
   extraSeries?: MetricPoint[][];
   height?: number;
   color?: string;
   baselineColor?: string;
   label: string;
-  /** Формат значения в подсказке. */
+  /** Number format in the hover hint. */
   digits?: number;
 }
 
@@ -34,11 +34,11 @@ function niceTicks(min: number, max: number, count = 4): number[] {
 }
 
 /**
- * График метрики по шагам. Свой SVG вместо библиотеки:
- * - нет chartjunk: только оси, сетка и линии;
- * - общая ось для сравнения (правило Кливленда–Макгилла: позиция читается точнее цвета);
- * - baseline — пунктиром и другим весом, а не цветом;
- * - подсказка по наведению: значение текущего прогона и baseline на том же шаге.
+ * A metric over steps. A hand-written SVG rather than a chart library:
+ * - no chartjunk: only axes, grid and lines;
+ * - a shared axis for comparison (Cleveland-McGill: position reads more accurately than colour);
+ * - the baseline is a different weight and dash, not a different colour;
+ * - on hover: the value of the current run and of the baseline at the same step.
  */
 export function MetricChart({
   series,
@@ -154,7 +154,7 @@ export function MetricChart({
         {extraSeries.length > 0 ? (
           <span className="fe-chart__key">
             <span className="fe-chart__swatch fe-chart__swatch--muted" aria-hidden />
-            другие сиды
+            other seeds
           </span>
         ) : null}
         {baselineSeries && baselineSeries.length > 1 ? (
@@ -170,7 +170,7 @@ export function MetricChart({
           width={width}
           height={height}
           role="img"
-          aria-label={`${label}: график по шагам`}
+          aria-label={`${label}: over steps`}
           onMouseMove={onMove}
           onMouseLeave={() => setHoverIndex(null)}
         >
@@ -290,7 +290,7 @@ export function MetricChart({
               ),
             }}
           >
-            <div className="fe-chart__tip-step">шаг {Math.round(hovered.step)}</div>
+            <div className="fe-chart__tip-step">step {Math.round(hovered.step)}</div>
             <div className="fe-chart__tip-row">
               <span className="fe-chart__swatch" style={{ background: color }} aria-hidden />
               {formatMetric(hovered.value, digits)}

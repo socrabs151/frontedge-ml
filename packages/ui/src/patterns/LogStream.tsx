@@ -1,8 +1,7 @@
-import { formatDuration, formatRelativeTime } from "../format";
-import type { LogLine } from "../types";
-import { useEffect, useRef, useState } from "react";
-import clsx from "clsx";
 import { ArrowDownToLine } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useT } from "../i18n/I18nProvider";
+import type { LogLine } from "../types";
 
 const LEVEL_LABEL: Record<LogLine["level"], string> = {
   info: "INFO",
@@ -11,6 +10,7 @@ const LEVEL_LABEL: Record<LogLine["level"], string> = {
   error: "ERROR",
 };
 
+/** Live log stream: severity as a text prefix, tail follow, and a way back to the bottom. */
 export function LogStream({
   lines,
   live = false,
@@ -20,6 +20,7 @@ export function LogStream({
   live?: boolean;
   height?: number;
 }) {
+  const t = useT();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(true);
 
@@ -49,19 +50,21 @@ export function LogStream({
         {live ? (
           <span className="fe-freshness fe-freshness--live">
             <span className="fe-freshness__dot" aria-hidden />
-            live
+            {t("log.live")}
           </span>
         ) : (
           <span className="fe-freshness">
             <span className="fe-freshness__dot" aria-hidden />
-            поток закрыт
+            {t("log.streamClosed")}
           </span>
         )}
-        <span className="fe-logs__count num">{lines.length} строк</span>
+        <span className="fe-logs__count num">
+          {lines.length} {t("log.lines")}
+        </span>
         {!pinned ? (
           <button type="button" className="fe-logs__jump" onClick={jumpToBottom}>
             <ArrowDownToLine size={13} aria-hidden />
-            Прокрутить вниз
+            {t("log.scrollToBottom")}
           </button>
         ) : null}
       </div>
@@ -72,14 +75,17 @@ export function LogStream({
         style={{ height }}
         role="log"
         aria-live="polite"
-        aria-label="Логи прогона"
+        aria-label={t("log.runLogs")}
         tabIndex={0}
       >
+        {lines.length === 0 ? (
+          <p className="fe-note fe-note--inline">{t("log.streamClosed")}</p>
+        ) : null}
         {lines.map((line) => (
-          <div key={line.id} className={clsx("fe-logs__line", `fe-logs__line--${line.level}`)}>
+          <div key={line.id} className={`fe-logs__line fe-logs__line--${line.level}`}>
             <span className="fe-logs__level">{LEVEL_LABEL[line.level]}</span>
             <span className="fe-logs__time num">
-              {new Date(line.at).toLocaleTimeString("ru-RU", { hour12: false })}
+              {new Date(line.at).toLocaleTimeString("en-GB", { hour12: false })}
             </span>
             <span className="fe-logs__text">{line.text}</span>
           </div>
@@ -87,8 +93,4 @@ export function LogStream({
       </div>
     </div>
   );
-}
-
-export function logTimestampLabel(at: number, now: number): string {
-  return `${formatRelativeTime(at, now)} · ${formatDuration(Math.max(0, now - at))}`;
 }

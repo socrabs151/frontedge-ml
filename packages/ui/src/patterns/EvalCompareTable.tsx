@@ -1,4 +1,5 @@
 import clsx from "clsx";
+import { useT } from "../i18n/I18nProvider";
 import { describeDelta } from "./MetricCell";
 import type { EvalComparison, MetricDirection } from "../types";
 
@@ -28,19 +29,23 @@ export interface EvalCompareTableProps {
 }
 
 /**
- * Сравнение двух прогонов по одной оценке.
+ * Two runs compared over one evaluation.
  *
- * Примеры — строки, колонки сгруппированы по ролям (вход / выход / оценки),
- * эталонный прогон стоит слева и закреплён. Различие помечается стрелкой и
- * подписью, а не только цветом.
+ * Examples are rows, columns are grouped by role (input / output / scores), the
+ * reference run is pinned left, and the delta is computed against it. The
+ * direction of the metric belongs to its owner, so the word "better" follows the
+ * configured direction rather than a colour.
  */
 export function EvalCompareTable({
   comparison,
   onlyDiff = false,
   format = "value",
 }: EvalCompareTableProps) {
+  const t = useT();
   const direction: MetricDirection = comparison.direction;
-  const rows = onlyDiff ? comparison.examples.filter((example) => example.changed) : comparison.examples;
+  const rows = onlyDiff
+    ? comparison.examples.filter((example) => example.changed)
+    : comparison.examples;
 
   const aggregateDelta = comparison.comparisonAggregate - comparison.referenceAggregate;
   const aggregateMeta = describeDelta(aggregateDelta, direction);
@@ -50,7 +55,7 @@ export function EvalCompareTable({
       <div
         className="fe-table__scroll"
         role="region"
-        aria-label="Сравнение примеров"
+        aria-label={t("column.scores")}
         tabIndex={0}
       >
         <table className="fe-table__table">
@@ -60,13 +65,13 @@ export function EvalCompareTable({
                 Example
               </th>
               <th scope="col" className="fe-table__th fe-table__th--group">
-                Вход
+                {t("column.input")}
               </th>
               <th scope="col" className="fe-table__th fe-table__th--group">
-                Выход
+                {t("column.output")}
               </th>
               <th scope="colgroup" colSpan={3} className="fe-table__th fe-table__th--group fe-table__th--scores">
-                Оценки
+                {t("column.scores")}
               </th>
             </tr>
             <tr>
@@ -74,16 +79,16 @@ export function EvalCompareTable({
                 id
               </th>
               <th scope="col" className="fe-table__th">
-                текст
+                text
               </th>
               <th scope="col" className="fe-table__th">
-                ответ
+                answer
               </th>
               <th scope="col" className="fe-table__th fe-table__th--num">
-                эталон
+                {t("column.reference")}
               </th>
               <th scope="col" className="fe-table__th fe-table__th--num">
-                прогон
+                {t("column.run")}
               </th>
               <th scope="col" className="fe-table__th fe-table__th--num">
                 Δ
@@ -94,7 +99,7 @@ export function EvalCompareTable({
             {rows.length === 0 ? (
               <tr>
                 <td colSpan={6} className="fe-table__td fe-table__td--empty">
-                  Различий нет — все примеры оценены так же, как в эталоне.
+                  {t("empty.noDifferences")}
                 </td>
               </tr>
             ) : null}
@@ -117,8 +122,8 @@ export function EvalCompareTable({
                     {example.changed ? (
                       <span
                         className="fe-eval__changed"
-                        title="Оценка отличается от эталона"
-                        aria-label="Оценка отличается от эталона"
+                        title="Scored differently from the reference"
+                        aria-label="Scored differently from the reference"
                       >
                         {delta !== null && delta > 0 ? "↑" : "↓"}
                       </span>
@@ -131,10 +136,10 @@ export function EvalCompareTable({
                     {example.output}
                   </td>
                   <td className="fe-table__td fe-table__td--num num">
-                    {formatScore(reference, format)}
+                    {formatScore(reference, format, reference)}
                   </td>
                   <td className="fe-table__td fe-table__td--num num">
-                    {formatScore(comparisonScore, format)}
+                    {formatScore(comparisonScore, format, reference)}
                   </td>
                   <td
                     className={clsx(
@@ -145,7 +150,9 @@ export function EvalCompareTable({
                     {delta === null
                       ? "–"
                       : `${delta > 0 ? "+" : delta < 0 ? "−" : "±"}${Math.abs(delta).toFixed(3)}`}
-                    {meta?.word ? <span className="fe-eval__word">{meta.word}</span> : null}
+                    {meta?.word ? (
+                      <span className="fe-eval__word">{t(`delta.${meta.word}`)}</span>
+                    ) : null}
                   </td>
                 </tr>
               );
@@ -154,10 +161,15 @@ export function EvalCompareTable({
           <tfoot>
             <tr className="fe-table__foot-row">
               <td className="fe-table__td fe-table__td--sticky">
-                {comparison.aggregate === "fraction" ? "Доля верных" : "Среднее"}
+                {comparison.aggregate === "fraction"
+                  ? t("aggregate.accuracy")
+                  : t("aggregate.mean")}
               </td>
               <td className="fe-table__td" colSpan={2}>
-                {comparison.examples.length} примеров, изменено {comparison.changed}
+                {t("aggregate.examplesChanged", {
+                  count: comparison.examples.length,
+                  changed: comparison.changed,
+                })}
               </td>
               <td className="fe-table__td fe-table__td--num num">
                 {comparison.referenceAggregate.toFixed(3)}
@@ -169,7 +181,7 @@ export function EvalCompareTable({
                 {aggregateDelta > 0 ? "+" : aggregateDelta < 0 ? "−" : "±"}
                 {Math.abs(aggregateDelta).toFixed(3)}
                 {aggregateMeta.word ? (
-                  <span className="fe-eval__word">{aggregateMeta.word}</span>
+                  <span className="fe-eval__word">{t(`delta.${aggregateMeta.word}`)}</span>
                 ) : null}
               </td>
             </tr>

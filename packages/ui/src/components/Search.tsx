@@ -1,4 +1,5 @@
 import { Search as SearchIcon, X } from "lucide-react";
+import { useT } from "../i18n/I18nProvider";
 
 interface SearchProps {
   value: string;
@@ -8,6 +9,7 @@ interface SearchProps {
 }
 
 export function Search({ value, onValueChange, placeholder, ariaLabel }: SearchProps) {
+  const t = useT();
   return (
     <div className="fe-search">
       <SearchIcon size={13} className="fe-search__icon" aria-hidden />
@@ -24,7 +26,7 @@ export function Search({ value, onValueChange, placeholder, ariaLabel }: SearchP
           type="button"
           className="fe-search__clear"
           onClick={() => onValueChange("")}
-          aria-label="Очистить поиск"
+          aria-label={t("search.clear")}
         >
           <X size={12} aria-hidden />
         </button>

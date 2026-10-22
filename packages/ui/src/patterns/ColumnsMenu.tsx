@@ -2,6 +2,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { Check, Columns3 } from "lucide-react";
 import type { VisibilityState } from "@tanstack/react-table";
+import { useT } from "../i18n/I18nProvider";
 
 export interface ColumnOption {
   id: string;
@@ -17,6 +18,7 @@ export function ColumnsMenu({
   visibility: VisibilityState;
   onVisibilityChange: (visibility: VisibilityState) => void;
 }) {
+  const t = useT();
   const hiddenCount = columns.filter((column) => visibility[column.id] === false).length;
 
   return (
@@ -24,8 +26,12 @@ export function ColumnsMenu({
       <DropdownMenu.Trigger asChild>
         <button type="button" className="fe-btn fe-btn--secondary fe-btn--sm">
           <Columns3 size={13} aria-hidden />
-          Колонки
-          {hiddenCount > 0 ? <span className="fe-menu__hint">{hiddenCount} скрыто</span> : null}
+          {t("menu.columns")}
+          {hiddenCount > 0 ? (
+            <span className="fe-menu__hint">
+              {hiddenCount} {t("menu.hidden")}
+            </span>
+          ) : null}
         </button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>

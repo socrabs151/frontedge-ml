@@ -20,9 +20,9 @@ export interface RunRibbonProps {
 }
 
 /**
- * Signature-элемент Frontedge: полоса стадий прогона по времени.
- * Длина сегмента = длительность стадии, цвет = статус стадии.
- * Провал показан штриховкой, а не только цветом (WCAG 1.4.1).
+ * The signature element of Frontedge: the stages of a run as a band over time.
+ * Segment length is the duration of the stage, colour is the status of the stage.
+ * A failure is shown with hatching, not with colour alone (WCAG 1.4.1).
  */
 export function RunRibbon({
   stages,

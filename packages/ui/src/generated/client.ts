@@ -103,7 +103,7 @@ export function createClient(options: FrontedgeClientOptions = {
         headers: { accept: "text/event-stream" },
       });
       if (!response.ok || !response.body) {
-        throw new Error(`frontedge: не удалось открыть поток логов (${runId})`);
+        throw new Error(`frontedge: could not open the log stream (${runId})`);
       }
       const reader = response.body.getReader();
       const decoder = new TextDecoder();

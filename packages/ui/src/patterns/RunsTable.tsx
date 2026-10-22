@@ -13,6 +13,7 @@ import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { StatusBadge } from "../components/StatusBadge";
+import { useT } from "../i18n/I18nProvider";
 import { formatAbsoluteTime, formatDuration, formatMetric, formatRelativeTime, toTime } from "../format";
 import { MetricCell } from "./MetricCell";
 import { RunRibbon } from "./RunRibbon";
@@ -35,9 +36,9 @@ export interface RunsTableProps {
   columnVisibility: VisibilityState;
   onColumnVisibilityChange: (visibility: VisibilityState) => void;
   onOpenRun: (run: Run) => void;
-  /** Действия в строке — объявляются проектом, а не библиотекой. */
+  /** Actions in a row - declared by the project, not by the library. */
   rowActions?: RowAction[];
-  /** Порядок и состав колонок: известные id или имена метрик. */
+  /** Column order and set: known ids or metric names. */
   columnIds?: string[];
 }
 
@@ -64,6 +65,7 @@ export function RunsTable({
   rowActions = [],
   columnIds,
 }: RunsTableProps) {
+  const t = useT();
   const [sorting, setSorting] = useState<SortingState>([{ id: "startedAt", desc: true }]);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -84,7 +86,7 @@ export function RunsTable({
             <span className="fe-run-name__dot" aria-hidden />
             <span className="mono">{info.getValue()}</span>
             {info.row.original.id === baselineId ? (
-              <span className="fe-run-name__tag">baseline</span>
+              <span className="fe-run-name__tag">{t("tag.baseline")}</span>
             ) : null}
           </span>
         ),
@@ -92,14 +94,14 @@ export function RunsTable({
 
       status: columnHelper.accessor("status", {
         id: "status",
-        header: "Статус",
+        header: () => t("column.status"),
         size: 110,
         cell: (info) => <StatusBadge status={info.getValue()} />,
       }) as ColumnDef<Run, unknown>,
 
       ribbon: columnHelper.display({
         id: "ribbon",
-        header: "Ход",
+        header: () => t("column.stages"),
         size: 85,
         enableSorting: false,
         cell: (info) => (
@@ -123,7 +125,7 @@ export function RunsTable({
 
       startedAt: columnHelper.accessor("startedAt", {
         id: "startedAt",
-        header: "Начат",
+        header: () => t("column.started"),
         size: 110,
         cell: (info) => (
           <span title={formatAbsoluteTime(toTime(info.getValue()))}>
@@ -134,18 +136,18 @@ export function RunsTable({
 
       durationMs: columnHelper.accessor("durationMs", {
         id: "durationMs",
-        header: "Длительность",
+        header: () => t("column.duration"),
         size: 85,
         cell: (info) => <span className="num">{formatDuration(info.getValue())}</span>,
       }) as ColumnDef<Run, unknown>,
     };
 
-    // Метрики accuracy и loss: значение, дельта к эталону, спарклайн.
+    // The accuracy and loss metrics: value, delta against the baseline, sparkline.
     const metric = (id: "accuracy" | "loss", label: string, color: string) =>
       columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
         id,
         header: () => (
-          <span title={id === "accuracy" ? "Больше — лучше" : "Меньше — лучше"}>
+          <span title={id === "accuracy" ? "Higher is better" : "Lower is better"}>
             {label} <span aria-hidden>{id === "accuracy" ? "↑" : "↓"}</span>
           </span>
         ),
@@ -168,12 +170,12 @@ export function RunsTable({
     fixed.accuracy = metric("accuracy", "Accuracy", "var(--data-series-1)");
     fixed.loss = metric("loss", "Loss", "var(--data-series-2)");
 
-    // Любая другая метрика проекта: колонка строится из данных.
+    // Any other metric of the project: the column is built from the data.
     const custom = (id: string) =>
       columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
         id,
         header: () => (
-          <span title="Направление метрики задаёт владелец">
+          <span title="The metric owner sets the direction">
             {id} <span aria-hidden>·</span>
           </span>
         ),
@@ -200,7 +202,7 @@ export function RunsTable({
       built.push(
         columnHelper.display({
           id: "actions",
-          header: "Действия",
+          header: () => t("column.actions"),
           size: 100,
           enableSorting: false,
           cell: (info) => (
@@ -397,10 +399,10 @@ export function RunsTable({
         </table>
       </div>
       <div className="fe-table__footer">
-        <span className="num">{runs.length}</span> прогонов
+        <span className="num">{runs.length}</span> {t("footer.runs")}
         {baselineId ? (
           <span className="fe-table__footer-note">
-            дельты считаются к baseline
+            {t("footer.deltasToBaseline")}
             {baseline ? ` · ${formatMetric(baseline.metrics.accuracy)}` : ""}
           </span>
         ) : null}

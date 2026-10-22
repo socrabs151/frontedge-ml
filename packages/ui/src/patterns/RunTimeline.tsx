@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { formatDuration, toTime } from "../format";
 import { statusMeta } from "../components/StatusBadge";
+import { useT } from "../i18n/I18nProvider";
 import type { RunStatus, Stage } from "../types";
 
 const STATUS_COLOR: Record<RunStatus, string> = {
@@ -14,21 +15,22 @@ const STATUS_COLOR: Record<RunStatus, string> = {
 
 export interface RunTimelineProps {
   stages: Stage[];
-  /** Максимальная ширина полосы: таймлайн не должен растягиваться на весь экран. */
+  /** Maximum width of the band: the timeline should not stretch across the screen. */
   maxWidth?: number;
   className?: string;
 }
 
 /**
- * Развёрнутая лента прогона: стадии как сегменты таймлайна, подписи выровнены
- * по началу своих сегментов. Провал стадии виден штриховкой и подписью статуса.
+ * The run timeline: stages as segments, labels aligned to the start of their own
+ * segment. A failed stage is visible through hatching and a status label.
  */
 export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelineProps) {
+  const t = useT();
   const measured = stages.filter((stage) => stage.endedAt !== null);
   const total = measured.reduce((sum, stage) => sum + (toTime(stage.endedAt!) - toTime(stage.startedAt)), 0);
 
   if (total <= 0) {
-    return <p className="fe-note">Прогон ещё не начал выполняться.</p>;
+    return <p className="fe-note">The run has not started yet.</p>;
   }
 
   return (
@@ -61,13 +63,13 @@ export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelinePr
         {measured.map((stage) => {
           const duration = toTime(stage.endedAt ?? stage.startedAt) - toTime(stage.startedAt);
           const share = (duration / total) * 100;
-          const { label } = statusMeta(stage.status);
+          const { key } = statusMeta(stage.status);
           return (
             <div key={stage.name} className="fe-timeline__label" style={{ width: `${share}%` }}>
               <span className="fe-timeline__name">{stage.name}</span>
               <span className="fe-timeline__time num">{formatDuration(duration)}</span>
               {stage.status !== "succeeded" ? (
-                <span className="fe-timeline__status">{label}</span>
+                <span className="fe-timeline__status">{t(`status.${key}`)}</span>
               ) : null}
             </div>
           );

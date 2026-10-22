@@ -8,6 +8,9 @@ export { Search } from "./components/Search";
 export { EmptyState } from "./components/EmptyState";
 export { LoadingRows } from "./components/LoadingRows";
 
+export { I18nProvider, useI18n, useT, type I18nValue, type Lang } from "./i18n/I18nProvider";
+export { en, ru, type Dictionary, type StringKey } from "./i18n/strings";
+
 export { RunRibbon, type RunRibbonProps } from "./patterns/RunRibbon";
 export { RunTimeline, type RunTimelineProps } from "./patterns/RunTimeline";
 export { MetricCell, MetricCard, describeDelta } from "./patterns/MetricCell";

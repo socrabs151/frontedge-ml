@@ -1,3 +1,4 @@
+import { useT } from "../i18n/I18nProvider";
 import type { ExampleResult } from "../types";
 
 export interface DatasetTableProps {
@@ -5,14 +6,15 @@ export interface DatasetTableProps {
   scoreLabel?: string;
 }
 
-/** Примеры датасета: вход, ответ и оценка. Сравнение соседних строк — как в любой таблице. */
-export function DatasetTable({ examples, scoreLabel = "Score" }: DatasetTableProps) {
+/** Dataset examples: input, answer and score. Adjacent rows compare at a glance, like any table. */
+export function DatasetTable({ examples, scoreLabel }: DatasetTableProps) {
+  const t = useT();
   return (
     <div className="fe-table fe-table--dataset">
       <div
         className="fe-table__scroll"
         role="region"
-        aria-label="Примеры датасета"
+        aria-label={t("column.input")}
         tabIndex={0}
       >
         <table className="fe-table__table">
@@ -22,13 +24,13 @@ export function DatasetTable({ examples, scoreLabel = "Score" }: DatasetTablePro
                 Example
               </th>
               <th scope="col" className="fe-table__th">
-                Вход
+                {t("column.input")}
               </th>
               <th scope="col" className="fe-table__th">
-                Ответ
+                {t("column.answer")}
               </th>
               <th scope="col" className="fe-table__th fe-table__th--num">
-                {scoreLabel}
+                {scoreLabel ?? t("column.score")}
               </th>
             </tr>
           </thead>
