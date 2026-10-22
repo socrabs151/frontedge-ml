@@ -14,6 +14,7 @@ import {
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Example, LogLine, Run, UiConfig } from "@frontedge/ui";
+import { useAppT } from "../i18n";
 import { errorMessage, source } from "../data/source";
 
 export function RunDetailScreen({
@@ -27,6 +28,7 @@ export function RunDetailScreen({
   config: UiConfig | null;
   onBack: () => void;
 }) {
+  const t = useAppT();
   const [run, setRun] = useState<Run | null>(null);
   const [examples, setExamples] = useState<Example[]>([]);
   const [logs, setLogs] = useState<LogLine[]>([]);
@@ -43,7 +45,7 @@ export function RunDetailScreen({
     setActionNote(null);
     try {
       const result = await source.runAction(actionId, { runId });
-      setActionNote(result.message ?? (result.ok ? "Готово" : "Не выполнено"));
+      setActionNote(result.message ?? (result.ok ? t("detail.actionDone") : t("detail.actionFailed")));
     } catch (cause) {
       setActionNote(errorMessage(cause));
     } finally {
@@ -55,12 +57,13 @@ export function RunDetailScreen({
     let cancelled = false;
     setError(null);
     setRun(null);
+    setLogs([]);
+    setExamples([]);
 
     source
       .getRun(runId)
       .then((loaded) => {
-        if (cancelled) return;
-        setRun(loaded);
+        if (!cancelled) setRun(loaded);
       })
       .catch((cause) => {
         if (!cancelled) setError(errorMessage(cause));
@@ -96,17 +99,17 @@ export function RunDetailScreen({
         <div className="fe-detail__crumbs">
           <button type="button" className="fe-linkbtn" onClick={onBack}>
             <ArrowLeft size={13} aria-hidden />
-            Runs
+            {t("detail.back")}
           </button>
         </div>
         <div className="fe-panel">
           <EmptyState
             icon={<RefreshCw size={20} aria-hidden />}
-            title="Не удалось загрузить прогон"
-            text={`Источник данных не ответил: ${error}. Вернитесь к списку и попробуйте снова.`}
+            title={t("runs.loadError")}
+            text={t("runs.loadErrorHint", { error })}
             action={
               <Button variant="secondary" size="sm" onClick={onBack}>
-                К списку прогонов
+                {t("runs.resetFilters")}
               </Button>
             }
           />
@@ -121,10 +124,10 @@ export function RunDetailScreen({
         <div className="fe-detail__crumbs">
           <button type="button" className="fe-linkbtn" onClick={onBack}>
             <ArrowLeft size={13} aria-hidden />
-            Runs
+            {t("detail.back")}
           </button>
         </div>
-        <LoadingRows rows={6} height={40} label="Загружаем прогон" />
+        <LoadingRows rows={6} height={40} label={t("loading.default")} />
       </div>
     );
   }
@@ -136,7 +139,7 @@ export function RunDetailScreen({
   const items = [
     {
       value: "metrics",
-      label: "Метрики",
+      label: t("detail.metrics"),
       content: (
         <div className="fe-detail__stack">
           <div className="fe-metric-cards">
@@ -165,7 +168,7 @@ export function RunDetailScreen({
               color="var(--data-series-3)"
             />
             <MetricCard
-              label="Токены"
+              label="Tokens"
               value={run.metrics.tokens}
               baseline={baseline?.metrics.tokens}
               direction="none"
@@ -175,29 +178,26 @@ export function RunDetailScreen({
 
           <div className="fe-detail__grid">
             <MetricChart
-              label="Accuracy по шагам"
+              label="Accuracy over steps"
               series={accuracySeries}
               baselineSeries={baselineAccuracy}
               color="var(--data-series-1)"
             />
             <MetricChart
-              label="Loss по шагам"
+              label="Loss over steps"
               series={lossSeries}
               baselineSeries={baseline?.series.loss ?? []}
               color="var(--data-series-2)"
             />
           </div>
 
-          <p className="fe-note">
-            Показан один сид. Другие сиды появятся, когда провайдер отдаст
-            их в series: среднее по двум сидам скрывает выбросы.
-          </p>
+          <p className="fe-note">{t("detail.seedsNote")}</p>
         </div>
       ),
     },
     {
       value: "examples",
-      label: "Примеры",
+      label: t("detail.examples"),
       count: examples.length,
       content: (
         <div className="fe-detail__stack">
@@ -208,18 +208,14 @@ export function RunDetailScreen({
                 checked={onlyDiff}
                 onChange={(event) => setOnlyDiff(event.target.checked)}
               />
-              Только различия
+              {t("evals.onlyDiff")}
             </label>
             <span className="fe-note fe-note--inline">
-              Score считается как доля совпадений; дельта — к baseline.
+              Score is the share of matches; the delta is relative to the baseline.
             </span>
           </div>
           {examples.length === 0 ? (
-            <p className="fe-note">
-              Эндпоинт примеров ещё не подключён: добавьте в провайдера
-              <span className="mono"> GET /api/runs/&lt;id&gt;/examples</span> — и вкладка
-              наполнится.
-            </p>
+            <p className="fe-note">{t("detail.examplesMissing")}</p>
           ) : (
             <ExamplesTable examples={examples} onlyDiff={onlyDiff} />
           )}
@@ -228,13 +224,13 @@ export function RunDetailScreen({
     },
     {
       value: "logs",
-      label: "Логи",
+      label: t("detail.logs"),
       count: logs.length,
       content: <LogStream lines={logs} live={run.status === "running"} height={360} />,
     },
     {
       value: "artifacts",
-      label: "Артефакты",
+      label: t("detail.artifacts"),
       count: (run.artifacts ?? []).length,
       content: (
         <ul className="fe-artifacts">
@@ -243,7 +239,7 @@ export function RunDetailScreen({
               <span className="fe-artifacts__name mono">{artifact.name}</span>
               <span className="fe-artifacts__kind">{artifact.kind}</span>
               <span className="fe-artifacts__size num">
-                {(artifact.sizeBytes / 1_000_000).toFixed(1)} МБ
+                {(artifact.sizeBytes / 1_000_000).toFixed(1)} MB
               </span>
               <a
                 className="fe-artifacts__download"
@@ -251,7 +247,7 @@ export function RunDetailScreen({
                 download={artifact.name}
               >
                 <Download size={13} aria-hidden />
-                Скачать
+                {t("detail.download")}
               </a>
             </li>
           ))}
@@ -260,7 +256,7 @@ export function RunDetailScreen({
     },
     {
       value: "provenance",
-      label: "Провенанс",
+      label: t("detail.provenance"),
       content: <ProvenanceList entries={run.provenance ?? []} />,
     },
   ];
@@ -270,7 +266,7 @@ export function RunDetailScreen({
       <div className="fe-detail__crumbs">
         <button type="button" className="fe-linkbtn" onClick={onBack}>
           <ArrowLeft size={13} aria-hidden />
-          Runs
+          {t("detail.back")}
         </button>
       </div>
 
@@ -309,10 +305,12 @@ export function RunDetailScreen({
 
       {run.error ? (
         <p className="fe-run-error" role="note">
-          <span className="fe-run-error__label">Причина</span>
+          <span className="fe-run-error__label">{t("detail.reason")}</span>
           <span className="fe-run-error__text">{run.error}</span>
           {run.exitCode !== null && run.exitCode !== undefined ? (
-            <span className="fe-run-error__code mono">код выхода {run.exitCode}</span>
+            <span className="fe-run-error__code mono">
+              {t("detail.exitCode", { code: run.exitCode })}
+            </span>
           ) : null}
         </p>
       ) : null}
@@ -325,7 +323,8 @@ export function RunDetailScreen({
           <span className="muted">Git</span> <span className="mono">{run.gitSha}</span>
         </span>
         <span className="fe-detail__meta-item">
-          <span className="muted">Baseline</span> <span className="mono">{baseline?.name ?? "не выбран"}</span>
+          <span className="muted">Baseline</span>{" "}
+          <span className="mono">{baseline?.name ?? "not selected"}</span>
         </span>
         <span className="fe-detail__meta-item">
           <span className="muted">Seed</span> <span className="mono num">{run.seed}</span>
@@ -334,17 +333,7 @@ export function RunDetailScreen({
 
       <RunTimeline stages={run.stages} />
 
-      <Tabs items={items} value={tab} onValueChange={setTab} ariaLabel="Разделы прогона" />
+      <Tabs items={items} value={tab} onValueChange={setTab} ariaLabel={t("detail.metrics")} />
     </div>
-  );
-}
-
-export function RunDetailPlaceholder() {
-  return (
-    <EmptyState
-      icon={<RefreshCw size={20} aria-hidden />}
-      title="Прогон не выбран"
-      text="Откройте прогон в списке слева, чтобы увидеть метрики, примеры и логи."
-    />
   );
 }

@@ -77,7 +77,7 @@ await page.waitForSelector(".fe-detail__head", { timeout: 8000 }).catch(() => {
 // Меню колонок: Escape закрывает
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector(".fe-table__row");
-await page.getByRole("button", { name: /Колонки/ }).click();
+await page.getByRole("button", { name: /Columns/ }).click();
 await page.waitForSelector(".fe-menu");
 await page.keyboard.press("Escape");
 await wait(300);

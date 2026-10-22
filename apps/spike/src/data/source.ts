@@ -20,7 +20,7 @@ import {
   makeRuns,
 } from "./mock";
 
-/** Параметры выборки списка прогонов. */
+/** Parameters of the runs list query. */
 export interface RunsQuery {
   limit?: number;
   offset?: number;
@@ -35,10 +35,10 @@ export interface RunsPage {
 }
 
 /**
- * Источник данных для экранов.
+ * The same interface works against the mock (spike, dev) and against the API
  *
- * Один и тот же интерфейс работает против мока (спайк, dev) и против API
- * (собранное приложение, отдаваемое FastAPI). Разница только в реализации.
+ * (the built application, served by FastAPI). Only the implementation differs.
+ *
  */
 export interface RunsSource {
   readonly kind: "mock" | "api";
@@ -54,11 +54,11 @@ export interface RunsSource {
   ): Promise<EvalComparison>;
   listDatasets(): Promise<DatasetInfo[]>;
   getDataset(datasetId: string): Promise<DatasetDetail>;
-  /** Конфигурация интерфейса: колонки, вкладки, объявленные действия. */
+/** Configuration of the interface: columns, tabs, declared actions. */
   config(): Promise<UiConfig>;
-  /** Выполнить действие проекта на бэкенде. */
+/** Run an action of the project on the backend. */
   runAction(actionId: string, payload: Record<string, unknown>): Promise<ActionResult>;
-  /** Адрес содержимого артефакта. */
+/** The address of the artifact content. */
   artifactUrl(artifactId: string): string;
 }
 
@@ -88,7 +88,7 @@ export const mockSource: RunsSource = {
   },
   async getRun(runId) {
     const run = mockRuns.find((candidate) => candidate.id === runId);
-    if (!run) throw new Error(`Прогон ${runId} не найден`);
+    if (!run) throw new Error(`Run ${runId} was not found`);
     return run;
   },
   async examples() {
@@ -118,14 +118,14 @@ export const mockSource: RunsSource = {
       runColumns: ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss"],
       evalTabs: [],
       actions: [
-        { id: "stop", label: "Остановить", placement: "run", danger: true },
-        { id: "export", label: "Экспорт CSV", placement: "run" },
-        { id: "rerun", label: "Перезапустить", placement: "runs" },
+        { id: "stop", label: "Stop", placement: "run", danger: true },
+        { id: "export", label: "Export CSV", placement: "run" },
+        { id: "rerun", label: "Restart", placement: "runs" },
       ],
     };
   },
   async runAction(actionId) {
-    return { ok: true, message: `Действие «${actionId}» выполнено (мок)`, data: {} };
+    return { ok: true, message: `Action "${actionId}" done (mock)`, data: {} };
   },
   artifactUrl(artifactId) {
     return `/frontedge/api/artifacts/${encodeURIComponent(artifactId)}/content`;
@@ -133,8 +133,8 @@ export const mockSource: RunsSource = {
 };
 
 /**
- * Базовый путь API. Сервер подставляет путь монтирования в HTML
- * (window.__FRONTEDGE_MOUNT__), поэтому интерфейс работает под любым префиксом.
+ * The server injects the mount path into the page (window.__FRONTEDGE_MOUNT__),
+ * so the interface finds its own API under whatever prefix it is served from.
  */
 function apiBasePath(): string {
   const mount = (globalThis as { __FRONTEDGE_MOUNT__?: string }).__FRONTEDGE_MOUNT__;

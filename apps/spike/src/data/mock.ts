@@ -1,6 +1,6 @@
 import type { Example, LogLine, MetricPoint, Run, RunStatus, Stage, StageName } from "@frontedge/ui";
 
-/** Детерминированный генератор — картинка не должна меняться между запусками. */
+/** Deterministic generator: the same seed always gives the same data. */
 function mulberry32(seed: number) {
   let a = seed;
   return () => {
@@ -111,7 +111,7 @@ export function makeRuns(count = 200): Run[] {
       events.push({
         stage: "train",
         step: Math.floor(steps * (0.3 + random() * 0.5)),
-        label: "потеря выросла выше baseline",
+        label: "Delta against the baseline",
         kind: "regression",
       });
     }
@@ -119,7 +119,7 @@ export function makeRuns(count = 200): Run[] {
       events.push({
         stage: "eval",
         step: Math.floor(steps * 0.8),
-        label: "сохранён чекпойнт",
+        label: "Metric direction",
         kind: "checkpoint",
       });
     }
@@ -183,12 +183,12 @@ export function makeRuns(count = 200): Run[] {
         },
       ],
       provenance: [
-        { label: "Код", value: `a3f19c2 (${GIT_SHAS[index % GIT_SHAS.length]})`, mono: true },
+        { label: "Code", value: `a3f19c2 (${GIT_SHAS[index % GIT_SHAS.length]})`, mono: true },
         { label: "Dataset", value: DATASETS[index % DATASETS.length]!, mono: true },
-        { label: "Версия датасета", value: "v3.1.0", mono: true },
-        { label: "Запустил", value: OWNERS[index % OWNERS.length]! },
-        { label: "Окружение", value: "python 3.12 · cuda 12.4 · A10G", mono: true },
-        { label: "Проверил", value: index % 3 === 0 ? "socrabs" : "не проверялось" },
+        { label: "Dataset version", value: "v3.1.0", mono: true },
+        { label: "Started by", value: OWNERS[index % OWNERS.length]! },
+        { label: "Environment", value: "python 3.12 · cuda 12.4 · A10G", mono: true },
+        { label: "Reviewed by", value: index % 3 === 0 ? "socrabs" : "not reviewed" },
       ],
     });
   }
@@ -197,21 +197,21 @@ export function makeRuns(count = 200): Run[] {
 }
 
 const INPUTS = [
-  "В чём разница между RAG и fine-tuning?",
-  "Суммация: 12 пакетов по 250 г",
-  "Исправь цикл: while i < n: total += arr[i]; i += 1",
-  "Кто автор «Войны и мира» и когда написано?",
-  "Найди в тексте все упоминания «модель» и выпиши контекст",
-  "Сравни точность 0.91 и 0.88 на разных выборках",
+  "What is the difference between RAG and fine-tuning?",
+  "Sum: 12 packs of 250 g",
+  "Fix the loop: while i < n: total += arr[i]; i += 1",
+  "Who wrote War and Peace, and when?",
+  "Find every mention of the model in the text and list the context",
+  "Compare an accuracy of 0.91 and 0.88 on different samples",
 ];
 
 const OUTPUTS = [
-  "RAG подтягивает контекст из внешней базы, fine-tuning меняет веса модели.",
-  "Итого 3000 г.",
-  "Цикл корректен, но читает только элементы до n-1.",
-  "Лев Толстой, 1869.",
-  "Найдено 4 упоминания в трёх абзацах.",
-  "Разница не значима при такой выборке.",
+  "RAG pulls context from an external store, fine-tuning changes the weights.",
+  "Total 3000 g.",
+  "The loop is correct, but it reads only the elements up to n-1.",
+  "Leo Tolstoy, 1869.",
+  "Found 4 mentions in three paragraphs.",
+  "The difference is not significant on this sample.",
 ];
 
 export function makeExamples(count = 32): Example[] {
@@ -244,18 +244,18 @@ export function makeLogs(count = 80): LogLine[] {
       roll > 0.94 ? "error" : roll > 0.86 ? "warning" : roll > 0.55 ? "progress" : "info";
     const text =
       level === "error"
-        ? "CUDA out of memory при батче 4096 — снизить до 2048"
+        ? "CUDA out of memory at batch 4096 - lower it to 2048"
         : level === "warning"
-          ? "loss растёт 3 шага подряд, лучше значение на шаге 14"
+        ? "loss grew for 3 steps in a row, best value was at step 14"
           : level === "progress"
             ? `epoch ${(index % 8) + 1}/8 · step ${index * 120} · loss ${(0.9 - index * 0.008).toFixed(4)}`
             : [
-                "загрузка чекпойта из s3://models/llm-base",
-                "датасет squad-v2-ru: 48 271 пример",
-                "вычисляю embeddings для батча",
-                "сохранён промежуточный чекпойт",
-                "оценка на eval-наборе: 1024 примера",
-                "размер батча 2048, grad accumulation 4",
+        "loading the checkpoint from s3://models/llm-base",
+        "dataset squad-v2-ru: 48,271 examples",
+        "computing embeddings for the batch",
+        "saved an intermediate checkpoint",
+        "evaluating on the eval set: 1,024 examples",
+        "batch size 2048, grad accumulation 4",
               ][index % 6]!;
     lines.push({ id: index, at: new Date(at).toISOString(), level, text });
     at += 20_000 + random() * 40_000;
@@ -266,7 +266,7 @@ export function makeLogs(count = 80): LogLine[] {
 export const NOW_TIME = NOW;
 export const DATASET_NAMES = DATASETS;
 
-/* --- Оценки и датасеты ------------------------------------------------ */
+/* --- Evaluations ------------------------------------------------------ */
 
 export interface MockEval {
   id: string;
@@ -283,7 +283,7 @@ export interface MockEval {
 const EVAL_SPECS: MockEval[] = [
   {
     id: "eval-squad-exact",
-    name: "Точное совпадение",
+    name: "Exact match",
     dataset: "squad-v2-ru",
     scorer: "exact_match",
     metric: "accuracy",
@@ -294,7 +294,7 @@ const EVAL_SPECS: MockEval[] = [
   },
   {
     id: "eval-squad-f1",
-    name: "F1 по токенам",
+    name: "Token F1",
     dataset: "squad-v2-ru",
     scorer: "token_f1",
     metric: "f1",
@@ -305,7 +305,7 @@ const EVAL_SPECS: MockEval[] = [
   },
   {
     id: "eval-support-judge",
-    name: "LLM-судья: полезность",
+    name: "LLM judge: helpfulness",
     dataset: "support-2025",
     scorer: "llm_judge",
     metric: "helpfulness",
@@ -399,35 +399,35 @@ export function makeComparison(
 
 const DATASHEETS: Record<string, Array<[string, string]>> = {
   "squad-v2-ru": [
-    ["Мотивация", "Проверка извлечения ответов из русскоязычных статей Википедии"],
-    ["Состав", "48 271 вопрос с коротким ответом, 3–4 аннотатора на пример"],
-    ["Сбор", "Перевод SQuAD v2 и ручная вычитка, 2024-11"],
-    ["Применения", "RAG, извлечение фактов, дообучение на коротких ответах"],
-    ["Ограничения", "Только английские аннотации переведены автоматически"],
+    ["Motivation", "Extracting answers from Russian Wikipedia articles"],
+    ["Composition", "48,271 questions with a short answer, 3-4 annotators per example"],
+    ["Collection", "SQuAD v2 translation and manual proofreading, 2024-11"],
+    ["Intended use", "RAG, fact extraction, fine-tuning on short answers"],
+    ["Limitations", "Only the English annotations were translated automatically"],
   ],
   "wiki-2024-qa": [
-    ["Мотивация", "Длинный контекст: вопросы по статьям целиком"],
-    ["Состав", "12 400 пар вопрос-статья, статьи до 8 000 слов"],
-    ["Сбор", "Дампы Википедии 2024, дедупликация по заголовку"],
-    ["Применения", "Проверка длинного контекста и цитируемости"],
+    ["Motivation", "Long context: questions over whole articles"],
+    ["Composition", "12,400 question-article pairs, articles up to 8,000 words"],
+    ["Collection", "Wikipedia dumps of 2024, deduplicated by title"],
+    ["Intended use", "Testing long context and citability"],
   ],
   "code-repair-v3": [
-    ["Мотивация", "Починка коротких функций по описанию ошибки"],
-    ["Состав", "8 120 задач из issue-трекеров, 3 языка"],
-    ["Сбор", "Открытые issue и pull request, фильтр по воспроизводимости"],
-    ["Применения", "Code LLM, авто-исправление, ревью"],
+    ["Motivation", "Fixing short functions from an error message"],
+    ["Composition", "8,120 tasks from issue trackers, 3 languages"],
+    ["Collection", "Open issues and pull requests, filtered by reproducibility"],
+    ["Intended use", "Code LLMs, auto-repair, review"],
   ],
   "support-2025": [
-    ["Мотивация", "Качество ответов поддержки в диалоге с клиентом"],
-    ["Состав", "31 500 диалогов, оценка LLM-судьёй по шкале 1–5"],
-    ["Сбор", "Обезличенные обращения из тикет-системы, 2025 H1"],
-    ["Применения", "Оценка полезности, детекция отказов"],
+    ["Motivation", "Quality of support answers in a customer conversation"],
+    ["Composition", "31,500 dialogues, scored by an LLM judge on a 1-5 scale"],
+    ["Collection", "Anonymised tickets from the help desk, first half of 2025"],
+    ["Intended use", "Helpfulness scoring, refusal detection"],
   ],
   "math-verify": [
-    ["Мотивация", "Проверка арифметики и рассуждений"],
-    ["Состав", "5 600 задач с пошаговым решением"],
-    ["Сбор", "Курируемая подборка, 2025-02"],
-    ["Применения", "Математика, reasoning-трейки"],
+    ["Motivation", "Checking arithmetic and reasoning"],
+    ["Composition", "5,600 tasks with a step-by-step solution"],
+    ["Collection", "Curated selection, 2025-02"],
+    ["Intended use", "Mathematics, reasoning traces"],
   ],
 };
 
@@ -453,9 +453,9 @@ export function makeDatasets(): MockDataset[] {
     tags: [index < 3 ? "production" : "research"],
     datasheet: (DATASHEETS[name] ?? []).map(([label, value]) => ({ label, value })),
     provenance: [
-      { label: "Версия", value: "v3.1.0", mono: true },
-      { label: "Ответственный", value: "socrabs", mono: false },
-      { label: "Собрано", value: "2025-11-04", mono: true },
+      { label: "Version", value: "v3.1.0", mono: true },
+      { label: "Owner", value: "socrabs", mono: false },
+      { label: "Collected", value: "2025-11-04", mono: true },
     ],
   }));
 }

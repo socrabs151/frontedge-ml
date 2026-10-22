@@ -1,5 +1,4 @@
 import {
-  Button,
   EmptyState,
   EvalCompareTable,
   LoadingRows,
@@ -9,12 +8,13 @@ import {
 import { RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { EvalComparison, EvalSummary, Run } from "@frontedge/ui";
+import { useAppT } from "../i18n";
 import { errorMessage, source } from "../data/source";
 
 const FORMAT_OPTIONS: Array<{ value: DeltaFormat; label: string; title: string }> = [
-  { value: "value", label: "0.73", title: "Значение как есть" },
-  { value: "percent", label: "73%", title: "Процент" },
-  { value: "relative", label: "×1.04", title: "Множитель относительно эталона" },
+  { value: "value", label: "0.73", title: "Value as is" },
+  { value: "percent", label: "73%", title: "Percent" },
+  { value: "relative", label: "×1.04", title: "Multiplier against the reference" },
 ];
 
 export function EvalDiffScreen({
@@ -24,6 +24,7 @@ export function EvalDiffScreen({
   runs: Run[] | null;
   baselineId?: string;
 }) {
+  const t = useAppT();
   const [evals, setEvals] = useState<EvalSummary[] | null>(null);
   const [evalId, setEvalId] = useState("");
   const [reference, setReference] = useState(baselineId ?? "");
@@ -92,10 +93,8 @@ export function EvalDiffScreen({
     <div className="fe-runs">
       <header className="fe-runs__head">
         <div>
-          <h1 className="fe-runs__title">Eval diff</h1>
-          <p className="fe-runs__subtitle">
-            Примеры как строки, эталонный прогон слева. Дельта считается к эталону.
-          </p>
+          <h1 className="fe-runs__title">{t("evals.title")}</h1>
+          <p className="fe-runs__subtitle">{t("evals.subtitle")}</p>
         </div>
       </header>
 
@@ -104,7 +103,7 @@ export function EvalDiffScreen({
           className="fe-select"
           value={evalId}
           onChange={(event) => setEvalId(event.target.value)}
-          aria-label="Оценка"
+          aria-label={t("evals.evaluation")}
         >
           {(evals ?? []).map((item) => (
             <option key={item.id} value={item.id}>
@@ -113,23 +112,23 @@ export function EvalDiffScreen({
           ))}
         </select>
         <label className="fe-field">
-          <span className="fe-field__label">Эталон</span>
+          <span className="fe-field__label">{t("evals.reference")}</span>
           <select
             className="fe-select"
             value={reference}
             onChange={(event) => setReference(event.target.value)}
-            aria-label="Эталонный прогон"
+            aria-label={t("evals.reference")}
           >
             {runOptions}
           </select>
         </label>
         <label className="fe-field">
-          <span className="fe-field__label">Прогон</span>
+          <span className="fe-field__label">{t("evals.run")}</span>
           <select
             className="fe-select"
             value={comparisonRun}
             onChange={(event) => setComparisonRun(event.target.value)}
-            aria-label="Сравниваемый прогон"
+            aria-label={t("evals.run")}
           >
             {runOptions}
           </select>
@@ -140,11 +139,11 @@ export function EvalDiffScreen({
             checked={onlyDiff}
             onChange={(event) => setOnlyDiff(event.target.checked)}
           />
-          Только различия
+          {t("evals.onlyDiff")}
         </label>
         <div className="fe-toolbar__spacer" />
         <Segmented
-          ariaLabel="Формат числа"
+          ariaLabel="Number format"
           value={format}
           onChange={setFormat}
           options={FORMAT_OPTIONS}
@@ -155,35 +154,30 @@ export function EvalDiffScreen({
         <div className="fe-panel">
           <EmptyState
             icon={<RefreshCw size={20} aria-hidden />}
-            title="Не удалось сравнить прогоны"
-            text={`Источник данных не ответил: ${error}. Попробуйте другую пару прогонов.`}
+            title={t("evals.compareError")}
+            text={t("evals.compareErrorHint", { error })}
           />
         </div>
       ) : !comparison ? (
-        <LoadingRows rows={10} height={32} label="Сравниваем прогоны" />
+        <LoadingRows rows={10} height={32} label={t("loading.default")} />
       ) : (
         <>
           <EvalCompareTable comparison={comparison} onlyDiff={onlyDiff} format={format} />
           <p className="fe-note">
-            {comparison.aggregate === "fraction"
-              ? "Агрегат — доля верных ответов."
-              : "Агрегат — среднее по примерам."}{" "}
-            Направление «{comparison.direction === "maximize" ? "больше — лучше" : "меньше — лучше"}»
-            задаёт владелец метрики.
+            {t("evals.aggregateNote", {
+              aggregate:
+                comparison.aggregate === "fraction"
+                  ? t("aggregate.accuracy")
+                  : t("aggregate.mean"),
+            })}{" "}
+            {comparison.direction === "maximize"
+              ? t("evals.directionMax")
+              : comparison.direction === "minimize"
+                ? t("evals.directionMin")
+                : ""}
           </p>
         </>
       )}
     </div>
-  );
-}
-
-export function EvalDiffPlaceholder() {
-  return (
-    <EmptyState
-      icon={<RefreshCw size={20} aria-hidden />}
-      title="Оценки не подключены"
-      text="Передайте провайдера оценок в frontedge.mount(..., evals=...), чтобы увидеть этот экран."
-      action={<Button variant="secondary" size="sm">Документация</Button>}
-    />
   );
 }

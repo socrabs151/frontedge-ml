@@ -11,25 +11,29 @@ import {
 import { Download, Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Run, RunStatus, UiConfig } from "@frontedge/ui";
+import { useAppT } from "../i18n";
 import { errorMessage, source, type RunsQuery } from "../data/source";
 
-const STATUS_FILTERS: Array<{ value: RunStatus | "all"; label: string }> = [
-  { value: "all", label: "Все" },
-  { value: "succeeded", label: "Завершён" },
-  { value: "failed", label: "Упал" },
-  { value: "running", label: "Идёт" },
-  { value: "queued", label: "В очереди" },
-  { value: "lost", label: "Потерян" },
+const STATUS_FILTERS: Array<{
+  value: RunStatus | "all";
+  label: "status.queued" | "status.succeeded" | "status.failed" | "status.running" | "status.lost" | "all";
+}> = [
+  { value: "all", label: "all" },
+  { value: "succeeded", label: "status.succeeded" },
+  { value: "failed", label: "status.failed" },
+  { value: "running", label: "status.running" },
+  { value: "queued", label: "status.queued" },
+  { value: "lost", label: "status.lost" },
 ];
 
 const COLUMN_OPTIONS: ColumnOption[] = [
   { id: "name", label: "Run" },
-  { id: "status", label: "Статус" },
-  { id: "ribbon", label: "Ход" },
+  { id: "status", label: "Status" },
+  { id: "ribbon", label: "Stages" },
   { id: "dataset", label: "Dataset" },
   { id: "gitSha", label: "Git" },
-  { id: "startedAt", label: "Начат" },
-  { id: "durationMs", label: "Длительность" },
+  { id: "startedAt", label: "Started" },
+  { id: "durationMs", label: "Duration" },
   { id: "accuracy", label: "Accuracy" },
   { id: "loss", label: "Loss" },
 ];
@@ -73,11 +77,12 @@ export function RunsScreen({
   onColumnVisibilityChange,
   onOpenRun,
 }: RunsScreenProps) {
+  const t = useAppT();
   const [search, setSearch] = useState(query.search ?? "");
   const pageSize = config?.pageSize ?? 50;
   const offset = query.offset ?? 0;
 
-  // Поиск не должен дёргать сервер на каждую букву.
+  // Search must not hit the server on every keystroke.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const next = search.trim();
@@ -122,20 +127,17 @@ export function RunsScreen({
     <div className="fe-runs">
       <header className="fe-runs__head">
         <div>
-          <h1 className="fe-runs__title">Runs</h1>
-          <p className="fe-runs__subtitle">
-            Прогоны проекта <span className="mono">squad-ru-eval</span> · базовая ветка{" "}
-            <span className="mono">main</span>
-          </p>
+          <h1 className="fe-runs__title">{t("runs.title")}</h1>
+          <p className="fe-runs__subtitle">{t("runs.subtitle")}</p>
         </div>
         <div className="fe-runs__actions">
           <label className="fe-field">
-            <span className="fe-field__label">Эталон</span>
+            <span className="fe-field__label">{t("runs.baseline")}</span>
             <select
               className="fe-select"
               value={baselineId ?? ""}
               onChange={(event) => onBaselineChange(event.target.value || undefined)}
-              aria-label="Эталонный прогон"
+              aria-label={t("runs.baseline")}
             >
               {baselineOptions}
             </select>
@@ -145,18 +147,20 @@ export function RunsScreen({
             size="sm"
             icon={<RefreshCw size={13} aria-hidden />}
             onClick={onRefresh}
-            title="Обновить список"
+            title={t("runs.refresh")}
           >
             {updatedAt
-              ? `обновлено ${new Date(updatedAt).toLocaleTimeString("ru-RU", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                })}`
-              : "обновить"}
+              ? t("runs.updatedAt", {
+                  time: new Date(updatedAt).toLocaleTimeString("en-GB", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  }),
+                })
+              : t("runs.refresh")}
           </Button>
           <Button variant="secondary" size="sm" icon={<Download size={13} aria-hidden />}>
-            Экспорт CSV
+            {t("runs.exportCsv")}
           </Button>
         </div>
       </header>
@@ -165,10 +169,10 @@ export function RunsScreen({
         <Search
           value={search}
           onValueChange={setSearch}
-          placeholder="Найти по имени прогона"
-          ariaLabel="Поиск по прогонам"
+          placeholder={t("runs.searchPlaceholder")}
+          ariaLabel={t("runs.searchPlaceholder")}
         />
-        <div className="fe-toolbar__group" role="group" aria-label="Фильтр по статусу">
+        <div className="fe-toolbar__group" role="group" aria-label={t("runs.title")}>
           {STATUS_FILTERS.map((option) => (
             <button
               key={option.value}
@@ -183,7 +187,7 @@ export function RunsScreen({
                 })
               }
             >
-              {option.label}
+              {option.label === "all" ? t("runs.all") : t(option.label)}
             </button>
           ))}
         </div>
@@ -197,9 +201,9 @@ export function RunsScreen({
               offset: 0,
             })
           }
-          aria-label="Фильтр по датасету"
+          aria-label={t("runs.allDatasets")}
         >
-          <option value="all">Все датасеты</option>
+          <option value="all">{t("runs.allDatasets")}</option>
           {datasets.map((name) => (
             <option key={name} value={name}>
               {name}
@@ -216,7 +220,7 @@ export function RunsScreen({
             }}
           >
             <SlidersHorizontal size={12} aria-hidden />
-            {activeFilters} {activeFilters === 1 ? "фильтр" : "фильтра"}
+            {t("runs.filterCount", { count: activeFilters })}
             <X size={12} aria-hidden />
           </button>
         ) : null}
@@ -232,23 +236,23 @@ export function RunsScreen({
         <div className="fe-panel">
           <EmptyState
             icon={<RefreshCw size={20} aria-hidden />}
-            title="Не удалось загрузить прогоны"
-            text={`Источник данных не ответил: ${error}. Проверьте, что API запущен, и повторите попытку.`}
+            title={t("runs.loadError")}
+            text={t("runs.loadErrorHint", { error })}
             action={
               <Button variant="secondary" size="sm" onClick={onRetry}>
-                Повторить
+                {t("runs.retry")}
               </Button>
             }
           />
         </div>
       ) : !runs ? (
-        <LoadingRows rows={12} height={rowHeight} label="Загружаем прогоны" />
+        <LoadingRows rows={12} height={rowHeight} label={t("loading.default")} />
       ) : runs.length === 0 ? (
         <div className="fe-panel">
           <EmptyState
             icon={<Inbox size={20} aria-hidden />}
-            title="Под фильтр ничего не попало"
-            text="Снимите фильтры или измените запрос — показываем только то, что подходит под условия."
+            title={t("runs.emptyTitle")}
+            text={t("runs.emptyText")}
             action={
               <Button
                 variant="secondary"
@@ -258,7 +262,7 @@ export function RunsScreen({
                   onQueryChange({ offset: 0 });
                 }}
               >
-                Сбросить фильтры
+                {t("runs.resetFilters")}
               </Button>
             }
           />
@@ -279,7 +283,11 @@ export function RunsScreen({
           {total > runs.length || offset > 0 ? (
             <div className="fe-toolbar fe-toolbar--pagination">
               <span className="fe-note fe-note--inline">
-                показано {offset + 1}–{offset + runs.length} из {total}
+                {t("runs.showing", {
+                  from: offset + 1,
+                  to: offset + runs.length,
+                  total,
+                })}
               </span>
               <div className="fe-toolbar__spacer" />
               <Button
@@ -288,7 +296,7 @@ export function RunsScreen({
                 disabled={offset === 0}
                 onClick={() => onQueryChange({ ...query, offset: Math.max(0, offset - pageSize) })}
               >
-                Назад
+                {t("runs.prev")}
               </Button>
               <Button
                 variant="ghost"
@@ -296,7 +304,7 @@ export function RunsScreen({
                 disabled={offset + runs.length >= total}
                 onClick={() => onQueryChange({ ...query, offset: offset + pageSize })}
               >
-                Вперёд
+                {t("runs.next")}
               </Button>
             </div>
           ) : null}

@@ -1,9 +1,10 @@
 import { Boxes, Database, GitBranch, GitCompareArrows, Moon, Sun } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Run, UiConfig, VisibilityState } from "@frontedge/ui";
-import { Segmented, TooltipProvider } from "@frontedge/ui";
+import { I18nProvider, Segmented, TooltipProvider, useI18n } from "@frontedge/ui";
 import { DATASET_NAMES, NOW_TIME } from "./data/mock";
 import { errorMessage, source, type RunsQuery } from "./data/source";
+import { useAppT } from "./i18n";
 import { RunsScreen } from "./screens/RunsScreen";
 import { RunDetailScreen } from "./screens/RunDetailScreen";
 import { EvalDiffScreen } from "./screens/EvalDiffScreen";
@@ -15,7 +16,9 @@ type Route = { name: "runs" } | { name: "run"; id: string } | { name: "evals" } 
 
 const ROW_HEIGHT: Record<Density, number> = { compact: 28, default: 32, comfortable: 40 };
 
-export function App() {
+function Shell() {
+  const t = useAppT();
+  const { lang, setLang } = useI18n();
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem("fe-theme") as Theme | null) ?? "light",
   );
@@ -74,7 +77,7 @@ export function App() {
       .catch(() => setConfig(null));
   }, []);
 
-  // Живое обновление: пока вкладка видима, список обновляется сам.
+  // Live refresh: while the tab is visible, the list refreshes itself.
   useEffect(() => {
     const seconds = config?.liveRefreshSeconds ?? 0;
     if (!seconds) return;
@@ -102,7 +105,16 @@ export function App() {
           </div>
           <div className="topbar__tools">
             <Segmented
-              ariaLabel="Плотность таблицы"
+              ariaLabel={t("nav.language")}
+              value={lang}
+              onChange={setLang}
+              options={[
+                { value: "en", label: "EN" },
+                { value: "ru", label: "RU" },
+              ]}
+            />
+            <Segmented
+              ariaLabel="Table density"
               value={density}
               onChange={setDensity}
               options={[
@@ -115,16 +127,16 @@ export function App() {
               type="button"
               className="fe-icon-btn"
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              aria-label={theme === "light" ? "Включить тёмную тему" : "Включить светлую тему"}
+              aria-label={theme === "light" ? "Switch to the dark theme" : "Switch to the light theme"}
             >
               {theme === "light" ? <Moon size={15} aria-hidden /> : <Sun size={15} aria-hidden />}
             </button>
           </div>
         </header>
 
-        <nav className="sidebar" aria-label="Разделы проекта">
+        <nav className="sidebar" aria-label={t("nav.experiments")}>
           <div className="sidebar__group">
-            <p className="sidebar__title">Эксперименты</p>
+            <p className="sidebar__title">{t("nav.experiments")}</p>
             <button
               type="button"
               className={`sidebar__item${route.name === "runs" ? " sidebar__item--active" : ""}`}
@@ -132,7 +144,7 @@ export function App() {
               onClick={() => setRoute({ name: "runs" })}
             >
               <Boxes size={14} aria-hidden />
-              Runs
+              {t("nav.runs")}
             </button>
             <button
               type="button"
@@ -141,7 +153,7 @@ export function App() {
               onClick={() => setRoute({ name: "evals" })}
             >
               <GitCompareArrows size={14} aria-hidden />
-              Evals
+              {t("nav.evals")}
             </button>
             <button
               type="button"
@@ -150,12 +162,12 @@ export function App() {
               onClick={() => setRoute({ name: "datasets" })}
             >
               <Database size={14} aria-hidden />
-              Datasets
+              {t("nav.datasets")}
             </button>
           </div>
           <div className="sidebar__foot">
             <p className="sidebar__note">
-              Фронтенд для ML-инжиниринга. Источник данных: {source.kind === "api" ? "API" : "мок"}.
+              {t("runs.source", { kind: source.kind === "api" ? "API" : "mock" })}
             </p>
           </div>
         </nav>
@@ -196,5 +208,13 @@ export function App() {
         </main>
       </div>
     </TooltipProvider>
+  );
+}
+
+export function App() {
+  return (
+    <I18nProvider defaultLang="en">
+      <Shell />
+    </I18nProvider>
   );
 }

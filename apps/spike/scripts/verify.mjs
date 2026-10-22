@@ -48,13 +48,13 @@ await shoot("01-runs-light-1440");
 seriousTotal += await audit("runs light");
 
 // тёмная тема
-await page.getByRole("button", { name: /тёмную тему/i }).click();
+await page.getByRole("button", { name: /dark theme/i }).click();
 await page.waitForTimeout(250);
 await shoot("02-runs-dark-1440");
 seriousTotal += await audit("runs dark");
 
-// обратно в светлую, открываем прогон
-await page.getByRole("button", { name: /светлую тему/i }).click();
+// back to light, open a run
+await page.getByRole("button", { name: /light theme/i }).click();
 await page.waitForTimeout(200);
 await page.locator(".fe-run-name").nth(3).click();
 await page.waitForSelector(".fe-detail__head", { timeout: 15000 });
@@ -68,9 +68,9 @@ seriousTotal += await audit("run detail dark");
 
 // вкладки деталей
 await page.getByRole("button", { name: /светлую тему/i }).click();
-await page.getByRole("tab", { name: /Примеры/ }).click();
+await page.getByRole("tab", { name: /Examples/ }).click();
 await shoot("05-run-examples-1440");
-await page.getByRole("tab", { name: /Логи/ }).click();
+await page.getByRole("tab", { name: /Logs/ }).click();
 await shoot("06-run-logs-1440");
 
 // 1280
