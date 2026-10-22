@@ -1,4 +1,4 @@
-"""Раздача собранного интерфейса: статика + SPA-fallback."""
+"""Serving the built interface: static files + SPA fallback."""
 
 from __future__ import annotations
 
@@ -12,20 +12,20 @@ __all__ = ["STATIC_DIR", "static_router", "static_root"]
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 _INDEX = "index.html"
-# Плейсхолдер значения (не ключа!) — иначе замена съела бы и имя переменной.
+# Value placeholder (not a key!) — otherwise the replacement would eat the variable name too.
 _MOUNT_PLACEHOLDER = "@@FRONTEDGE_MOUNT@@"
 
 
 def static_root() -> Path:
-    """Каталог собранного интерфейса (создаётся на этапе сборки)."""
+    """Directory of the built interface (created at build time)."""
     return STATIC_DIR
 
 
 def static_router(mount: str = "/frontedge") -> APIRouter:
-    """Роутер, отдающий собранный интерфейс с fallback на index.html.
+    """Router serving the built interface with an index.html fallback.
 
-    Путь монтирования подставляется в HTML, поэтому интерфейс знает, где искать
-    свой API, и работает под любым префиксом.
+    The mount path is substituted into the HTML, so the interface knows where to
+    look for its API and works under any prefix.
     """
     router = APIRouter()
 
@@ -45,7 +45,7 @@ def static_router(mount: str = "/frontedge") -> APIRouter:
         if not index.is_file():
             raise HTTPException(
                 status_code=503,
-                detail="Интерфейс не собран: выполните `pnpm build` и скопируйте dist в frontedge/static",
+                detail="Interface is not built: run `pnpm build` and copy dist to frontedge/static",
             )
         html = index.read_text(encoding="utf-8").replace(_MOUNT_PLACEHOLDER, mount)
         return Response(html, media_type="text/html", headers={"Cache-Control": "no-cache"})

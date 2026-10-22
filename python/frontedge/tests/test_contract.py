@@ -1,8 +1,8 @@
-"""Контрактные тесты публичного API пакета.
+"""Contract tests for the public package API.
 
-Каждый тест закрывает реальный дефект, найденный аудитом: неработающий
-``frontedge.runs()``, неверное имя аргумента, HTML вместо 404 на несуществующем
-API-пути, поток SSE, который умирал после первого keepalive.
+Every test closes a real defect the audit found: a broken ``frontedge.runs()``, a wrong
+keyword name, HTML instead of 404 on an unknown API path, and an SSE stream that died
+after the first keepalive.
 """
 
 from __future__ import annotations
@@ -57,19 +57,19 @@ class TestPublicApi:
         assert router is not None
 
     def test_runs_shortcut_works(self) -> None:
-        """Раньше параметр ``mount`` перекрывал функцию ``mount`` — TypeError."""
+        """The ``mount`` parameter used to shadow the ``mount`` function — TypeError."""
         router = frontedge.runs(runs_provider)
         assert router is not None
 
     def test_documented_keyword(self) -> None:
-        """В README пример: ``frontedge.mount(runs_provider=...)``."""
+        """The documented call: ``frontedge.mount(runs_provider=...)``."""
         router = frontedge.mount(runs_provider=runs_provider)
         assert router is not None
 
     def test_log_line_helper_builds_valid_model(self) -> None:
-        line = log_line("что-то пошло не так", "error")
+        line = log_line("something went wrong", "error")
         assert line.id > 0
-        assert line.text == "что-то пошло не так"
+        assert line.text == "something went wrong"
         assert line.level == "error"
 
     def test_provider_without_stream_logs_is_accepted(self) -> None:
@@ -96,13 +96,13 @@ class TestHttp:
         assert "started_at" not in payload
 
     def test_unknown_api_path_returns_404_json(self) -> None:
-        """SPA-fallback не должен отдавать HTML на несуществующий путь API."""
+        """The SPA fallback must not answer an unknown API path with HTML."""
         response = client_for().get("/frontedge/api/typo")
         assert response.status_code == 404
         assert "application/json" in response.headers["content-type"]
 
     def test_mount_path_is_substituted_into_html(self) -> None:
-        """Интерфейс должен знать свой префикс: иначе ассеты и API ищутся в /frontedge."""
+        """The interface must know its prefix, otherwise assets and the API are looked up under /frontedge."""
         response = client_for(path="/ml").get("/ml/")
         assert response.status_code == 200
         assert '__FRONTEDGE_MOUNT__ = "/ml"' in response.text
@@ -180,7 +180,7 @@ class TestHttp:
 
 class TestSse:
     def test_stream_survives_keepalive(self) -> None:
-        """Поток не должен умирать после паузы длиннее keepalive."""
+        """The stream must not die after a pause longer than the keepalive interval."""
 
         async def scenario() -> list[str]:
             chunks: list[str] = []
@@ -199,7 +199,7 @@ class TestSse:
 
         chunks = asyncio.run(scenario())
         assert any(": keepalive" in chunk for chunk in chunks)
-        assert any('"i": 1' in chunk for chunk in chunks), "события после keepalive не дошли"
+        assert any('"i": 1' in chunk for chunk in chunks), "events after the keepalive never arrived"
 
 
 class TestConfigAndActions:
@@ -212,7 +212,7 @@ class TestConfigAndActions:
                     "density": "compact",
                     "run_columns": ["name", "status"],
                     "actions": [
-                        {"id": "stop", "label": "Остановить", "placement": "run", "danger": True}
+                        {"id": "stop", "label": "Stop", "placement": "run", "danger": True}
                     ],
                 },
             )
@@ -227,13 +227,13 @@ class TestConfigAndActions:
 
         async def stop(request: Any, payload: dict[str, Any]) -> Any:
             seen.update(payload)
-            return frontedge.ActionResult(ok=True, message="остановлен")
+            return frontedge.ActionResult(ok=True, message="stopped")
 
         app = FastAPI()
         app.include_router(frontedge.mount(runs_provider, actions={"stop": stop}))
         response = TestClient(app).post("/frontedge/api/actions/stop", json={"runId": "run-000"})
         assert response.status_code == 200
-        assert response.json()["message"] == "остановлен"
+        assert response.json()["message"] == "stopped"
         assert seen["runId"] == "run-000"
 
     def test_unknown_action_returns_404(self) -> None:
@@ -248,7 +248,7 @@ class TestConfigAndActions:
             'density = "compact"\n\n'
             "[[actions]]\n"
             'id = "export"\n'
-            'label = "Экспорт"\n'
+            'label = "Export"\n'
             'placement = "runs"\n',
             encoding="utf-8",
         )

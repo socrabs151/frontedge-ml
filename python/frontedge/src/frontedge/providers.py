@@ -1,9 +1,9 @@
-"""Источники данных для экранов Frontedge.
+"""Data sources for the Frontedge screens.
 
-Пользователь отдаёт provider — объект с методами ``list_runs`` / ``get_run`` /
-``stream_logs`` либо простую async-функцию, возвращающую список прогонов.
-Библиотека не знает про аутентификацию: ``request`` передаётся в provider,
-решение остаётся за приложением пользователя.
+The user passes a provider — an object with ``list_runs`` / ``get_run`` /
+``stream_logs`` methods, or a plain async function returning a list of runs.
+The library knows nothing about authentication: ``request`` is passed to the
+provider, the decision stays with the user's application.
 """
 
 from __future__ import annotations
@@ -27,10 +27,10 @@ __all__ = [
 
 @runtime_checkable
 class EvalProvider(Protocol):
-    """Источник данных для экрана сравнения оценок."""
+    """Data source for the eval comparison screen."""
 
     async def list_evals(self, request: Request) -> Sequence[EvalSummary]:
-        """Все оценки проекта: датасет × скорер × метрика."""
+        """All project evals: dataset × scorer × metric."""
         ...
 
     async def compare_evals(
@@ -40,13 +40,13 @@ class EvalProvider(Protocol):
         reference_run: str,
         comparison_run: str,
     ) -> EvalComparison | None:
-        """Сравнение двух прогонов по одной оценке."""
+        """Comparison of two runs on one eval."""
         ...
 
 
 @runtime_checkable
 class DatasetProvider(Protocol):
-    """Источник данных для экрана датасетов."""
+    """Data source for the datasets screen."""
 
     async def list_datasets(self, request: Request) -> Sequence[DatasetInfo]:
         ...
@@ -57,25 +57,25 @@ class DatasetProvider(Protocol):
 
 @runtime_checkable
 class FrontedgeProvider(Protocol):
-    """Полный контракт источника данных."""
+    """Full data source contract."""
 
     async def list_runs(self, request: Request) -> Sequence[Run]:
-        """Все прогоны проекта."""
+        """All project runs."""
         ...
 
     async def get_run(self, request: Request, run_id: str) -> Run | None:
-        """Один прогон по идентификатору."""
+        """One run by id."""
         ...
 
     def stream_logs(self, request: Request, run_id: str) -> AsyncIterator[LogLine]:
-        """Поток логов прогона."""
+        """Run log stream."""
         ...
 
 class CallableProvider:
-    """Адаптер: async-функция ``(request) -> Sequence[Run]``.
+    """Adapter for an async function ``(request) -> Sequence[Run]``.
 
-    Детали и логи берутся из того же списка: этого достаточно, чтобы собрать
-    интерфейс, когда у прогона нет отдельного потока логов.
+    Details and logs come from the same list: enough to build the interface
+    when a run has no separate log stream.
     """
 
     def __init__(self, fn: Callable[[Request], Awaitable[Sequence[Run]]]) -> None:
@@ -99,12 +99,15 @@ ProviderInput = FrontedgeProvider | Callable[[Request], Awaitable[Sequence[Run]]
 
 
 class _ProviderAdapter:
-    """Обёртка над провайдером, у которого может не быть ``stream_logs``."""
+    """Wrapper for a provider that may lack ``stream_logs``."""
 
     def __init__(self, provider: Any) -> None:
         self._provider = provider
+        self.supports_query = _accepts_query(getattr(provider, "list_runs", None))
 
-    async def list_runs(self, request: Request) -> Sequence[Run]:
+    async def list_runs(self, request: Request, query: Any = None) -> Any:
+        if self.supports_query:
+            return await self._provider.list_runs(request, query)
         return await self._provider.list_runs(request)
 
     async def get_run(self, request: Request, run_id: str) -> Run | None:
@@ -124,11 +127,10 @@ class _ProviderAdapter:
         return await reader(request, artifact_id)
 
 
-def provider_accepts_query(provider: Any) -> bool:
-    """Умеет ли провайдер фильтровать выборку сам: ``list_runs(request, query)``."""
+def _accepts_query(target: Any) -> bool:
+    """Whether the function accepts a second argument — the selection."""
     import inspect
 
-    target = getattr(provider, "list_runs", None)
     if target is None:
         return False
     try:
@@ -138,16 +140,24 @@ def provider_accepts_query(provider: Any) -> bool:
     return len(parameters) >= 2
 
 
+def provider_accepts_query(provider: Any) -> bool:
+    """Whether the provider filters the selection itself: ``list_runs(request, query)``."""
+    if isinstance(provider, _ProviderAdapter):
+        return provider.supports_query
+    return _accepts_query(getattr(provider, "list_runs", None))
+
+
 def provider_reads_artifacts(provider: Any) -> bool:
-    """Умеет ли провайдер отдавать содержимое артефакта."""
+    """Whether the provider can serve artifact content."""
     return callable(getattr(provider, "read_artifact", None))
 
 
 def adapt_provider(provider: ProviderInput) -> FrontedgeProvider:
-    """Привести вход к протоколу.
+    """Bring the input to the protocol.
 
-    Принимает объект с ``list_runs`` и ``get_run`` (метод ``stream_logs`` необязателен —
-    без него поток логов будет пустым) либо async-функцию ``(request) -> Sequence[Run]``.
+    Accepts an object with ``list_runs`` and ``get_run`` (the ``stream_logs``
+    method is optional — without it the log stream stays empty) or an async
+    function ``(request) -> Sequence[Run]``.
     """
     if isinstance(provider, FrontedgeProvider):
         return provider
@@ -156,13 +166,13 @@ def adapt_provider(provider: ProviderInput) -> FrontedgeProvider:
     if hasattr(provider, "list_runs") and hasattr(provider, "get_run"):
         return _ProviderAdapter(provider)
     raise TypeError(
-        "provider должен быть объектом с методами list_runs/get_run "
-        "или async-функцией (request) -> Sequence[Run]"
+        "provider must be an object with list_runs/get_run methods "
+        "or an async function (request) -> Sequence[Run]"
     )
 
 
 def provider_has_logs(provider: Any) -> bool:
-    """Есть ли у провайдера поток логов (у адаптера callable — нет)."""
+    """Whether the provider has a log stream (the callable adapter has none)."""
     if isinstance(provider, CallableProvider):
         return False
     return callable(getattr(provider, "stream_logs", None))

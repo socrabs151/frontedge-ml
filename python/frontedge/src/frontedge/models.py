@@ -1,8 +1,8 @@
-"""Доменная модель Frontedge.
+"""The Frontedge domain model.
 
-Модель фиксирована продуктом: пользователь пишет адаптер (provider), который отдаёт
-эти объекты. Роли ``x-frontedge`` в схеме — публичный контракт: по ним генератор
-типов понимает, как показывать поле в интерфейсе.
+The model is fixed by the product: the user writes an adapter (provider) that
+returns these objects. The ``x-frontedge`` roles in the schema are a public
+contract: the type generator uses them to know how to render a field.
 """
 
 from __future__ import annotations
@@ -34,16 +34,16 @@ __all__ = [
 
 
 def role(name: str, **extra: Any) -> dict[str, Any]:
-    """Аннотация поля: роль в интерфейсе и её дополнительные параметры."""
+    """Field annotation: its role in the interface plus extra parameters."""
     return {"x-frontedge": {"role": name, **extra}}
 
 
 class RunStatus(StrEnum):
-    """Канонические статусы прогона.
+    """Canonical run statuses.
 
-    ``failed`` — процесс завершился с ненулевым кодом выхода.
-    ``lost`` — процесс исчез: умерла инфраструктура. Различие не сливается,
-    по нему ведут триаж.
+    ``failed`` — the process finished with a non-zero exit code.
+    ``lost`` — the process vanished: the infrastructure died. The two are not
+    merged, triage relies on the difference.
     """
 
     queued = "queued"
@@ -55,7 +55,7 @@ class RunStatus(StrEnum):
 
 
 class Freshness(StrEnum):
-    """Свежесть данных — отдельное измерение поверх статуса."""
+    """Data freshness — a separate dimension on top of the status."""
 
     live = "live"
     fresh = "fresh"
@@ -71,7 +71,7 @@ class StageName(StrEnum):
 
 
 class MetricDirection(StrEnum):
-    """Направление метрики: задаёт владелец, а не интерфейс."""
+    """Metric direction: set by the owner, not by the interface."""
 
     maximize = "maximize"
     minimize = "minimize"
@@ -83,13 +83,13 @@ LogLevel = Literal["info", "progress", "warning", "error"]
 
 
 class FrontedgeModel(BaseModel):
-    """Базовая модель: JSON отдаётся в camelCase, как в TypeScript-типах."""
+    """Base model: JSON is served in camelCase, like in the TypeScript types."""
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class MetricPoint(FrontedgeModel):
-    step: int = Field(description="Шаг обучения", json_schema_extra=role("series"))
+    step: int = Field(description="Training step", json_schema_extra=role("series"))
     value: float = Field(json_schema_extra=role("metric"))
 
 
@@ -123,7 +123,7 @@ class ProvenanceEntry(FrontedgeModel):
 
 
 class Run(FrontedgeModel):
-    """Прогон эксперимента."""
+    """An experiment run."""
 
     id: str = Field(json_schema_extra=role("id"))
     name: str = Field(json_schema_extra=role("text"))
@@ -148,7 +148,7 @@ class Run(FrontedgeModel):
 
 
 class Example(FrontedgeModel):
-    """Срез датасета: вход, выход, ожидание и оценка."""
+    """A dataset slice: input, output, expectation and score."""
 
     id: str = Field(json_schema_extra=role("id"))
     input: str = Field(json_schema_extra=role("text"))
@@ -167,14 +167,14 @@ class LogLine(FrontedgeModel):
 
 MetricValue = Annotated[float, Field(json_schema_extra=role("metric"))]
 
-# --- Оценки и датасеты ---------------------------------------------------
+# --- Evals and datasets ---------------------------------------------------
 
 
 class EvalSummary(FrontedgeModel):
-    """Оценка: датасет × скорер × метрика.
+    """An eval: dataset × scorer × metric.
 
-    Скаляр «score» без скорера бессмыслен: столбец лидерборда — это тройка
-    (датасет, скорер, агрегация).
+    A bare "score" without a scorer is meaningless: a leaderboard column is a
+    triple (dataset, scorer, aggregation).
     """
 
     id: str = Field(json_schema_extra=role("id"))
@@ -189,7 +189,7 @@ class EvalSummary(FrontedgeModel):
 
 
 class ExampleResult(FrontedgeModel):
-    """Результат оценки на одном примере."""
+    """The eval result for a single example."""
 
     id: str = Field(json_schema_extra=role("id"))
     input: str = Field(json_schema_extra=role("text"))
@@ -201,7 +201,7 @@ class ExampleResult(FrontedgeModel):
 
 
 class EvalComparison(FrontedgeModel):
-    """Сравнение двух прогонов по одной оценке: примеры как строки."""
+    """Comparison of two runs on one eval: examples as rows."""
 
     eval_id: str = Field(json_schema_extra=role("id"))
     name: str = Field(json_schema_extra=role("text"))
@@ -221,11 +221,10 @@ class EvalComparison(FrontedgeModel):
 
 
 class RunsQuery(FrontedgeModel):
-    """Параметры выборки прогонов.
+    """Run selection parameters.
 
-    Провайдер может принять их вторым аргументом ``list_runs(request, query)`` и
-    отфильтровать на своей стороне. Если не принимает — библиотека применяет
-    выборку сама.
+    A provider can take them as the second argument of ``list_runs(request, query)``
+    and filter on its own side. If it does not, the library applies the selection.
     """
 
     limit: int | None = None
@@ -236,14 +235,14 @@ class RunsQuery(FrontedgeModel):
 
 
 class RunsPage(FrontedgeModel):
-    """Страница прогонов вместе с общим числом — когда провайдер фильтрует сам."""
+    """A page of runs with the total count — when the provider filters itself."""
 
     items: list[Run]
     total: int
 
 
 class DatasetInfo(FrontedgeModel):
-    """Датасет: версия, размер, datasheet и провенанс."""
+    """A dataset: version, size, datasheet and provenance."""
 
     id: str = Field(json_schema_extra=role("id"))
     name: str = Field(json_schema_extra=role("text"))

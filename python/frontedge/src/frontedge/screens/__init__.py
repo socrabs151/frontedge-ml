@@ -1,4 +1,4 @@
-"""Экраны Frontedge: API и раздача интерфейса."""
+"""Frontedge screens: API and interface serving."""
 
 from .runs import mount, runs
 

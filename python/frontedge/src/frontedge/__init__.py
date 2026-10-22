@@ -1,4 +1,4 @@
-"""Frontedge — фронтенд-слой для ML-инжиниринга.
+"""Frontedge — the frontend layer for ML engineering.
 
     from fastapi import FastAPI
     import frontedge

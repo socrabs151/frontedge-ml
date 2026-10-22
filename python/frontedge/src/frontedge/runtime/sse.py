@@ -1,4 +1,4 @@
-"""Поток событий Server-Sent Events."""
+"""Server-Sent Events stream."""
 
 from __future__ import annotations
 
@@ -22,11 +22,12 @@ async def event_stream(
     *,
     keepalive: int = KEEPALIVE_SECONDS,
 ) -> AsyncIterator[str]:
-    """Превращает пары (тип, данные) в поток SSE с keepalive-комментариями.
+    """Turns (type, data) pairs into an SSE stream with keepalive comments.
 
-    Источник читается отдельной задачей: таймаут ожидания не должен отменять
-    ``__anext__`` генератора — иначе провайдер, который молчит дольше keepalive
-    (обычная пауза между строками лога), потерял бы поток навсегда.
+    The source is read by a separate task: the wait timeout must not cancel the
+    generator's ``__anext__`` — otherwise a provider that stays silent longer
+    than the keepalive (a normal pause between log lines) would lose the stream
+    forever.
     """
     queue: asyncio.Queue[Any] = asyncio.Queue()
     done = object()
@@ -59,7 +60,7 @@ def sse_response(
     *,
     keepalive: int = KEEPALIVE_SECONDS,
 ) -> Any:
-    """Ответ FastAPI с потоком SSE."""
+    """FastAPI response with an SSE stream."""
     from fastapi.responses import StreamingResponse
 
     return StreamingResponse(

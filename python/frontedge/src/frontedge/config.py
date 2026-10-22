@@ -1,12 +1,12 @@
-"""Конфигурация интерфейса и действия.
+"""Interface configuration and actions.
 
-Два объекта, из которых собирается продукт у пользователя:
+Two objects the user's product is built from:
 
-* **конфигурация** — данные: какие колонки показывать, какие вкладки и действия
-  видны. Лежит в TOML/JSON, поэтому её одинаково легко править руками, из кода
-  и (позже) визуальным редактором;
-* **действия** — код: обработчики, которые выполняются на бэкенде приложения.
-  Библиотека только вызывает их и показывает результат.
+* **config** — data: which columns to show, which tabs and actions are visible.
+  It lives in TOML/JSON, so it is equally easy to edit by hand, from code and
+  (later) in a visual editor;
+* **actions** — code: handlers that run on the application backend.
+  The library only calls them and shows the result.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ Placement = Literal["runs", "run", "evals", "datasets"]
 
 
 class ActionSpec(BaseModel):
-    """Описание действия: что видно в интерфейсе."""
+    """Action description: what the interface shows."""
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
@@ -43,7 +43,7 @@ class ActionSpec(BaseModel):
 
 
 class ActionResult(BaseModel):
-    """Ответ действия."""
+    """Action response."""
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
@@ -53,7 +53,7 @@ class ActionResult(BaseModel):
 
 
 class UiConfig(BaseModel):
-    """Конфигурация интерфейса проекта."""
+    """Project interface configuration."""
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
@@ -62,11 +62,11 @@ class UiConfig(BaseModel):
     run_columns: list[str] = Field(default_factory=list)
     eval_tabs: list[str] = Field(default_factory=list)
     actions: list[ActionSpec] = Field(default_factory=list)
-    #: Как часто обновлять список прогонов, секунды. 0 — не обновлять.
+    #: How often to refresh the run list, in seconds. 0 — never refresh.
     live_refresh_seconds: int = 5
-    #: Прогон по умолчанию для сравнения (baseline).
+    #: Default run for comparison (baseline).
     baseline_run: str | None = None
-    #: Сколько прогонов запрашивать за раз (пагинация на сервере).
+    #: How many runs to request at a time (server-side pagination).
     page_size: int = 50
 
     def actions_for(self, placement: Placement) -> list[ActionSpec]:
@@ -74,10 +74,10 @@ class UiConfig(BaseModel):
 
 
 def load_config_file(path: str | Path) -> UiConfig:
-    """Прочитать конфигурацию из TOML или JSON."""
+    """Read the configuration from TOML or JSON."""
     file = Path(path)
     if not file.is_file():
-        raise FileNotFoundError(f"Файл конфигурации не найден: {file}")
+        raise FileNotFoundError(f"Configuration file not found: {file}")
     raw = file.read_bytes()
     if file.suffix == ".json":
         data = json.loads(raw.decode("utf-8"))
@@ -87,7 +87,7 @@ def load_config_file(path: str | Path) -> UiConfig:
 
 
 def load_config(source: str | Path | dict[str, Any] | None) -> UiConfig:
-    """Конфигурация из пути к файлу или из словаря. ``None`` — пустая конфигурация."""
+    """Configuration from a file path or a dict. ``None`` — an empty configuration."""
     if source is None:
         return UiConfig()
     if isinstance(source, dict):

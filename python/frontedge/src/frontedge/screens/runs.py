@@ -1,4 +1,4 @@
-"""Роутеры экранов: прогоны, оценки, датасеты, логи, артефакты."""
+"""Screen routers: runs, evals, datasets, logs, artifacts."""
 
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ ActionHandler = Callable[[Request, dict[str, Any]], Awaitable[Any]]
 
 
 def _json_model(model: Any) -> Any:
-    """Сериализация в camelCase, как в сгенерированных TypeScript-типах."""
+    """Serialization to camelCase, like in the generated TypeScript types."""
     return model.model_dump(mode="json", by_alias=True)
 
 
@@ -52,7 +52,7 @@ def _run_payload(run: Run, path: str) -> dict[str, Any]:
 
 
 def meta() -> dict[str, Any]:
-    """Метаданные, о которых должен знать интерфейс."""
+    """Metadata the interface needs to know."""
     from .. import __version__
 
     return {
@@ -74,14 +74,15 @@ def _build_router(
     path: str = "/frontedge",
     title: str = "Frontedge",
 ) -> APIRouter:
-    """Сборка роутера. Имя функции намеренно не ``mount``: параметр ``path`` не должен
-    перекрывать одноимённую функцию (такая ошибка ломала ``frontedge.runs()``)."""
+    """Router assembly. The function is deliberately not named ``mount``: the ``path``
+    parameter must not shadow the function of the same name (that bug broke
+    ``frontedge.runs()``)."""
     source = adapt_provider(runs)
     ui_config = load_config(config)
     handlers = actions or {}
     router = APIRouter(prefix=path)
 
-    # --- Прогоны ---------------------------------------------------------
+    # --- Runs -------------------------------------------------------------
 
     @router.get("/api/runs", tags=["frontedge"])
     async def list_runs(
@@ -92,11 +93,11 @@ def _build_router(
         status: str | None = None,
         dataset: str | None = None,
     ) -> Response:
-        """Список прогонов.
+        """A list of runs.
 
-        Если провайдер принимает ``list_runs(request, query)``, выборка уходит
-        на его сторону; иначе библиотека применяет её сама и отдаёт общее число
-        в заголовке ``X-Frontedge-Total``.
+        If the provider accepts ``list_runs(request, query)``, the selection goes
+        to its side; otherwise the library applies it and returns the total count
+        in the ``X-Frontedge-Total`` header.
         """
         query = RunsQuery(
             limit=limit,
@@ -143,7 +144,7 @@ def _build_router(
     async def get_run(request: Request, run_id: str) -> dict[str, Any]:
         run = await source.get_run(request, run_id)
         if run is None:
-            raise HTTPException(status_code=404, detail="Прогон не найден")
+            raise HTTPException(status_code=404, detail="Run not found")
         return _run_payload(run, path)
 
     @router.get("/api/runs/{run_id}/logs/stream", tags=["frontedge"])
@@ -152,7 +153,7 @@ def _build_router(
             return sse_response(_empty_logs())
         run = await source.get_run(request, run_id)
         if run is None:
-            raise HTTPException(status_code=404, detail="Прогон не найден")
+            raise HTTPException(status_code=404, detail="Run not found")
 
         async def events() -> AsyncIterator[tuple[str, Any]]:
             async for line in source.stream_logs(request, run_id):
@@ -160,25 +161,25 @@ def _build_router(
 
         return sse_response(events())
 
-    # --- Артефакты --------------------------------------------------------
+    # --- Artifacts --------------------------------------------------------
 
     @router.get("/api/artifacts/{artifact_id}/content", tags=["frontedge"])
     async def artifact_content(request: Request, artifact_id: str) -> Response:
-        """Содержимое артефакта — если провайдер умеет его отдавать."""
+        """Artifact content — if the provider can serve it."""
         if not provider_reads_artifacts(source):
             raise HTTPException(
-                status_code=404, detail="Провайдер не отдаёт содержимое артефактов"
+                status_code=404, detail="Provider does not serve artifact content"
             )
         data = await source.read_artifact(request, artifact_id)
         if data is None:
-            raise HTTPException(status_code=404, detail="Артефакт не найден")
+            raise HTTPException(status_code=404, detail="Artifact not found")
         return Response(
             content=data,
             media_type="application/octet-stream",
             headers={"Content-Disposition": f'attachment; filename="{artifact_id}"'},
         )
 
-    # --- Оценки ----------------------------------------------------------
+    # --- Evals ------------------------------------------------------------
 
     @router.get("/api/evals", tags=["frontedge"])
     async def list_evals(request: Request) -> list[dict[str, Any]]:
@@ -194,13 +195,13 @@ def _build_router(
         comparison: str,
     ) -> dict[str, Any]:
         if evals is None:
-            raise HTTPException(status_code=404, detail="Экраны оценок не подключены")
+            raise HTTPException(status_code=404, detail="Eval screens are not connected")
         result = await evals.compare_evals(request, eval_id, reference, comparison)
         if result is None:
-            raise HTTPException(status_code=404, detail="Оценка не найдена")
+            raise HTTPException(status_code=404, detail="Eval not found")
         return _json_model(result)
 
-    # --- Датасеты --------------------------------------------------------
+    # --- Datasets ---------------------------------------------------------
 
     @router.get("/api/datasets", tags=["frontedge"])
     async def list_datasets(request: Request) -> list[dict[str, Any]]:
@@ -211,13 +212,13 @@ def _build_router(
     @router.get("/api/datasets/{dataset_id}", tags=["frontedge"])
     async def get_dataset(request: Request, dataset_id: str) -> dict[str, Any]:
         if datasets is None:
-            raise HTTPException(status_code=404, detail="Экраны датасетов не подключены")
+            raise HTTPException(status_code=404, detail="Dataset screens are not connected")
         result = await datasets.get_dataset(request, dataset_id)
         if result is None:
-            raise HTTPException(status_code=404, detail="Датасет не найден")
+            raise HTTPException(status_code=404, detail="Dataset not found")
         return _json_model(result)
 
-    # --- Метаданные и интерфейс -------------------------------------------
+    # --- Metadata and interface -------------------------------------------
 
     @router.get("/api/meta", tags=["frontedge"])
     async def get_meta() -> dict[str, Any]:
@@ -225,15 +226,15 @@ def _build_router(
 
     @router.get("/api/config", tags=["frontedge"])
     async def get_config() -> dict[str, Any]:
-        """Конфигурация интерфейса: колонки, вкладки, объявленные действия."""
+        """Interface configuration: columns, tabs, declared actions."""
         return _json_model(ui_config)
 
     @router.post("/api/actions/{action_id}", tags=["frontedge"])
     async def run_action(action_id: str, request: Request, payload: dict[str, Any] | None = None) -> Any:
-        """Выполнить действие проекта. Библиотека знает только идентификатор."""
+        """Run a project action. The library only knows the id."""
         handler = handlers.get(action_id)
         if handler is None:
-            raise HTTPException(status_code=404, detail=f"Действие не объявлено: {action_id}")
+            raise HTTPException(status_code=404, detail=f"Action is not declared: {action_id}")
         result = await handler(request, payload or {})
         if isinstance(result, ActionResult):
             return _json_model(result)
@@ -245,8 +246,8 @@ def _build_router(
         include_in_schema=False,
     )
     async def api_not_found(rest: str) -> Response:
-        """Несуществующий путь API — 404 в JSON, а не HTML-страница SPA."""
-        raise HTTPException(status_code=404, detail=f"Неизвестный эндпоинт API: /{rest}")
+        """Unknown API path — 404 in JSON, not an SPA HTML page."""
+        raise HTTPException(status_code=404, detail=f"Unknown API endpoint: /{rest}")
 
     router.include_router(static_router(path))
     router.title = title
@@ -263,14 +264,15 @@ def mount(
     path: str = "/frontedge",
     title: str = "Frontedge",
 ) -> APIRouter:
-    """Смонтировать интерфейс Frontedge в приложение.
+    """Mount the Frontedge interface into the application.
 
-    ``runs_provider`` — источник прогонов: объект с методами ``list_runs`` / ``get_run``
-    (и опционально ``stream_logs``) либо async-функция ``(request) -> Sequence[Run]``.
-    ``evals`` и ``datasets`` — необязательные источники для экранов сравнения оценок
-    и датасетов; без них соответствующие разделы не появятся.
-    ``actions`` — обработчики действий проекта: ``{"stop": async def stop(request, payload)}``.
-    ``config`` — конфигурация интерфейса: путь к TOML/JSON, словарь или готовый объект.
+    ``runs_provider`` — run source: an object with ``list_runs`` / ``get_run``
+    methods (and optionally ``stream_logs``) or an async function
+    ``(request) -> Sequence[Run]``.
+    ``evals`` and ``datasets`` — optional sources for the eval comparison and
+    dataset screens; without them the matching sections do not appear.
+    ``actions`` — project action handlers: ``{"stop": async def stop(request, payload)}``.
+    ``config`` — interface configuration: a path to TOML/JSON, a dict or a ready object.
     """
     return _build_router(
         runs_provider,
@@ -291,14 +293,14 @@ def runs(
     path: str = "/frontedge",
     title: str = "Frontedge",
 ) -> APIRouter:
-    """Только экран прогонов — короткая запись для :func:`mount`."""
+    """The runs screen only — a short form of :func:`mount`."""
     return _build_router(
         runs_provider, actions=actions, config=config, path=path, title=title
     )
 
 
 def log_line(text: str, level: str = "info") -> LogLine:
-    """Помощник для провайдеров логов: строка с уникальным идентификатором."""
+    """Helper for log providers: a line with a unique id."""
     from datetime import UTC, datetime
 
     return LogLine(

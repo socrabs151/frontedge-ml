@@ -44,22 +44,22 @@ MODELS = [
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="frontedge", description="Инструменты Frontedge")
+    parser = argparse.ArgumentParser(prog="frontedge", description="Frontedge tools")
     parser.add_argument("--version", action="version", version=f"frontedge {__version__}")
     sub = parser.add_subparsers(dest="command")
 
-    gen = sub.add_parser("gen", help="сгенерировать TypeScript-типы и клиент")
-    gen.add_argument("--out", default="src/generated", help="каталог для сгенерированных файлов")
+    gen = sub.add_parser("gen", help="generate TypeScript types and a client")
+    gen.add_argument("--out", default="src/generated", help="directory for the generated files")
     gen.add_argument(
         "--base-path",
         default="/frontedge/api",
-        help="базовый путь API (по умолчанию /frontedge/api)",
+        help="API base path (default /frontedge/api)",
     )
     gen.add_argument(
         "--models",
         nargs="*",
         default=None,
-        help="свои модели: module:ClassName (по умолчанию — встроенные)",
+        help="custom models: module:ClassName (default — built-in)",
     )
 
     args = parser.parse_args(argv)
@@ -80,7 +80,7 @@ def main(argv: list[str] | None = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     (out / "types.ts").write_text(generate_types(models), encoding="utf-8")
     (out / "client.ts").write_text(generate_client(base_path=args.base_path), encoding="utf-8")
-    print(f"frontedge: типы и клиент записаны в {out}")
+    print(f"frontedge: types and client written to {out}")
     return 0
 
 

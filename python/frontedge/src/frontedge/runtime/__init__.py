@@ -1,1 +1,1 @@
-"""Рантайм: SSE и раздача статики."""
+"""Runtime: SSE and static serving."""
