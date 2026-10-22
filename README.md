@@ -39,11 +39,11 @@ Frontedge is that layer, packaged.
 
 | | |
 |---|---|
-| **Runs** | a dense table with per-stage timelines, deltas against a pinned baseline and inline metric sparklines |
-| **Run detail** | metrics over steps, example-level evaluation, live logs over SSE, artifacts, provenance |
+| **Runs** | a dense table with per-stage timelines, deltas against a pinned baseline and inline metric sparklines. Columns, filters, pagination and the live refresh are yours to configure |
+| **Run detail** | metrics over steps, example-level evaluation, live logs over SSE, artifacts, provenance, and the reason a run failed |
 | **Eval diff** | two runs compared example by example: examples as rows, columns grouped by role, reference run pinned left |
 | **Dataset** | versions, examples, a datasheet (motivation, composition, collection, intended use) and provenance |
-| **A design system** | tokens, primitives and ML patterns — density, dark theme, keyboard navigation, WCAG-checked contrast |
+| **A design system** | tokens, primitives and ML patterns — density, dark theme, keyboard navigation, WCAG-checked contrast, English with a Russian toggle |
 
 ![Run detail](docs/images/run-detail.png)
 
@@ -113,6 +113,21 @@ Buttons appear only for declared actions, so there are no dead controls. Column 
 actions live in configuration — data, not code — so the same file can be edited by hand or by a
 tool later.
 
+The same file decides what the list shows and how it behaves:
+
+```toml
+# frontedge.toml
+density = "default"
+run_columns = ["name", "status", "ribbon", "dataset", "accuracy", "bleu"]
+baseline_run = "exp-039"
+live_refresh_seconds = 5
+page_size = 50
+```
+
+Any metric the project reports becomes a column: add `bleu` to `run_columns` and it shows up
+with its own delta against the baseline. Filtering, search and pagination run on the server
+when the provider takes a `list_runs(request, query)` signature.
+
 For your own screens, use the components directly:
 
 ```tsx
@@ -145,6 +160,9 @@ pnpm gen:types     # pydantic -> types.ts + client.ts
   surfaces.
 - **Accessible by construction.** Every token pair is checked against WCAG 2.2 in CI; the
   browser gates run axe and a keyboard pass on every pull request.
+- **One language at a time.** The interface is English by default with a Russian toggle.
+  Domain terms (Run, Dataset, Baseline) stay English in both, because they are the words
+  people look up in W&B and MLflow.
 
 ## Development
 
@@ -159,7 +177,7 @@ uv sync --all-packages
 uv run --package frontedge pytest python/frontedge/tests -q
 ```
 
-Design document (in Russian): [docs/specs/2026-10-20-frontedge-design.md](docs/specs/2026-10-20-frontedge-design.md).
+Design document: [docs/specs/2026-10-20-frontedge-design.md](docs/specs/2026-10-20-frontedge-design.md).
 
 ## Status
 

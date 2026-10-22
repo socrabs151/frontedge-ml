@@ -1,136 +1,96 @@
 # AGENTS.md
 
-Инструкция для агента, который работает с этим репозиторием.
+Instructions for an agent working in this repository.
 
-## Что это
+## What this is
 
-`frontedge` — фронтенд-слой для ML-проектов: Python-пакет монтирует экраны в чужой FastAPI,
-npm-пакет `@frontedge/ui` даёт примитивы и токены. Текущая стадия — **Phase 1, дизайн-спайк**:
-дизайн-система и два экрана на мок-данных, без Python-части.
+`frontedge` is a frontend layer for ML engineering: a Python package that mounts ready-made
+screens into any FastAPI app, and an npm package `@frontedge/ui` with the design system.
+The current stage is **Phase 3**: the design system, four screens, the Python package and the
+type generator work and are covered by gates. Publication to PyPI and npm is Phase 4.
 
-Прочитай первым: `docs/specs/2026-10-20-frontedge-design.md`. Это источник истины
-по продукту, визуальному языку и контрактам. Не выдумывай дизайн — следуй §4.
+Read `docs/specs/2026-10-20-frontedge-design.md` first. It is the source of truth for the
+product, the visual language and the contracts. Do not invent design — follow §4.
 
-## Правила публичности
-
-- **Всё, что не является продуктом, — в репозиторий не попадает.** Стенды сравнений, прототипы
-  для внутреннего обсуждения, черновики знака, экспериментальные страницы — это инструменты
-  работы, а не поставка. Держи их вне репозитория (во временном каталоге) и не коммить.
-- В репозиторий идёт только то, что работает и нужно пользователям продукта: код, тесты,
-  документация, гейты качества.
-
-## Коммиты
-
-- **Английский.** Сообщения, описания PR и комментарии к коду — на английском.
-- **Conventional Commits.** `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`, `test:`, `perf:`,
-  `build:`, `ci:`. Scopes, если нужен: `feat(ui):`, `fix(spike):`, `docs:`.
-- Тема — до 72 символов, в императиве, без точки в конце. Тело — зачем и что изменилось,
-  с негативным списком («not changed: …»), если это важно для ревью.
-- Никаких упоминаний инструментов и процесса в сообщениях коммитов: коммит описывает
-  изменение в коде, а не способ его получения.
-
-## Как расширять интерфейс
-
-Интерфейс не придумывает функции за пользователя: кнопка появляется только если действие
-объявлено. Полный контракт — [`docs/integration.md`](docs/integration.md); ниже сокращённый
-рецепт, чтобы агент мог сделать нужное пользователю без вопросов.
-
-**Добавить действие (кнопку) — три шага:**
-
-1. Обработчик в коде приложения (`async def handler(request, payload) -> ActionResult`).
-2. Объявление в конфигурации (`frontedge.toml`): `id`, `label`, `placement` (`run` | `runs` |
-   `evals` | `datasets`), опционально `danger` и `description`.
-3. Регистрация: `frontedge.mount(provider, actions={"<id>": handler}, config="frontedge.toml")`.
-
-Обработчик получает `payload` с `runId` и возвращает `ActionResult(ok=..., message=...)` —
-`message` показывается пользователю.
-
-**Добавить свой экран:** собрать на компонентах `@frontedge/ui` (примитивы в
-`packages/ui/src/components`, ML-паттерны в `packages/ui/src/patterns`), взяв токены из
-`packages/ui/src/styles/tokens.css`. Не плодить новые токены: новый цвет — это строка в
-`tokens.css` плюс проверка в `check-contrast.mjs`.
-
-**Добавить поле в модель данных:** правь pydantic-модель в
-`python/frontedge/src/frontedge/models.py`, затем `pnpm gen:types` — типы TypeScript
-перегенерируются, CI падает, если они разошлись.
-
-**Чего не делать:** не хардкодить кнопки в компонентах (`packages/ui/src/patterns`) — они
-приходят из конфигурации; не добавлять слова в интерфейс мимо словаря (§11 дизайн-документа);
-не обходить генератор типов ручной правкой `packages/ui/src/generated/`.
-
-## Команды
+## Commands
 
 ```bash
 pnpm install
-pnpm dev                          # http://localhost:5173 (спайк на моках)
-pnpm typecheck                    # обязательно перед коммитом
-pnpm check:contrast               # WCAG-контраст токенов, обе темы; падает при нарушении
-pnpm build:ui                     # сборка интерфейса + копирование в Python-пакет
-pnpm gen:types                    # перегенерировать TS-типы из Python-моделей
-pnpm demo                         # демо на FastAPI: http://127.0.0.1:8000/frontedge
-uv sync --all-packages            # окружение Python
-node apps/spike/scripts/verify.mjs         # скриншоты + axe (нужен запущенный dev-сервер)
-node apps/spike/scripts/keyboard-check.mjs # клавиатурный прогон таблицы
+pnpm dev                          # the spike app on http://localhost:5173
+pnpm typecheck                    # required before a commit
+pnpm check:contrast               # WCAG contrast of every token pair, both themes
+pnpm build:ui                     # build the interface and copy it into the Python package
+pnpm gen:types                    # regenerate the TypeScript types from the Python models
+pnpm demo                         # the demo on FastAPI: http://127.0.0.1:8000/frontedge
+uv sync --all-packages            # the Python workspace
+uv run --package frontedge pytest python/frontedge/tests -q
+node apps/spike/scripts/verify.mjs         # screenshots + axe (a running dev server is required)
+node apps/spike/scripts/keyboard-check.mjs # keyboard pass over the table
 ```
 
-Проверки против собранного демо: `FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps/spike/scripts/verify.mjs`.
+Against the running demo: `FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps/spike/scripts/verify.mjs`.
 
-## Типы
+## Commits
 
-Доменные типы **генерируются** из Python-моделей: `packages/ui/src/generated/types.ts`
-(команда `pnpm gen:types`). Руками их не правим: меняем pydantic-модель в
-`python/frontedge/src/frontedge/models.py` — перегенерируем. CI падает, если сгенерированный
-файл разошёлся с моделями.
+- **English.** Messages, pull request descriptions and code comments.
+- **Conventional Commits.** `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`, `test:`, `perf:`,
+  `build:`, `ci:`. Scopes when useful: `feat(ui):`, `fix(python):`, `docs:`.
+- The subject is imperative, up to 72 characters, no trailing dot. The body says why and what
+  changed, with a negative list ("not changed: …") when that matters for review.
+- Never mention tools or process in a commit message: a commit describes the change in the code,
+  not the way it was produced.
 
-## Контракты
+## Contracts
 
-**Токены** — только из `packages/ui/src/styles/tokens.css`. Не пиши hex, `px` радиусов и
-`font-size` в компонентах: новый цвет или размер — это токен в `tokens.css` плюс строка
-в `check-contrast.mjs`.
+**Tokens** come from `packages/ui/src/styles/tokens.css` only. Do not write hex values, pixel
+radii or font sizes in components: a new colour is a line in `tokens.css` plus a line in
+`packages/ui/scripts/check-contrast.mjs`.
 
-**Имена классов** — префикс `fe-`. Компонент в `packages/ui/src/components/` — примитив,
-в `packages/ui/src/patterns/` — ML-паттерн (знает про run/dataset/eval/trace).
+**Class names** carry the `fe-` prefix. A component in `packages/ui/src/components` is a
+primitive; one in `packages/ui/src/patterns` is an ML pattern (it knows about run, dataset, eval,
+trace).
 
-**Зависимости** — минимальны. Сейчас: React, Radix, TanStack Table/Virtual, clsx, Lucide.
-Новая зависимость — только с обоснованием в PR: что именно нельзя сделать 50 строками.
+**Dependencies** stay minimal. Today: React, Radix, TanStack Table/Virtual, clsx, Lucide. A new
+dependency needs a justification in the pull request: what exactly cannot be done in 50 lines.
 
-**Язык интерфейса** — термины домена английские (`Run`, `Dataset`, `Baseline`, `Trace`),
-служебные слова русские («Запустить», «Упал», «Сравнить», «Показать детали»).
-Словарь — §11 дизайн-документа.
+**Interface language** is English by default with a Russian toggle. Strings live in a
+dictionary (`packages/ui/src/i18n/strings.ts` for the package, `apps/spike/src/i18n.ts` for the
+app); components never carry a literal. Domain terms stay English in both languages.
 
-**Статусы** — канонический набор: `queued · running · succeeded · failed · cancelled · lost`.
-`failed` (ненулевой код выхода) и `lost` (умерла инфраструктура) не сливать.
-Свежесть — отдельное измерение: `live · fresh · stale · partial`.
+**Public vocabularies** are frozen contracts: the `x-frontedge` roles, the status set
+(`queued · running · succeeded · failed · cancelled · lost`), the freshness set
+(`live · fresh · stale · partial`) and the paths under `/frontedge/api`. Extend them, never
+rename them in a minor release.
 
-**Провайдеры** (Python-пакет) — три независимых источника: прогоны (`list_runs` / `get_run` /
-`stream_logs`), оценки (`list_evals` / `compare_evals`) и датасеты (`list_datasets` /
-`get_dataset`). Монтирование: `frontedge.mount(runs, evals=..., datasets=..., path="/frontedge")`.
-Аутентификации в библиотеке нет: `request` передаётся провайдеру.
+**Providers** (Python package) are three independent sources: runs (`list_runs` / `get_run` /
+`stream_logs`), evaluations (`list_evals` / `compare_evals`) and datasets (`list_datasets` /
+`get_dataset`). Mount them with
+`frontedge.mount(runs, evals=..., datasets=..., path="/frontedge")`. The library has no
+authentication: the `request` is passed to the provider, so access control stays in the app.
 
-**Права в Python-пакете** (Phase 2+) — роли `x-frontedge`: `id · text · status · metric ·
-series · timestamp · duration · dataset · baseline · stage · freshness · code · example ·
-span · image · url`. Словарь публичный: расширять можно, переименовывать — только в мажоре.
+**Types** are generated from the Python models: `packages/ui/src/generated/types.ts`
+(`pnpm gen:types`). Never edit them by hand — change the pydantic model in
+`python/frontedge/src/frontedge/models.py` and regenerate. CI fails when the generated file
+drifted from the models.
 
-**Модель данных** — `python/frontedge/src/frontedge/models.py` (pydantic v2). JSON отдаётся в
-camelCase, даты — ISO 8601. Фронт берёт типы оттуда (генератор), поэтому расхождение
-Python и TypeScript невозможно по построению.
+## Anti-patterns
 
-## Анти-паттерны
+- A table of runs built from cards. A table, yes; cards, no (comparing neighbouring values).
+- Zebra striping in a table. Hairline separators only.
+- `green = better`, `red = worse`. Colour does not carry "better": the owner of the metric sets
+  the direction.
+- A status shown with colour alone. It needs an icon and a word.
+- `transition: all`, animating `width/height`, `scale(0)`, motion without
+  `prefers-reduced-motion`.
+- A shadow on a card or a button. Depth comes from borders and surface shifts.
+- An empty cell instead of an en dash.
+- A new component next to an existing primitive: look for what is already there first.
+- A login, an icon or a status in colour without text.
 
-- Таблица прогонов из карточек. Таблица — да, карточки — нет (сравнение соседних значений).
-- Зебра в таблице. Только hairline-разделители.
-- `зелёный = лучше`, `красный = хуже`. Цвет не выражает «лучше»: направление метрики задаёт владелец.
-- Статус только цветом. Нужны иконка и слово.
-- `transition: all`, анимация `width/height`, `scale(0)`, анимация без `prefers-reduced-motion`.
-- Тень на карточке или кнопке. Глубина — границами и сдвигом поверхности.
-- Пустая ячейка вместо тире «–».
-- Новый компонент рядом с существующим примитивом: сначала найди, что уже есть.
-- Логин, иконки и статусы — цветом без текста.
+## Before handing over
 
-## Проверка перед сдачей
-
-1. `pnpm typecheck` — без ошибок.
-2. `pnpm check:contrast` — все проверки пройдены.
-3. `node apps/spike/scripts/verify.mjs` — axe: 0 critical/serious; посмотри скриншоты сам.
-4. `node apps/spike/scripts/keyboard-check.mjs` — клавиатура не сломана.
-5. Сверься с §4 дизайн-документа: не появилось ли дефолтов, которых там нет.
+1. `pnpm typecheck` — no errors.
+2. `pnpm check:contrast` — every pair passes.
+3. `node apps/spike/scripts/verify.mjs` — axe: 0 critical/serious; look at the screenshots.
+4. `node apps/spike/scripts/keyboard-check.mjs` — the keyboard still works.
+5. Check against §4 of the design document: no defaults crept in that are not in there.

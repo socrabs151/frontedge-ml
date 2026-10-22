@@ -1,17 +1,17 @@
-# Интеграция Frontedge
+# Frontedge integration
 
-Документ для человека-разработчика. Если ты агент — у тебя есть [AGENTS.md](../AGENTS.md)
-в корне репозитория: там тот же контракт в сокращённом виде и рецепт «добавить действие
-за 10 минут».
+A document for a human developer. If you are an agent, [AGENTS.md](../AGENTS.md) in the
+repository root carries the same contract in a shorter form and a "add an action in 10 minutes"
+recipe.
 
 ---
 
-## 1. Что это
+## 1. What this is
 
-Frontedge — готовый интерфейс для ML-проектов: список прогонов, детали прогона, сравнение
-оценок, просмотр датасета. Ты подключаешь его к своему FastAPI-приложению и отдаёшь свои
-данные через провайдера — библиотека ничего не знает про твою модель данных, кроме того, что
-она описана объектами `frontedge.Run`, `frontedge.Eval` и `frontedge.Dataset`.
+Frontedge is a ready-made interface for ML projects: a list of runs, run details, an evaluation
+comparison, a dataset viewer. You mount it into your own FastAPI app and feed it your own data
+through a provider — the library knows nothing about your data model beyond the fact that it is
+described by `frontedge.Run`, `frontedge.EvalSummary` and `frontedge.DatasetInfo` objects.
 
 ```python
 from fastapi import FastAPI
@@ -22,30 +22,32 @@ app.include_router(frontedge.mount(my_runs_provider))
 # → http://127.0.0.1:8000/frontedge
 ```
 
-Интерфейс и API отдаются тем же сервером: один процесс, один порт, никакого Node в проде.
+The interface and the API are served by the same process: one process, one port, no Node in
+production.
 
-## 2. Установка
+## 2. Installation
 
 ```bash
-uv add frontedge           # или: pip install frontedge
+uv add frontedge           # or: pip install frontedge
 ```
 
-Пакет пока не опубликован (Phase 4). До публикации — из исходников:
+The package is not on PyPI yet — releases are cut by tagging the repository (Phase 4). Until
+then, install from the sources:
 
 ```bash
 uv add "frontedge @ git+https://github.com/socrabs151/frontedge-ml.git#subdirectory=python/frontedge"
 ```
 
-Для своего фронта на компонентах:
+For your own frontend on the components:
 
 ```bash
 npm i @frontedge/ui react react-dom
 ```
 
-## 3. Провайдер: 20 строк
+## 3. Provider: 20 lines
 
-Провайдер — это функция или объект, который отдаёт прогоны. Библиотека не знает про
-аутентификацию: она передаёт тебе `request`, решай сам.
+A provider is a function or an object that returns runs. The library knows nothing about
+authentication: it hands you the `request`, you decide.
 
 ```python
 from datetime import UTC, datetime
@@ -53,7 +55,7 @@ from fastapi import Request
 import frontedge
 
 async def my_runs_provider(request: Request) -> list[frontedge.Run]:
-    # Здесь твоя авторизация: request.user и т.д.
+    # Your authorisation lives here: request.user and so on.
     rows = await my_repository.fetch_runs(request.user)
     return [
         frontedge.Run(
@@ -76,50 +78,95 @@ async def my_runs_provider(request: Request) -> list[frontedge.Run]:
 app.include_router(frontedge.mount(my_runs_provider))
 ```
 
-**Что обязательно, что нет:**
+**What is required, what is optional:**
 
-| Метод | Обязателен | Без него |
+| Method | Required | Without it |
 |---|---|---|
-| `list_runs(request)` | да | — |
-| `get_run(request, run_id)` | да | — |
-| `stream_logs(request, run_id)` | нет | вкладка «Логи» останется пустой |
+| `list_runs(request)` | yes | — |
+| `get_run(request, run_id)` | yes | — |
+| `stream_logs(request, run_id)` | no | the "Logs" tab stays empty |
+| `read_artifact(request, artifact_id)` | no | `GET /api/artifacts/{id}/content` answers 404 |
+| `list_runs(request, query)` | no | the library filters and paginates the list itself |
 
-Можно передать объект вместо функции — тогда доступны все три метода:
+A failed run carries its reason in `error` and the exit code of the process in `exit_code`; both
+reach the client as `error` and `exitCode`.
+
+You can pass an object instead of a function — then all of the methods are available:
 
 ```python
 class MyProvider:
     async def list_runs(self, request): ...
     async def get_run(self, request, run_id): ...
-    async def stream_logs(self, request, run_id):    # async-генератор LogLine
+    async def stream_logs(self, request, run_id):    # async generator of LogLine
         ...
 
 app.include_router(frontedge.mount(MyProvider()))
 ```
 
-## 4. Что монтируется
+### Filtering on the server side
 
-| Метод и путь | Что отдаёт |
+If `list_runs` takes a second argument, the library hands the selection over to you instead of
+filtering the list in memory. Return a `RunsPage` to report the total number of runs:
+
+```python
+from frontedge.models import RunsPage, RunsQuery
+
+class MyProvider:
+    async def list_runs(self, request: Request, query: RunsQuery) -> RunsPage:
+        total, rows = await my_repository.fetch_runs(
+            search=query.search,
+            status=query.status,
+            dataset=query.dataset,
+            offset=query.offset,
+            limit=query.limit,
+        )
+        return RunsPage(items=rows, total=total)
+
+    async def get_run(self, request: Request, run_id: str): ...
+
+    async def stream_logs(self, request: Request, run_id: str):    # async generator of LogLine
+        ...
+
+app.include_router(frontedge.mount(MyProvider()))
+```
+
+The provider has to implement `stream_logs`: a provider without it is wrapped for the log
+stream, and the wrapper does not pass the query on.
+
+The total is returned in the `X-Frontedge-Total` header of `GET /api/runs`.
+
+## 4. What gets mounted
+
+`frontedge.mount()` takes the provider and, optionally, `evals=`, `datasets=`, `actions=`,
+`config=`, `path=` (the prefix the interface is mounted under, `/frontedge` by default) and
+`title=`. `frontedge.runs()` is the same router without the eval and dataset screens.
+
+| Method and path | What it returns |
 |---|---|
-| `GET /frontedge/api/runs` | список прогонов |
-| `GET /frontedge/api/runs/{id}` | один прогон |
-| `GET /frontedge/api/runs/{id}/logs/stream` | поток логов (SSE, `event: log`) |
-| `GET /frontedge/api/evals` | список оценок (если подключён `evals=`) |
-| `GET /frontedge/api/evals/{id}/compare?reference=&comparison=` | сравнение двух прогонов |
-| `GET /frontedge/api/datasets` | список датасетов (если подключён `datasets=`) |
-| `GET /frontedge/api/datasets/{id}` | датасет с примерами |
-| `GET /frontedge/api/config` | конфигурация интерфейса (см. §5) |
-| `GET /frontedge/api/meta` | словари статусов, свежести, направлений метрик |
-| `POST /frontedge/api/actions/{id}` | выполнение действия проекта (см. §6) |
+| `GET /frontedge/api/runs` | a list of runs; accepts `limit`, `offset`, `search`, `status`, `dataset` and answers with the `X-Frontedge-Total` header |
+| `GET /frontedge/api/runs/{id}` | one run |
+| `GET /frontedge/api/runs/{id}/logs/stream` | a log stream (SSE, `event: log`) |
+| `GET /frontedge/api/artifacts/{id}/content` | the bytes of an artifact (needs `read_artifact`) |
+| `GET /frontedge/api/evals` | a list of evaluations (if `evals=` is connected) |
+| `GET /frontedge/api/evals/{id}/compare?reference=&comparison=` | a comparison of two runs |
+| `GET /frontedge/api/datasets` | a list of datasets (if `datasets=` is connected) |
+| `GET /frontedge/api/datasets/{id}` | a dataset with its examples |
+| `GET /frontedge/api/config` | the interface configuration (see §5) |
+| `GET /frontedge/api/meta` | the status, freshness and metric-direction vocabularies |
+| `POST /frontedge/api/actions/{id}` | runs a project action (see §6) |
 
-Несуществующий путь под `/frontedge/api/` даёт 404 в JSON, а не HTML.
+The built interface is served under the mount path, with an SPA fallback for the paths outside
+`/api`.
 
-## 5. Конфигурация: что показывать
+An unknown path under `/frontedge/api/` answers 404 in JSON, not HTML.
 
-Конфигурация — данные (TOML или JSON). Её можно править руками, из кода и позже
-визуальным редактором: формат один и тот же.
+## 5. Configuration: what to show
+
+The configuration is data (TOML or JSON). It can be edited by hand, from code and later by a
+visual editor: the format is the same.
 
 ```toml
-# frontedge.toml в корне проекта
+# frontedge.toml in the project root
 density = "default"          # compact | default | comfortable
 theme = "light"              # light | dark
 
@@ -128,46 +175,59 @@ run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs",
 
 ```python
 app.include_router(frontedge.mount(my_runs_provider, config="frontedge.toml"))
-# или словарём:
+# or with a dictionary:
 app.include_router(frontedge.mount(my_runs_provider, config={"density": "compact"}))
 ```
 
-`run_columns` — какие колонки показывать в списке прогонов. Доступные: `name`, `status`,
-`ribbon`, `dataset`, `gitSha`, `startedAt`, `durationMs`, `accuracy`, `loss`. Пустой список —
-показывать все.
+All of the keys of `UiConfig`:
 
-## 6. Как добавить действие (кнопку)
+| Key | Meaning |
+|---|---|
+| `density` | `compact`, `default` or `comfortable` — the row height (28/32/40 px) |
+| `theme` | `light` or `dark` |
+| `run_columns` | which columns to show in the list of runs; an empty list shows all of them |
+| `eval_tabs` | which tabs to show on the evaluation screen |
+| `actions` | the declared actions (see §6) |
+| `live_refresh_seconds` | how often the list of runs refreshes, in seconds; `0` disables it |
+| `baseline_run` | the run pinned as the baseline for the deltas |
+| `page_size` | how many runs to request at a time (server-side pagination) |
 
-Действие — это то, что **твой проект умеет** со своим прогоном: остановить, перезапустить,
-выгрузить, отправить в очередь. Библиотека не знает про эти вещи и не придумывает их: кнопка
-появляется в интерфейсе только если действие объявлено.
+The available run columns are `name`, `status`, `ribbon`, `dataset`, `gitSha`, `startedAt`,
+`durationMs`, `accuracy` and `loss` — plus any metric name of your own data, which is built from
+the `metrics` dictionary.
 
-Два шага.
+## 6. How to add an action (a button)
 
-**Шаг 1 — обработчик в коде:**
+An action is something **your project can do** with its run: stop, restart, export, queue. The
+library knows nothing about these things and does not invent them: a button appears in the
+interface only if the action is declared.
+
+Three steps.
+
+**Step 1 — the handler in the code:**
 
 ```python
-from fastedge import ActionResult
+from frontedge import ActionResult
 from fastapi import Request
 
 async def stop_run(request: Request, payload: dict) -> ActionResult:
     run_id = payload["runId"]
     await my_repository.stop(run_id)
-    return ActionResult(ok=True, message=f"Прогон {run_id} остановлен")
+    return ActionResult(ok=True, message=f"Run {run_id} stopped")
 ```
 
-**Шаг 2 — объявить действие в конфигурации:**
+**Step 2 — declare the action in the configuration:**
 
 ```toml
 [[actions]]
 id = "stop"
-label = "Остановить"
+label = "Stop"
 placement = "run"        # run | runs | evals | datasets
-danger = true            # красная кнопка
-description = "Останавливает прогон и освобождает GPU"
+danger = true            # a red button
+description = "Stops the run and frees the GPU"
 ```
 
-**Шаг 3 — зарегистрировать обработчик:**
+**Step 3 — register the handler:**
 
 ```python
 app.include_router(
@@ -179,21 +239,21 @@ app.include_router(
 )
 ```
 
-Готово: кнопка «Остановить» появится в шапке прогона, по клику выполнится обработчик, а его
-`message` покажется под шапкой.
+That is all: the "Stop" button appears in the header of the run, the click calls the handler, and
+its `message` is shown under the header.
 
-- `placement = "run"` — кнопка в шапке экрана прогона;
-- `placement = "runs"` — кнопка в каждой строке списка;
-- `payload` — то, что интерфейс кладёт в запрос: для `run` — `{"runId": "..."}`, для `runs` —
-  тоже `runId` выбранной строки.
+- `placement = "run"` — a button in the header of the run screen;
+- `placement = "runs"` — a button in every row of the list;
+- `payload` — what the interface puts into the request: for `run` it is `{"runId": "..."}`, for
+  `runs` it is the `runId` of the selected row.
 
-Действие, для которого нет обработчика, даёт 404 при вызове и не показывается в интерфейсе,
-если его нет в конфигурации.
+An action that has no handler answers 404 when it is called, and a button that is not in the
+configuration is not shown at all.
 
-## 7. Свои экраны на наших компонентах
+## 7. Your own screens on our components
 
-Если стандартных экранов не хватает — собери свой на примитивах. Токены и компоненты
-приезжают из `@frontedge/ui`:
+If the standard screens are not enough — build your own on the primitives. The tokens and the
+components come from `@frontedge/ui`:
 
 ```tsx
 import "@frontedge/ui/styles.css";
@@ -218,31 +278,33 @@ export function MyRuns({ runs }: { runs: Run[] }) {
 }
 ```
 
-Не забудь про плотность и тему на корне приложения:
+Do not forget the density and the theme on the root of the application:
 
 ```html
 <html data-theme="light" data-density="default">
 ```
 
-и про шрифты: пакет не тянет их сам, добавь `@fontsource-variable/inter` и
-`@fontsource/jetbrains-mono` (или свои).
+and the fonts: the package does not load them itself, add `@fontsource-variable/inter` and
+`@fontsource/jetbrains-mono` (or your own).
 
-Типы приходят из Python-моделей: `frontedge gen --out src/generated` создаёт `types.ts` и
-`client.ts`, которые можно импортировать вместо ручных типов.
+The types come from the Python models: `frontedge gen --out src/generated` creates `types.ts` and
+`client.ts`, which you can import instead of hand-written types. Pass `--base-path` if the
+interface is mounted under another prefix.
 
-## 8. Разбор проблем
+## 8. Troubleshooting
 
-| Симптом | Причина | Что делать |
+| Symptom | Cause | What to do |
 |---|---|---|
-| 503 «Интерфейс не собран» | в пакете нет собранного UI | `pnpm build:ui` в репозитории frontedge, затем пересобери пакет |
-| `/frontedge/api/...` отдаёт HTML | так ведёт себя SPA-fallback на неизвестных путях вне `/api` | так и должно быть; проверь, что не перепутал `/api` и корень |
-| Кнопка не появляется | действия нет в конфигурации или у него нет `placement` | проверь `frontedge.toml` и `GET /frontedge/api/config` |
-| Логи не идут | у провайдера нет `stream_logs` | добавь метод (async-генератор `LogLine`) |
-| Путь монтирования не `/frontedge` | собранный интерфейс жёстко привязан к `/frontedge` | пока поддерживается только `/frontedge` |
+| 503 "The interface is not built" | the package has no built UI | run `pnpm build:ui` in the frontedge repository, then rebuild the package |
+| `/frontedge/api/...` returns HTML | the SPA fallback answers the unknown paths outside `/api` | that is how it works; check that you did not mix up `/api` and the root |
+| The button does not appear | the action is not in the configuration or has no `placement` | check `frontedge.toml` and `GET /frontedge/api/config` |
+| The logs do not flow | the provider has no `stream_logs` | add the method (an async generator of `LogLine`) |
+| The interface keeps asking for `/frontedge` | the mount path is not the one you passed | the mount path is substituted into the built interface at runtime; check the `path=` argument |
 
-## 9. Что пока не поддерживается
+## 9. What is not supported yet
 
-- Путь монтирования отличается от `/frontedge` (собранный UI привязан к префиксу).
-- Своя аутентификация в библиотеке — она передаёт `request` провайдеру, решай там.
-- Свои типы данных: модель фиксирована (`frontedge.Run`, `frontedge.Eval`, `frontedge.Dataset`). Свои поля — через
-  `metrics`, `series` и `provenance`.
+- A layer over arbitrary user data models: the model is fixed (`frontedge.Run`,
+  `frontedge.EvalSummary`, `frontedge.DatasetInfo`). Your own fields go through `metrics`,
+  `series` and `provenance`.
+- Authentication inside the library — it hands `request` to the provider, you decide there.
+- A visual editor of the configuration.

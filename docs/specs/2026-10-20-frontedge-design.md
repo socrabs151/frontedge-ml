@@ -1,317 +1,339 @@
-# Frontedge — дизайн продукта
+# Frontedge — product design
 
-Дата: 2026-10-20
-Статус: **утверждён** (решения владельца зафиксированы в §10)
-Автор: socrabs151 + opencode
+Date: 2026-10-20
+Status: **approved** (owner decisions recorded in §10)
+Author: socrabs151 + opencode
 
-## Решения владельца (2026-10-20)
+## Owner decisions (2026-10-20)
 
-| # | Решение |
+| # | Decision |
 |---|---|
-| Имя | **frontedge** — PyPI `frontedge`, npm `@frontedge/ui`. Смысл: передняя кромка, где модель встречается с человеком |
-| Владелец модели данных | **(A)** фиксированная модель Frontedge (`frontedge.Run`, `frontedge.Dataset`, …). Пользователь пишет адаптер. `x-frontedge` — контракт для L2 и для генератора. Слой поверх пользовательских моделей — Phase 5 |
-| Объём Phase 1–2 | **оба экрана**: список прогонов + детали прогона |
-| Гейт качества Phase 1 | axe-аудит, контраст-тест, клавиатурный прогон, скриншоты обеих тем — см. §8.1 |
-| Словарь ролей | **расширяется сейчас**, фиксируется как публичный контракт v1 |
-| Язык UI | термины домена — английские (`Run`, `Dataset`, `Eval`, `Artifact`, `Baseline`, `Trace`), служебные слова — русские |
-| Плотность / тема | 32px строки (переключатель 28/40), светлая тема по умолчанию, тёмная — в настройках |
+| Name | **frontedge** — PyPI `frontedge`, npm `@frontedge/ui`. The idea: the leading edge, where the model meets the human |
+| Owner of the data model | **(A)** a fixed Frontedge model (`frontedge.Run`, `frontedge.Dataset`, …). The user writes an adapter. `x-frontedge` is the contract for L2 and for the generator. A layer over user models — Phase 5 |
+| Phase 1–2 scope | **both screens**: the runs list and the run detail |
+| Phase 1 quality gate | axe audit, contrast test, keyboard pass, screenshots of both themes — see §8.1 |
+| Role vocabulary | **extended now**, frozen as the public contract v1 |
+| UI language | English by default with a Russian toggle — domain terms (`Run`, `Dataset`, `Eval`, `Artifact`, `Baseline`, `Trace`) stay English in both |
+| Density / theme | 32px rows (switcher 28/40), light theme by default, dark in the settings |
+| Extension contract | configuration as data + project actions; **no visual editor** (§6.4, §6.6) |
+| Documentation | serves both people and agents (§6.6) |
 
 ---
 
-## 1. Что это
+## 1. What this is
 
-**Frontedge — переиспользуемый фронтенд-слой для ML-проектов.** Python-пакет, который монтирует готовые экраны в чужой FastAPI-приложение, и npm-пакет с примитивами и токенами, чтобы пользователь мог строить свои экраны в том же визуальном языке.
+**Frontedge — a reusable frontend layer for ML projects.** A Python package that mounts ready-made screens into someone else's FastAPI application, and an npm package with primitives and tokens, so the user can build their own screens in the same visual language.
 
-Это «CMS для фронта» в том смысле, что контентная модель не хранится в админке, а **выводится из кода**: pydantic-модели и OpenAPI пользователя — источник истины для типов и семантики. Позже (Phase 3) поверх той же схемы появится визуальный редактор.
+It is a "CMS for the frontend" in the sense that the content model is not stored in an admin panel but is **derived from code**: the user's pydantic models and OpenAPI are the source of truth for types and semantics. Later (Phase 5) a layer over arbitrary user models may appear on top of the same schema — the visual editor is not part of the plan (owner decision, 2026-10-20, §6.4).
 
-Репозиторий: `https://github.com/socrabs151/frontedge-ml` (Python-пакет — `frontedge` на PyPI, компоненты — `@frontedge/ui` на npm).
+Repository: `https://github.com/socrabs151/frontedge-ml` (the Python package is `frontedge` on PyPI, the components are `@frontedge/ui` on npm).
 
-Аналогия для словаря продукта:
+An analogy for the product vocabulary:
 
 | CMS | Frontedge |
 |---|---|
-| Content model | pydantic-модели / OpenAPI |
-| Content | артефакты: прогоны, датасеты, чекпойнты, метрики |
+| Content model | pydantic models / OpenAPI |
+| Content | artifacts: runs, datasets, checkpoints, metrics |
 | Entry types | Run, Dataset, Eval, Trace |
-| Templates | компоненты: таблица прогонов, diff-метрик, дерево трейса |
-| Delivery API | FastAPI-роутер + SSE + отдача артефактов |
-| Visual editor | редактор экранов (Phase 3, вне v1) |
+| Templates | components: runs table, metric diff, trace tree |
+| Delivery API | FastAPI router + SSE + artifact serving |
+| Visual editor | not in the plan — the configuration stays data (§6.4) |
 
-### 1.1 Ключевое отличие от «ещё одного админ-шаблона»
+### 1.1 The key difference from "yet another admin template"
 
-Фронт понимает природу ML-данных, а не только HTTP:
+The frontend understands the nature of ML data, not just HTTP:
 
-- `status: Literal[...]` → статус-чип с иконкой, словом и цветом (не только цветом — WCAG 2.2 SC 1.4.1);
-- `metrics: dict[str, float]` → числовая колонка со спарклайном и табличными цифрами;
-- `started_at: datetime` → локальное время, а не ISO-строка;
-- SSE-эндпоинт → живое обновление, а не polling по таймеру;
-- long-running job → прогресс-статус, а не «вращалка»;
-- отсутствующее значение → тире «–» с легендой, а не пустая ячейка и не ноль.
+- `status: Literal[...]` → a status chip with an icon, a word and a colour (never colour alone — WCAG 2.2 SC 1.4.1);
+- `metrics: dict[str, float]` → a numeric column with a sparkline and tabular figures;
+- `started_at: datetime` → local time, not an ISO string;
+- an SSE endpoint → live updates, not polling on a timer;
+- a long-running job → a progress status, not a "spinner";
+- a missing value → an em dash "–" with a legend, not an empty cell and not a zero.
 
-Семантика задаётся аннотациями в pydantic и переносится в TS-типы генератором Frontedge.
-
----
-
-## 2. Цели, не-цели, анти-цели
-
-### Цели
-1. Вертикальный срез, который показывает визуал: один сценарий end-to-end (список прогонов → прогон → diff → пример) на настоящем FastAPI.
-2. Дизайн-система, пригодная для плотных данных: таблицы, метрики, статусы, diff-ы, логи, трейс.
-3. Контракт расширения: L1 готовые экраны, L2 свои компоненты на наших токенах, L3 схема экрана (Phase 3).
-4. Открытый репозиторий, документация, из которой интеграция понятна за 10 минут.
-5. Минимальные зависимости: пользователь не должен тащить стек.
-
-### Не-цели (v1)
-- Визуальный редактор экранов.
-- Собственная аутентификация и мультиарендность (только точки расширения).
-- Plugin-система, marketplace, биллинг.
-- Лендинг и маркетинговые страницы.
-- Mobile-first (интерфейс плотный, десктопный; рефлоу до 320px обязателен, но не приоритет дизайна).
-
-### Анти-цели (то, что сделало бы продукт мёртвым)
-- «Универсальность» ценой конкретики: если компонент не отвечает на ML-вопрос, он лишний.
-- Генерация UI по форме схемы: сгенерированные по форме экраны одинаковы у всех — это generic admin panel.
-- Попытка покрыть весь MLOps в v1.
+Semantics are declared by annotations in pydantic and carried into the TS types by the Frontedge generator.
 
 ---
 
-## 3. Исследование: на какие правила опираемся
+## 2. Goals, non-goals, anti-goals
 
-### 3.1 Стандарты, которые дают проверяемые требования
+### Goals
+1. A vertical slice that shows the visual language: one end-to-end scenario (runs list → run → diff → example) on a real FastAPI.
+2. A design system fit for dense data: tables, metrics, statuses, diffs, logs, traces.
+3. An extension contract: L1 ready-made screens, L2 own components on our tokens. The screen-schema layer (L3) is not part of v1 (§6.4).
+4. An open repository and documentation that makes the integration understandable in 10 minutes.
+5. Minimal dependencies: the user should not have to pull in a stack.
 
-| Источник | Что требует | Как применяем |
-|---|---|---|
-| **WCAG 2.2 AA** (W3C Rec. 12.12.2024) | 1.4.1 — цвет не единственный носитель смысла; 1.4.11 — 3:1 на нетекстовые элементы; 2.5.8 — цель ≥24×24px; 2.4.7/2.4.13 — фокус ≥2px, ≥3:1; 1.3.1 — семантика таблиц; 4.1.3 — статусы через `role="status"` без перевода фокуса; 1.4.3 — текст ≥4.5:1 | Базовый приёмочный минимум. Контрастные токены проверяются тестом |
-| **EN 301 549** (EU harmonised) | включает WCAG 2.1 AA + требования к ПО | Цепочка обязательств, если продукт идёт в публичный сектор ЕС |
-| **ISO 9241-110:2020** | принципы взаимодействия (фильтры, сортировка, drill-in) | Разделение «взаимодействие» / «представление» в дизайн-спецификации |
-| **ISO 9241-112:2025** | эргономика представления информации: различимость, читаемость | Обоснование плотности таблиц и правил выравнивания |
-| **ISO 9241-11:2018** | юзабилити — результат использования, а не чеклист | Задачи проектируются из measurable-задач («найти регрессию среди 5000 прогонов») |
-| **EU AI Act ст. 12, 13, 14, 17, 50, 72** | журналирование, прозрачность, человеческий надзор, техдокументация, маркировка синтетики, пост-маркетинг | Provenance и «кто проверил/переопределил» — поля записей, а не PDF |
-| **ISO/IEC 42001:2023, 23894:2023, 23053, 42005** | управление ИИ-системами, риск, описание системы, оценка воздействия | Набор полей карточки модели/прогона вдохновлён 23053; риски — записи со статусом |
-| **NIST AI RMF (+ GenAI Profile)** | добровольная рамка доверия | Режим «compliance-support»: поверхности для доказательств оценки, а не бейдж |
-| **Cleveland & McGill (1984)** | position on common scale > length > angle > area > color | Сравнение метрик — общая ось и dot/lollipop, не цветные плитки и не радар |
-| **Tufte** | data-ink ratio, sparkline = word-sized графика | Спарклайн inline в строке, ~1 строка высотой; без декоративного ink |
-| **Munzner (nested model, 2009)** | ошибка вверху каскадирует вниз | Перед вёрсткой фиксируем задачу → операцию → кодирование |
-| **NN/g «Data Tables» (2022)** | 4 задачи таблицы: найти, сравнить, открыть, действие; sticky header; видимая активность фильтров; первая колонка — читаемый идентификатор | Структура таблицы прогонов |
-| **Adobe Spectrum, Table v6.0.1** | текст слева, числа справа, `tabular-nums`, без зебры, тире для null, вертикальный центрирование, клавиатурная модель грида | Прямые правила ячеек |
-| **ColorBrewer (Brewer, Harrower & Penn State)** | качественные палитры, фильтр под дальтония | Палитра идентичности прогонов (8 дискриминируемых цветов) |
-| **Microsoft Research, «Guidelines for Human-AI Interaction» (CHI 2019)** | 18 правил взаимодействия человек–ИИ | Чеклист ревью: показывать возможности, контекст, возможность исправления, неопределённость |
-| **Model Cards (arXiv 1810.03993), Datasheets (arXiv 1803.09010)** | метрики по срезам, условия применения, мотивация/состав/сбор данных | Поля карточки модели и датасета, а не внешние документы |
+### Non-goals (v1)
+- A visual screen editor.
+- Authentication and multi-tenancy of our own (extension points only).
+- A plugin system, a marketplace, billing.
+- A landing page and marketing pages.
+- Mobile-first (the interface is dense and desktop-oriented; reflow down to 320px is mandatory, but not a design priority).
 
-**Коррекции по ходу исследования** (чтобы не ссылаться на неверное):
-- **GOST R 52875-2018** — это тактильные наземные указатели для незрячих, НЕ стандарт доступности сайтов. Плюс он заменён с 01.07.2026 на GOST R 52875-2025. Релевантный российский стандарт доступности ИКТ — другой номер (встречается как GOST R 52876-2018), его нужно верифицировать вручную в protect.gost.ru до цитирования. В дизайн-документе не используем.
-- **ANSI/HFES-200** — «Human Factors Engineering of Software User Interfaces» (2008), а не стандарт раскладки клавиатуры. Клавиатура — ISO 9241-5 / ANSI X3.110.
-- **HFES 200** платный, цитируем только как контекст, не как требование.
-
-### 3.2 Конвенции рынка ML-инструментов (что уже придумали, чтобы не изобретать)
-
-Источник: W&B (документация переехала на `docs.coreweave.com`), MLflow 3, Evidently, Opik/Comet, Arize Phoenix, LangSmith.
-
-- **Словарь:** Project → Run → Artifact; Experiment → Run → Model; Sweep; Report; Eval Table. «Job/task/experiment» взаимозаменяемы не у всех инструментов — фиксируем одну иерархию и карту соответствий.
-- **Прогон** = запись метрик + параметров + артефактов с временем начала/конца и состоянием.
-- **Таблица прогонов:** настраиваемые колонки, закрепление, сортировка, агрегация `latest/min/max`, экспорт CSV.
-- **Baseline (эталон) — явный первоклассный объект:** один на пространство, закрепляется один раз, а не перевыбирается под каждое сравнение. В графике эталон рисуется жирнее, остальные — приглушённо (различие весом/пунктиром, не цветом).
-- **Дельта считается от baseline и показывается рядом со значением** в строке.
-- **Сравнение:** runs-as-columns для конфигов и метрик + «Diff only» (скрыть совпадающие); examples-as-rows, выровненные по id, с группировкой колонок **Inputs / Outputs / Scores**, референс — крайний левый столбец.
-- **Сторона/формат диффа:** side-by-side vs unified; число — как целое, процент или множитель, переключается кликом; процент--only ловушка около нуля.
-- **Leaderboard:** колонка = тройка (eval × scorer × агрегация), а не один скаляр.
-- **Sweep:** по умолчанию три графика — parallel coordinates, parameter importance, scatter; в списке — state, created, creator, число прогонов, compute time.
-- **Логи:** префиксы `ERROR` / `WARNING` / `wandb:` в тексте (не только цвет), tail-follow, «Jump to bottom», скачивание.
-- **Цвет прогона:** стабильная идентичность, ручное переопределение, переопределение — личное, не общее. Плюс отдельный режим «цвет по метрике» с 2–8 корзинами.
-- **Аннотации:** у рубрики есть тип (categorical/continuous/freeform) и направление (maximize/minimize/none) — именно направление делает «больше = лучше» корректным для токсичности.
-- **KPI-заголовок проекта:** count, errors, p50/p99 latency, total estimated cost; экспорт CSV должен совпадать со схемой экрана.
-- **Drill-down:** точка на графике → отчёт → датасет → конкретный пример.
-- **Справедливость сравнения:** метрика несёт идентичность датасета и чекпойнта; сравнение разных датасетов блокируется или помечается.
-- **Статусы прогонов:** W&B — Crashed / Failed / Finished / Killed / Running / Pending; MLflow — RUNNING / SCHEDULED / FINISHED / FAILED / KILLED. Различие «crashed» (умерла инфраструктура) и «failed» (ненулевой код выхода) важно для триажа — не сливаем.
-
-### 3.3 Эргономика плотных интерфейсов
-
-- Светлая тема для мелкого текста: лёгкая полярность выигрывает у мелких кеглей (Piepenbrock et al. 2013/2014). Тёмная — предпочтение, не преимущество (While & Sarvghad, IEEE VIS 2024: у 92% разница точности ≤0.5%). **Решение: светлая тема по умолчанию, тёмная — опция; цвета серий фиксированы между темами.**
-- Сравнение 3+ моделей: сначала кластеризация/обзор, потом drill-down (LLM Comparator, arXiv 2402.10524); плоская таблица из N колонок не масштабируется.
-- Показывать распределение, а не только среднее: 75% исследований с n=2–6 на группу (Weissgerber et al. 2015); показываем все сиды/фолды, а не mean±SE, и явно подписываем тип интервала.
-- Эксперты в плотных инструментах сидят часами: нужен компактный режим строк и переключатель плотности.
-- Никакой зебры: исследования показывают, что любая штриховка ухудшает поиск (Lee 2014, HFES) — используем hairline-разделители + sticky header + hover.
+### Anti-goals (what would kill the product)
+- "Universality" at the price of specificity: if a component does not answer an ML question, it is dead weight.
+- Generating the UI from the shape of the schema: screens generated by shape look the same for everyone — that is a generic admin panel.
+- Trying to cover all of MLOps in v1.
 
 ---
 
-## 4. Дизайн-язык
+## 3. Research: the rules we build on
 
-### 4.1 Кто пользователь и что он делает
+### 3.1 Standards that give verifiable requirements
 
-**Пользователь:** ML-инженер, 28–45 лет, работает с моделями и датасетами, сидит в инструменте по 2–6 часов в день, часто в фоне терминала. Одновременно открыт FastAPI, IDE и этот интерфейс. Не «дашборд для руководителя» — рабочий станок.
-
-**Основная задача (focal verb):** найти, где модель стала хуже, и дойти до конкретного примера, на котором она ошиблилась.
-
-**Ощущение:** «лабораторный журнал, а не маркетинговый дашборд». Точно, спокойно, плотно, но не удушливо. Светлая бумага с сеткой вместо глянцевой тёмной панели; тёмная тема — «ночная смена у монитора».
-
-### 4.2 Домен (понятия мира продукта)
-
-Прогон · Эпоха/шаг · Эталон (baseline) · Дельта · Срез (example) · Оценка (score) · Артефакт · Трейс/спан · Провенанс · Свежесть данных · Страхование/риск · Дрейф.
-
-### 4.3 Цветовой мир (откуда берём цвета)
-
-Не «синий SaaS». Мир лаборатории и приборов: бумага журнала, графит, охра/кирпич для отказа, зелёный сигнал «норма», лайм свечения дисплея, синий сигнал прибора, лавандовый свечения моделей на графиках.
-
-### 4.4 Токены
-
-**Светлая тема (по умолчанию)**
-
-| Токен | Значение | Роль |
+| Source | What it requires | How we apply it |
 |---|---|---|
-| `--canvas` | `#f7f7f4` | Фон приложения, тёплый нейтральный вместо чистого белого |
-| `--surface` | `#ffffff` | Карточки, панели |
-| `--surface-sunken` | `#f1f1ed` | Вложенные блоки, поля ввода (ввод — «вдавлен», значит темнее) |
-| `--surface-overlay` | `#ffffff` | Попапы, диалоги (+ один мягкий тень-слой) |
-| `--border` | `#e5e5e0` | Hairline-разделители, 1px |
-| `--border-strong` | `#d3d3cb` | Границы полей, выделенные разделители |
-| `--text-primary` | `#1a1a17` | Основной текст |
-| `--text-secondary` | `#56564e` | Вторичный текст, подписи |
-| `--text-tertiary` | `#82827a` | Метаданные, заголовки колонок |
-| `--text-muted` | `#a6a69d` | Плейсхолдеры, отключённое |
-| `--accent` | `#2f56d9` | Единственный акцент: действие, фокус, активный маршрут |
-| `--accent-hover` | `#2647b8` | Ховер акцента |
-| `--accent-wash` | `#eef2fd` | Подложка выделения, выбранной строки |
-| `--status-success` | `#2f7a4d` | «Завершился успешно» (не «хорошо») |
-| `--status-warning` | `#9a6a12` | Охра: «требует внимания», «деградация» |
-| `--status-danger` | `#b0402f` | Кирпич: «упало» |
-| `--status-neutral` | `#6f6f66` | «Ожидает», «неизвестно» |
-| `--status-running` | `--accent` | «Идёт» — совпадает с акцентом, различается иконкой |
-| `--data-ink` | `#9a9a92` | Сетка, оси, разделители внутри графиков |
+| **WCAG 2.2 AA** (W3C Rec. 12.12.2024) | 1.4.1 — colour is not the only carrier of meaning; 1.4.11 — 3:1 for non-text elements; 2.5.8 — target ≥24×24px; 2.4.7/2.4.13 — focus ≥2px, ≥3:1; 1.3.1 — table semantics; 4.1.3 — statuses via `role="status"` without moving focus; 1.4.3 — text ≥4.5:1 | The baseline acceptance minimum. Contrast tokens are checked by a test |
+| **EN 301 549** (EU harmonised) | includes WCAG 2.1 AA + requirements for software | The chain of obligations, if the product goes into the EU public sector |
+| **ISO 9241-110:2020** | interaction principles (filters, sorting, drill-in) | Separating "interaction" / "presentation" in the design specification |
+| **ISO 9241-112:2025** | ergonomics of information presentation: discriminability, readability | Justifies the density of tables and the alignment rules |
+| **ISO 9241-11:2018** | usability is the outcome of use, not a checklist | Tasks are designed from measurable tasks ("find the regression among 5000 runs") |
+| **EU AI Act art. 12, 13, 14, 17, 50, 72** | logging, transparency, human oversight, technical documentation, labelling of synthetic content, post-market monitoring | Provenance and "who checked / who overrode" are record fields, not a PDF |
+| **ISO/IEC 42001:2023, 23894:2023, 23053, 42005** | AI system management, risk, system description, impact assessment | The field set of the model/run card is inspired by 23053; risks are records with a status |
+| **NIST AI RMF (+ GenAI Profile)** | a voluntary trust framework | "Compliance-support" mode: surfaces for assessment evidence, not a badge |
+| **Cleveland & McGill (1984)** | position on a common scale > length > angle > area > colour | Metric comparison — a common axis and dot/lollipop, not coloured tiles and not a radar |
+| **Tufte** | data-ink ratio, a sparkline is word-sized graphics | The inline sparkline in a row, ~1 line tall; no decorative ink |
+| **Munzner (nested model, 2009)** | an error at the top cascades downwards | Before layout: fix the task → the operation → the encoding |
+| **NN/g "Data Tables" (2022)** | 4 table tasks: find, compare, open, act; sticky header; visible filter activity; first column is a readable identifier | The structure of the runs table |
+| **Adobe Spectrum, Table v6.0.1** | text left, numbers right, `tabular-nums`, no zebra, a dash for null, vertical centring, grid keyboard model | Direct rules for cells |
+| **ColorBrewer (Brewer, Harrower & Penn State)** | qualitative palettes, a filter for colour-vision deficiency | The palette of run identities (8 discriminable colours) |
+| **Microsoft Research, "Guidelines for Human-AI Interaction" (CHI 2019)** | 18 rules for human–AI interaction | The review checklist: show capabilities, context, the possibility of correction, uncertainty |
+| **Model Cards (arXiv 1810.03993), Datasheets (arXiv 1803.09010)** | metrics by slice, conditions of use, motivation/composition/data collection | Fields of the model and dataset card, not external documents |
 
-**Тёмная тема (та же система, инвертированные значения)**
+**Corrections made during the research** (so that we do not cite something wrong):
+- **GOST R 52875-2018** — these are tactile ground indicators for the blind, NOT a website accessibility standard. It is also replaced from 01.07.2026 by GOST R 52875-2025. The relevant Russian standard for ICT accessibility has a different number (it appears as GOST R 52876-2018) and has to be verified by hand at protect.gost.ru before being cited. We do not use it in the design document.
+- **ANSI/HFES-200** — "Human Factors Engineering of Software User Interfaces" (2008), not a keyboard layout standard. Keyboards are ISO 9241-5 / ANSI X3.110.
+- **HFES 200** is paid for; we cite it only as context, not as a requirement.
 
-`--canvas #121211` (тёплый near-black, не чистый чёрный) · `--surface #1a1a18` · `--surface-sunken #0e0e0d` · `--border rgba(255,255,255,0.08)` · `--text-primary #f2f2ee` · `--text-secondary #b6b6ad` · `--text-tertiary #85857d` · `--accent #7d9cff` · статусы приглушены на ~15% · **`--data-ink` и цвета серий не меняются** — идентичность прогона обязана означать одно и то же в обеих темах.
+### 3.2 Conventions of the ML tooling market (what has already been invented, so we do not reinvent it)
 
-**Цвета идентичности прогонов** (ColorBrewer qualitative, 8 штук, различимы при дальтонизме):
-`#1b9e77` · `#d95f02` · `#7570b3` · `#e7298a` · `#66a61e` · `#e6ab02` · `#a6761d` · `#666666`.
-Используются только как «кто есть кто» (точка в строке, линия на графике, метка в легенде). **Не** для «лучше/хуже».
+Source: W&B (the documentation has moved to `docs.coreweave.com`), MLflow 3, Evidently, Opik/Comet, Arize Phoenix, LangSmith.
 
-**Правила цвета (жёсткие):**
-1. Цвет никогда не единственный носитель смысла (WCAG 1.4.1): статус = иконка + слово + цвет; дельта = знак + число + слово («лучше»/«хуже») + цвет.
-2. Все нетекстовые элементы ≥3:1 к фону (WCAG 1.4.11): точки статуса, линии графиков, кольцо фокуса.
-3. Текст ≥4.5:1 (WCAG 1.4.3) в обеих темах — проверяется тестом.
-4. Один акцент. Цвет = структура или смысл, не украшение.
-5. Дельта «лучше» не зелёная, а «хуже» не красная (инверсия W&B спорна, а красно-зелёная пара нечитаема для ~8% мужчин). Знак и слово — носители, цвет — усилитель.
+- **Vocabulary:** Project → Run → Artifact; Experiment → Run → Model; Sweep; Report; Eval Table. "Job/task/experiment" are not interchangeable across all tools — we fix one hierarchy and a correspondence map.
+- **A run** = a record of metrics + parameters + artifacts with a start/end time and a state.
+- **Runs table:** configurable columns, pinning, sorting, aggregation of `latest/min/max`, CSV export.
+- **The Baseline (the reference) is an explicit first-class object:** one per space, pinned once, not re-picked for every comparison. In a chart the reference is drawn heavier, the rest muted (a difference of weight/dash, not of colour).
+- **A delta is computed from the baseline and shown next to the value** in the row.
+- **Comparison:** runs-as-columns for configs and metrics + "Diff only" (hide the matches); examples-as-rows, aligned by id, with the columns grouped as **Inputs / Outputs / Scores**, the reference being the leftmost column.
+- **Side/format of the diff:** side-by-side vs unified; a number as an integer, a percentage or a multiplier, switched by a click; the percentage-only trap near zero.
+- **Leaderboard:** a column = a triple (eval × scorer × aggregation), not a single scalar.
+- **Sweep:** three charts by default — parallel coordinates, parameter importance, scatter; in the list — state, created, creator, number of runs, compute time.
+- **Logs:** the prefixes `ERROR` / `WARNING` / `wandb:` in the text (not only in colour), tail-follow, "Jump to bottom", download.
+- **Run colour:** a stable identity, a manual override, the override is personal, not shared. Plus a separate "colour by metric" mode with 2–8 buckets.
+- **Annotations:** a rubric has a type (categorical/continuous/freeform) and a direction (maximize/minimize/none) — it is exactly the direction that makes "more = better" correct for toxicity.
+- **KPI header of a project:** count, errors, p50/p99 latency, total estimated cost; the CSV export must match the schema of the screen.
+- **Drill-down:** a point on a chart → a report → a dataset → a specific example.
+- **Fair comparison:** a metric carries the identity of the dataset and the checkpoint; comparing different datasets is blocked or flagged.
+- **Run statuses:** W&B — Crashed / Failed / Finished / Killed / Running / Pending; MLflow — RUNNING / SCHEDULED / FINISHED / FAILED / KILLED. The difference between "crashed" (the infrastructure died) and "failed" (a non-zero exit code) matters for triage — we do not merge them.
 
-### 4.5 Типографика
+### 3.3 Ergonomics of dense interfaces
 
-- **Inter** (variable) — UI и значения метрик. Высокий x-height, `tabular-nums` + `lining-nums` на всех числовых ячейках.
-- **JetBrains Mono** — логи, diff, идентификаторы, конфиги, артефакты. Нулевой с точкой, различимые `1/l/I` (критично, когда на экране `l1` и `11` в имени прогона).
-- Шкала от базы 14px, ratio ~1.25: `11 / 12 / 13 / 14 / 16 / 20 / 28 / 36`.
-- Иерархия строится весом и цветом, а не только размером: значение 600/primary, подпись 500/secondary, метаданные 400/tertiary.
-- Прописания: заголовки `text-wrap: balance`, основной текст `text-wrap: pretty`, моноширинные — без переносов.
-- Минимум 12px для текста в таблицах; 11px только для метаданных и подписей осей.
+- Light theme for small text: light polarity beats small type sizes (Piepenbrock et al. 2013/2014). Dark is a preference, not an advantage (While & Sarvghad, IEEE VIS 2024: for 92% the accuracy difference is ≤0.5%). **Decision: light theme by default, dark as an option; the series colours are fixed across themes.**
+- Comparing 3+ models: first clustering/overview, then drill-down (LLM Comparator, arXiv 2402.10524); a flat table of N columns does not scale.
+- Show the distribution, not just the mean: 75% of studies with n=2–6 per group (Weissgerber et al. 2015); we show all seeds/folds, not mean±SE, and we label the type of interval explicitly.
+- Experts sit in dense tools for hours: a compact row mode and a density switch are needed.
+- No zebra striping: research shows that any striping makes search harder (Lee 2014, HFES) — we use hairline separators + a sticky header + hover.
 
-### 4.6 Плотность, радиусы, глубина
+---
 
-- Базовый шаг — 4px. Отступы: 8 (внутри контрола), 12 (между элементами строки), 16 (внутри панели), 24 (между группами), 40 (между секциями).
-- Строки таблиц: **32px** основные, 28px компактные, 40px свободные; переключатель плотности.
-- Радиусы: 6px контролы и поля, 10px карточки и панели, 9999px только для пилюль-чипов. Наружу: `outer = inner + padding`.
-- Глубина: hairline-границы + сдвиги поверхностей. Тени — только у оверлеев (попап, диалог, тултип) и только в светлой теме; в тёмной — обводка.
-- Тени не на карточках, кнопках, таблицах.
-- Кольцо фокуса: 2px, ≥3:1, видно всегда; sticky-header не перекрывает сфокусированную строку (WCAG 2.4.11/2.4.12).
-- Целевые размеры ≥24×24px (WCAG 2.5.8), расстояние между целями — чтобы круги 24px не пересекались.
+## 4. Design language
 
-### 4.7 Движение
+### 4.1 Who the user is and what they do
 
-- Кривая входа/интерактива: `cubic-bezier(0.23, 1, 0.32, 1)`; на экране — `cubic-bezier(0.77, 0, 0.175, 1)`. `ease-in` не используем (задерживает первый кадр).
-- Длительности: нажатие 100–160ms, тултип/попап 125–200ms, выпадающий список 150–250ms, модалка 200–300ms. Ничего не дольше 300ms.
-- Анимируются только `transform` и `opacity`. Никогда `transition: all`, никогда `scale(0)`, никогда со `width/height`.
-- Высокочастотные действия (наведение на строку, переключение вкладки, ввод) — мгновенно или ≤150ms только по `opacity`/`background-color`.
-- `prefers-reduced-motion: reduce` — переходы по цвету/прозрачности остаются, перемещения исчезают.
-- Живое обновление (SSE) — инкрементально: новая строка лога доезжает, а не перерисовывает список.
+**The user:** an ML engineer, 28–45, works with models and datasets, sits in the tool for 2–6 hours a day, often with a terminal in the background. A FastAPI app, an IDE and this interface are open at the same time. Not a "dashboard for the manager" — a workbench.
 
-### 4.8 Signature: «лента прогона» (run ribbon)
+**The primary task (focal verb):** find where the model got worse, and get down to the specific example it got wrong on.
 
-Единственный элемент, который мог бы существовать только в этом продукте. Горизонтальная полоса длиной = длительность прогона, разбитая на стадии (queued → prepare → train → eval → publish), где:
-- сегмент = стадия, длина = её длительность;
-- цвет сегмента = статус стадии, но статус читается и подписью, и текстом в подписи;
-- на полосе отложены точки метрических событий (скачки loss, деградация) — с вертикальными метками;
-- провал стадии виден как разрыв/обрыв полосы, а не как красная строка в списке.
+**The feeling:** "a lab notebook, not a marketing dashboard". Precise, calm, dense, but not suffocating. Light paper with a grid instead of a glossy dark panel; the dark theme is the "night shift at the monitor".
 
-Лента живёт: в строке таблицы прогонов (одна строка высотой, полоса на всю ширину ячейки), в шапке экрана прогона (развёрнуто, с подписями стадий), в сравнении (две ленты рядом, общий масштаб времени).
+### 4.2 The domain (the concepts of the product's world)
 
-Почему именно это: прогон — единственный объект, у которого одновременно есть время, стадии, статус и метрика. Список из карточек это теряет. Лента умеет в одном 32-пиксельном элементе показать «он упал на тренировке на 40-й минуте» — быстрее, чем любой текст.
+Run · Epoch/step · Baseline · Delta · Example (slice) · Score · Artifact · Trace/span · Provenance · Data freshness · Assurance/risk · Drift.
 
-**Поддерживающий паттерн (не signature): «эталонная кромка».** В любой таблице с метриками слева закреплена колонка эталона, а справа — колонка дельт; дельта = «значение − эталон», показывается со знаком и словом. Различение эталона — весом и пунктиром, не цветом.
+### 4.3 The world of colour (where the colours come from)
 
-### 4.9 Три дефолта, которые мы отвергаем
+Not "SaaS blue". The world of a laboratory and of instruments: notebook paper, graphite, ochre/brick for failure, a green signal for "normal", the lime glow of a display, the blue signal of an instrument, the lavender glow of models on charts.
 
-| Дефолт | Отвергаем | Почему |
+### 4.4 Tokens
+
+The source of truth is `packages/ui/src/styles/tokens.css`; the values below are the current ones, and the contrast pairs are checked by `packages/ui/scripts/check-contrast.mjs`.
+
+**Light theme (default)**
+
+| Token | Value | Role |
 |---|---|---|
-| Сетка карточек прогонов (grid of cards с большим числом) | Таблица + лента | NN/g: в таблице соседние точки сравниваются без перевода взгляда; карточки заставляют переориентироваться. Дефолт также скрывает столбцы |
-| «Бусина»/цветная плитка в ячейке метрики как главный график | Общая ось + dot/lollipop для сравнения, спарклайн (~1 строка) inline как вторичный признак | Cleveland–McGill: позиция на общей шкале читается точнее; Tufte: sparkline — слово-размерная графика, не украшение |
-| Зелёный = «лучше», красный = «хуже» | Знак + число + слово «лучше/хуже» + нейтральный цвет; зелёный/красный только для статуса процесса | WCAG 1.4.1 (дальтония), плюс в ML «больше» ≠ «лучше» (зависит от метрики: у recall больше = лучше, у latency больше = хуже) |
+| `--canvas` | `#f7f7f4` | Application background, a warm neutral instead of pure white |
+| `--surface` | `#ffffff` | Cards, panels |
+| `--surface-sunken` | `#f1f1ed` | Nested blocks, input fields (an input is "pressed in", so it is darker) |
+| `--surface-overlay` | `#ffffff` | Popups, dialogs (+ one soft shadow layer) |
+| `--surface-hover` | `#f4f4f0` | Row hover |
+| `--surface-selected` | `#eef2fd` | Selection background |
+| `--border` | `#dadad2` | Hairline separators, 1px (1.41:1 to surface — in a dense table the hairline is structure) |
+| `--border-strong` | `#d3d3cb` | Field borders, emphasised separators |
+| `--border-input` | `#8a8a83` | Input field border, 3.07:1 to surface (WCAG 1.4.11) |
+| `--text-primary` | `#1a1a17` | Primary text |
+| `--text-secondary` | `#56564e` | Secondary text, captions |
+| `--text-tertiary` | `#64645c` | Metadata, column headers |
+| `--text-muted` | `#6f6f66` | Placeholders, disabled |
+| `--text-inverse` | `#ffffff` | Text on a dark surface |
+| `--accent` | `#2f56d9` | The only accent: action, focus, active route |
+| `--accent-hover` | `#2647b8` | Accent hover |
+| `--accent-wash` | `#eef2fd` | Selection background, selected row |
+| `--accent-text` | `#ffffff` | Text on an accent button |
+| `--status-success` | `#2f7a4d` | "Finished successfully" (not "good") |
+| `--status-warning` | `#8a5d0f` | Ochre: "needs attention", "degradation" |
+| `--status-danger` | `#b0402f` | Brick: "failed" |
+| `--status-neutral` | `#6b6b62` | "Pending", "unknown" |
+| `--status-running` | `#2f56d9` | "Running" — same as the accent, distinguished by the icon |
+| `--status-danger-text` | `#ffffff` | Text on a danger surface |
+| `--status-success-wash` | `#e9f4ee` | Background of the "succeeded" status |
+| `--status-warning-wash` | `#f8f1e2` | Background of the "warning" status |
+| `--status-danger-wash` | `#f9ecea` | Background of the "failed" status |
+| `--status-neutral-wash` | `#f0f0ec` | Background of the "pending" status |
+| `--status-running-wash` | `#eef2fd` | Background of the "running" status |
+| `--data-ink` | `#8f8f88` | Grid, axes, separators inside charts (3.25:1) |
+| `--data-ink-soft` | `#d8d8d2` | Secondary grid lines |
 
-### 4.10 Язык интерфейса
+**Dark theme (the same system, inverted values)**
 
-Правило одно и не обсуждается: **термины домена — английские, служебные слова — русские.**
+`--canvas #121211` (warm near-black, not pure black) · `--surface #1a1a18` · `--surface-sunken #0e0e0d` · `--surface-overlay #232320` · `--surface-hover #212120` · `--surface-selected #1c2437` · `--border rgba(255,255,255,0.12)` · `--border-strong rgba(255,255,255,0.2)` · `--text-primary #f2f2ee` · `--text-secondary #b6b6ad` · `--text-tertiary #8f8f88` · `--text-muted #83837a` · `--accent #7d9cff` · `--accent-hover #93aeff` · statuses muted by ~15% · **`--data-ink` follows the theme (`#6f6f66`), the series colours do not change** — a run's identity must mean the same thing in both themes.
 
-| Английский (в UI) | Русский (в UI) |
+**Run identity colours** (ColorBrewer qualitative, 8 of them, discriminable under colour-vision deficiency):
+`--data-series-1 #1b9e77` · `--data-series-2 #d95f02` · `--data-series-3 #7570b3` · `--data-series-4 #e7298a` · `--data-series-5 #66a61e` · `--data-series-6 #e6ab02` · `--data-series-7 #a6761d` · `--data-series-8 #666666`.
+They are used only as "who is who" (a dot in a row, a line on a chart, a label in the legend). **Never** for "better/worse".
+
+**Colour rules (strict):**
+1. Colour is never the only carrier of meaning (WCAG 1.4.1): a status = icon + word + colour; a delta = sign + number + word ("better"/"worse") + colour.
+2. All non-text elements are ≥3:1 against the background (WCAG 1.4.11): status dots, chart lines, the focus ring.
+3. Text is ≥4.5:1 (WCAG 1.4.3) in both themes — checked by a test.
+4. One accent. Colour is structure or meaning, not decoration.
+5. The "better" delta is not green and the "worse" delta is not red (the W&B inversion is debatable, and a red-green pair is unreadable for ~8% of men). The sign and the word are the carriers, the colour is the amplifier.
+
+### 4.5 Typography
+
+- **Inter** (variable) — the UI and the metric values. A high x-height, `tabular-nums` + `lining-nums` in every numeric cell.
+- **JetBrains Mono** — logs, diffs, identifiers, configs, artifacts. A slashed zero, distinguishable `1/l/I` (critical when the screen shows `l1` and `11` in a run name).
+- Scale from a 14px base, ratio ~1.25: `11 / 12 / 13 / 14 / 16 / 20 / 28 / 36`.
+- The hierarchy is built with weight and colour, not only size: a value 600/primary, a caption 500/secondary, metadata 400/tertiary.
+- Wrapping: headings `text-wrap: balance`, body text `text-wrap: pretty`, monospace — no wrapping.
+- A minimum of 12px for text in tables; 11px only for metadata and axis captions.
+
+### 4.6 Density, radii, depth
+
+- The base step is 4px. Spacing: 8 (inside a control), 12 (between the items of a row), 16 (inside a panel), 24 (between groups), 40 (between sections).
+- Table rows: **32px** main, 28px compact, 40px relaxed; a density switch.
+- Radii: 6px for controls and fields, 10px for cards and panels, 9999px only for pill chips. Outward: `outer = inner + padding`.
+- Depth: hairline borders + shifts of the surfaces. Shadows only on overlays (popup, dialog, tooltip) and only in the light theme; in the dark theme it is an outline.
+- No shadows on cards, buttons, tables.
+- Focus ring: 2px, ≥3:1, always visible; the sticky header must not cover a focused row (WCAG 2.4.11/2.4.12).
+- Target sizes ≥24×24px (WCAG 2.5.8), with enough distance between targets that 24px circles do not intersect.
+
+### 4.7 Motion
+
+- The entry/interaction curve: `cubic-bezier(0.23, 1, 0.32, 1)`; on screen — `cubic-bezier(0.77, 0, 0.175, 1)`. We do not use `ease-in` (it delays the first frame).
+- Durations: press 100–160ms, tooltip/popup 125–200ms, dropdown 150–250ms, modal 200–300ms. Nothing longer than 300ms.
+- Only `transform` and `opacity` are animated. Never `transition: all`, never `scale(0)`, never with `width/height`.
+- High-frequency actions (hovering a row, switching a tab, typing) — instantly or ≤150ms, and only via `opacity`/`background-color`.
+- `prefers-reduced-motion: reduce` — colour/opacity transitions stay, movement disappears.
+- Live updates (SSE) are incremental: a new log line arrives, it does not redraw the list.
+
+### 4.8 Signature: the "run ribbon"
+
+The one element that could exist only in this product. A horizontal bar whose length = the duration of the run, split into stages (queued → prepare → train → eval → publish), where:
+- a segment = a stage, its length = the duration of that stage;
+- the colour of a segment = the status of the stage, but the status is read both from the caption and from the text in the caption;
+- metric events (loss spikes, degradation) are marked on the bar — with vertical marks;
+- the failure of a stage is visible as a break in the bar, not as a red row in the list.
+
+The ribbon lives: in a row of the runs table (one row tall, the bar across the full width of the cell), in the header of the run screen (expanded, with the stage captions), in a comparison (two ribbons side by side, a common time scale).
+
+Why exactly this: a run is the only object that has time, stages, a status and a metric at the same time. A list of cards loses that. The ribbon can show "it failed at training in the 40th minute" inside a single 32-pixel element — faster than any text.
+
+**Supporting pattern (not the signature): the "reference edge".** In any table with metrics the baseline column is pinned on the left and the delta column on the right; a delta = "value − baseline", shown with a sign and a word. The baseline is distinguished by weight and dashes, not by colour.
+
+### 4.9 Three defaults we reject
+
+| Default | We reject | Why |
+|---|---|---|
+| A grid of run cards (a grid of cards with a large number) | A table + the ribbon | NN/g: in a table adjacent points are compared without moving your gaze; cards force you to re-orient. The default also hides columns |
+| A "bead"/coloured tile in a metric cell as the main chart | A common axis + dot/lollipop for comparison, a sparkline (~1 line) inline as a secondary sign | Cleveland–McGill: position on a common scale is read more accurately; Tufte: a sparkline is word-sized graphics, not decoration |
+| Green = "better", red = "worse" | Sign + number + the word "better/worse" + a neutral colour; green/red only for the status of a process | WCAG 1.4.1 (colour-vision deficiency), plus in ML "more" ≠ "better" (it depends on the metric: for recall more is better, for latency more is worse) |
+
+### 4.10 The interface language
+
+**English by default, Russian available from a toggle in the top bar.**
+
+| Domain terms (the same in both languages) | Service words (translated) |
 |---|---|
-| Run, Baseline, Dataset, Example, Score, Eval, Artifact, Trace, Span, Stage | Запустить, Ожидает, Идёт, Завершён, Упал, Отменён, Потерян, Сравнить, Показать детали, Скачать, Обновить, Поиск, Фильтры, Экспорт |
+| Run, Baseline, Dataset, Example, Score, Eval, Artifact, Trace, Span, Stage | Start, Pending, Running, Finished, Failed, Cancelled, Lost, Compare, Show details, Download, Refresh, Search, Filters, Export |
 
-Почему так: термин домена — это то, что пользователь ищет в W&B, MLflow и в документации; называть «Dataset» словом «Набор данных» создаёт разрыв между интерфейсом и остальным миром ML. Служебные слова (кнопки, статусы процесса, пустые состояния, ошибки) — на родном языке пользователя.
+Why: a domain term is what the user looks for in W&B, in MLflow and in the documentation; calling a "Dataset" a "Data set" creates a gap between the interface and the rest of the ML world. Domain terms therefore stay English even in the Russian interface — they are names, not sentences. Service words (buttons, process statuses, empty states, errors) are translated.
 
-Двуязычный вид («Прогон / Run») не используется нигде, кроме глоссария в §11. Тексты пишутся по правилам ux-writing: глагол первым, без извинений, без кодов ошибок в основном сообщении, без «Выберите файл», говорящего «Выберите CSV-файл с метриками».
+How it is built:
 
-### 4.11 Сверка с GitHub Primer (2026-10-20)
+- the strings of a package live in one dictionary (`packages/ui/src/i18n/strings.ts`), the strings of the application in its own (`apps/spike/src/i18n.ts`); components never carry a literal;
+- `I18nProvider` holds the language, persists it in `localStorage` and reflects it in `<html lang>`;
+- the choice of language is per user, not per deployment: the same build serves both.
 
-Дизайн сверялся с Primer — реальными значениями из `@primer/primitives`, а не по памяти.
-Решения владельца: **тёплый тон и акцент сохраняем, сигнатуру не трогаем, шрифты оставляем
-текущие** (Inter + JetBrains Mono). Взято одно: разделители.
+The bilingual form is used nowhere: the interface shows one language at a time, and the vocabulary is fixed in the glossary in §11. The texts follow the rules of ux-writing: the verb first, no apologies, no error codes in the main message, no "Select a file" that means "Select a CSV file with metrics".
 
-| | было | стало | почему |
+### 4.11 A comparison with GitHub Primer (2026-10-20)
+
+The design was compared with Primer — with real values from `@primer/primitives`, not from memory.
+Owner decisions: **we keep the warm tone and the accent, we do not touch the signature, we keep the current fonts** (Inter + JetBrains Mono). One thing was taken: the separators.
+
+| | was | became | why |
 |---|---|---|---|
-| `--border` (светлая) | `#e5e5e0` (1.26:1 к surface) | `#dadad2` (1.41:1) | в плотной таблице hairline — это структура; 1.26:1 её не давал |
-| `--border` (тёмная) | `rgba(255,255,255,0.09)` | `rgba(255,255,255,0.12)` | то же в тёмной теме |
+| `--border` (light) | `#e5e5e0` (1.26:1 to surface) | `#dadad2` (1.41:1) | in a dense table the hairline is structure; 1.26:1 did not give it |
+| `--border` (dark) | `rgba(255,255,255,0.09)` | `rgba(255,255,255,0.12)` | the same in the dark theme |
 
-Не взято и почему:
+What was not taken and why:
 
-- **тернарный цвет Primer `#9198a1`** — 2.92:1 на белом, ниже порога 4.5:1 для текста. Наш
-  `#64645c` даёт 5.97:1; копировать было бы ухудшением;
-- **нейтрально-белый canvas** — тёплый тон `#f7f7f4` решено сохранить;
-- **акцент `#0969da`** — решено сохранить свой `#2f56d9`;
-- **системный шрифт вместо Inter** — сверено на стенде (Inter · системный стек · IBM Plex Sans ·
-  всё моно), решение: оставить Inter. Одинаковый рендеринг метрик на всех ОС важнее, чем
-  нативность; системный стек сэкономил бы ~100 КБ веб-шрифта.
+- **Primer's ternary colour `#9198a1`** — 2.92:1 on white, below the 4.5:1 threshold for text. Our
+  `#64645c` gives 5.97:1; copying it would have been a downgrade;
+- **the neutral-white canvas** — the warm tone `#f7f7f4` was decided to be kept;
+- **the accent `#0969da`** — we decided to keep our own `#2f56d9`;
+- **the system font instead of Inter** — checked on a stand (Inter · system stack · IBM Plex Sans ·
+  everything mono), decision: keep Inter. Identical rendering of the metrics on every OS matters
+  more than nativeness; the system stack would have saved ~100 KB of web font.
 
-Стенды для обсуждения — **вне репозитория**: это инструмент сравнения, а не часть продукта.
-В публичный репозиторий не попадают ни стенды, ни прототипы для сомнений, ни черновики знака.
+The stands used for the discussion live **outside the repository**: they are a comparison tool, not
+part of the product. Neither the stands nor the prototypes for doubts nor the drafts of the mark
+go into the public repository.
 
 ---
 
-## 5. Доменная модель и контракты данных
+## 5. The domain model and the data contracts
 
-### 5.1 Объекты
+### 5.1 The objects
 
-**Владелец модели — Frontedge (решение A).** В v1 у продукта своя фиксированная доменная модель: пользователь пишет адаптер (`provider`), который отдаёт `frontedge.Run` и т.д. Роли `x-frontedge` — публичный контракт для L2 (свои экраны) и для генератора; слой поверх произвольных пользовательских моделей (манифест схем с бэкенда) — Phase 5.
+**The owner of the model is Frontedge (decision A).** In v1 the product has its own fixed domain model: the user writes an adapter (`provider`) that returns `frontedge.Run` and so on. The `x-frontedge` roles are the public contract for L2 (own screens) and for the generator; a layer over arbitrary user models (a schema manifest from the backend) — Phase 5.
 
 ```
 Project
-└── Run                     — эксперимент: метрики, параметры, артефакты, статус
-    ├── Stage[]             — стадии прогона (для ленты)
-    ├── Artifact[]          — чекпойнт, лог, отчёт, версия датасета
+└── Run                     — experiment: metrics, parameters, artifacts, status
+    ├── Stage[]             — the stages of the run (for the ribbon)
+    ├── Artifact[]          — checkpoint, log, report, dataset version
     └── Trace
-        └── Span[]          — шаг с входом, выходом, оценкой, длительностью
-Dataset (версионированный)
-└── Example[]               — вход, выход, ожидание, оценка, версии
+        └── Span[]          — a step with input, output, score, duration
+Dataset (versioned)
+└── Example[]               — input, output, expectation, score, versions
 Eval = Dataset × Scorer × Metric
 ```
 
-### 5.2 Статусы
+### 5.2 Statuses
 
-Канонический набор Frontedge: `queued · running · succeeded · failed · cancelled · lost`.
-- `failed` — процесс завершился с ошибкой (ненулевой код выхода);
-- `lost` — процесс исчез (инфраструктура умерла, heartbeat пропал).
+The canonical Frontedge set: `queued · running · succeeded · failed · cancelled · lost`.
+- `failed` — the process finished with an error (a non-zero exit code);
+- `lost` — the process vanished (the infrastructure died, the heartbeat stopped).
 
-Различие сохраняем — по нему ведут триаж. Маппинг вендоровских словарей приводим в документации.
+We keep the difference — triage is done by it. The mapping of vendor vocabularies is given in the documentation.
 
-### 5.3 Свежесть данных (отдельное измерение)
+### 5.3 Data freshness (a separate dimension)
 
-`live · stale · partial` — поверх статуса. «Метрики по состоянию на 14:02, 6 минут назад» показывается явно, устаревшее значение не выглядит живым.
+`live · fresh · stale · partial` — on top of the status. "Metrics as of 14:02, 6 minutes ago" is shown explicitly, a stale value does not look live.
 
-### 5.4 Аннотации `x-frontedge` (публичный контракт v1)
+### 5.4 The `x-frontedge` annotations (public contract v1)
 
 ```python
 from pydantic import Field
@@ -330,277 +352,338 @@ class Run(BaseModel):
     git_sha: str | None = Field(default=None, json_schema_extra={"x-frontedge": {"role": "code"}})
 ```
 
-**Словарь ролей (v1, зафиксирован):**
+**The role vocabulary (v1, frozen):**
 
-| Роль | Что означает | Что делает UI |
+| Role | What it means | What the UI does |
 |---|---|---|
-| `id` | идентификатор | моноширинный, копируется по клику |
-| `text` | обычный текст | перенос по словам |
-| `status` | статус процесса | чип: иконка + слово + цвет |
-| `metric` | числовая метрика | числовая ячейка: значение + дельта + спарклайн |
-| `series` | ряд значений по шагам | спарклайн / линия на графике |
-| `timestamp` | момент времени | локальное время, относительное — вторично |
-| `duration` | длительность | форматированная длительность (моноширинная) |
-| `dataset` | имя датасета | моноширинный идентификатор |
-| `baseline` | эталон сравнения | закреплённая колонка-эталон |
-| `stage` | стадия прогона | сегмент ленты |
-| `freshness` | свежесть данных | метка «обновлено N мин назад», переход в `stale` |
-| `code` | код, конфиг, команда | моноширинный, без переносов |
-| `example` | срез датасета | строка с входом/выходом/оценкой |
-| `span` | шаг трейса | узел дерева |
-| `image` | артефакт-изображение | превью с ленивой загрузкой |
-| `url` | ссылка на внешний ресурс | ссылка с подтверждением перехода |
+| `id` | identifier | monospace, copied on click |
+| `text` | ordinary text | wraps by words |
+| `status` | the status of the process | chip: icon + word + colour |
+| `metric` | a numeric metric | numeric cell: value + delta + sparkline |
+| `series` | a series of values by step | sparkline / line on a chart |
+| `timestamp` | a moment in time | local time, relative as a secondary form |
+| `duration` | a duration | formatted duration (monospace) |
+| `dataset` | the name of a dataset | monospace identifier |
+| `baseline` | the reference of a comparison | the pinned baseline column |
+| `stage` | a stage of the run | a segment of the ribbon |
+| `freshness` | data freshness | the label "updated N min ago", the switch to `stale` |
+| `code` | code, config, a command | monospace, no wrapping |
+| `example` | a slice of the dataset | a row with input/output/score |
+| `span` | a step of the trace | a node of the tree |
+| `image` | an image artifact | a preview with lazy loading |
+| `url` | a link to an external resource | a link with a confirmation of the navigation |
 
-**Направление метрики** — расширение `metric`: `direction: maximize | minimize | none` (по умолчанию `none`). `maximize` → «больше = лучше», `minimize` → «меньше = лучше», `none` → оценочного слова нет, только знак и число. Направление задаётся владельцем метрики; в UI оно — единственное основание для слова «лучше/хуже», а не зелёный/красный цвет.
+**The direction of a metric** is an extension of `metric`: `direction: maximize | minimize | none` (by default `none`). `maximize` → "more = better", `minimize` → "less = better", `none` → there is no evaluative word, only a sign and a number. The direction is set by the owner of the metric; in the UI it is the only basis for the word "better/worse", not the green/red colour.
 
-**Что делает генератор:** `metrics` → `Record<string, number>` + метаданные `role: "metric"` → UI рисует числовую ячейку со спарклайном и табличными цифрами; `status` → union-типы + роль `status` → бейдж с иконкой и словарём статусов; `timestamp` → роль `timestamp` → локальное время; `direction` → попадает в метаданные и управляет словом «лучше/хуже».
+**What the generator does:** `metrics` → `Record<string, number>` + the metadata `role: "metric"` → the UI draws a numeric cell with a sparkline and tabular figures; `status` → union types + the role `status` → a badge with an icon and the status vocabulary; `timestamp` → the role `timestamp` → local time; `direction` → lands in the metadata and controls the word "better/worse".
 
-**Совместимость:** расширение словаря — только в мажорной версии; в минорной можно добавлять новые роли, но не менять смысл существующих.
+**Compatibility:** extending the vocabulary — only in a major version; in a minor version new roles may be added, but the meaning of the existing ones may not change.
 
 ---
 
-## 6. Архитектура
+## 6. Architecture
 
-### 6.1 Репозиторий (монорепо)
+### 6.1 The repository (a monorepo)
 
 ```
 frontedge/
 ├── python/frontedge/          → PyPI: frontedge
-│   ├── frontedge/
-│   │   ├── gen/               → генератор TS-типов (чистый Python, без Node)
-│   │   ├── screens/           → готовые экраны (runs, run, eval, dataset)
-│   │   ├── runtime/           → SSE, артефакты, auth-точки, монтирование
-│   │   └── ui/                → собранная статика (или сборка на лету)
+│   ├── src/frontedge/
+│   │   ├── gen/               → the TS type generator (pure Python, no Node)
+│   │   ├── screens/           → ready-made screens (runs, run, eval, dataset)
+│   │   ├── runtime/           → SSE, artifacts, auth points, mounting
+│   │   └── static/            → the built interface (or a build on the fly)
 │   └── pyproject.toml
 ├── packages/ui/               → npm: @frontedge/ui
-│   ├── src/tokens/            → CSS custom properties, темы
-│   ├── src/components/        → примитивы
-│   └── src/patterns/          → ML-паттерны: таблица прогонов, лента, diff
-├── examples/demo-ml/          → FastAPI + фейковый ML-бэкенд
+│   ├── src/styles/            → CSS custom properties, themes
+│   ├── src/components/        → primitives
+│   ├── src/patterns/          → ML patterns: runs table, ribbon, diff
+│   └── src/generated/         → types.ts + client.ts from the Python models
+├── apps/spike/                → the Phase 1 spike app (Vite + React + TS)
+├── examples/demo-ml/          → FastAPI + a fake ML backend
 └── docs/                      → integration.md, AGENTS.md
 ```
 
-### 6.2 Стек
+### 6.2 The stack
 
-**Python:** 3.12+, FastAPI, pydantic v2, `uv` для пакетов и сборки, `hatchling`/`uv_build` — сборка дистрибутива.
+**Python:** 3.12+, FastAPI, pydantic v2, `uv` for the packages and the build, `hatchling`/`uv_build` — the distribution build.
 
-**Frontend:** React 19 + TypeScript + Vite. **React как решение по умолчанию** — обоснование в §6.3.
+**Frontend:** React 19 + TypeScript + Vite. **React as the default choice** — the justification is in §6.3.
 
-**Стили:** собственный CSS с токенами в custom properties. Tailwind **не обязателен**; если пользователь на нём — токены мапятся через `@theme` (одна строка). Никаких preflight-конфликтов в библиотеке.
+**Styling:** our own CSS with the tokens in custom properties. Tailwind is **not required**; if the user is on it, the tokens are mapped through `@theme` (one line). No preflight conflicts in the library.
 
-**Примитивы:** Radix UI (headless, доступность из коробки) — dialog, popover, tooltip, dropdown, tabs, checkbox, select. Свои стили поверх, единый набор состояний.
+**Primitives:** Radix UI (headless, accessibility out of the box) — dialog, popover, tooltip, dropdown, tabs, checkbox, select. Our own styles on top, a single set of states.
 
-**Таблицы:** TanStack Table (headless) + TanStack Virtual. Клавиатурная модель грида (roving tabindex, стрелки, Home/End, PageUp/PageDown) — по Adobe Spectrum.
+**Tables:** TanStack Table (headless) + TanStack Virtual. The grid keyboard model (roving tabindex, arrows, Home/End, PageUp/PageDown) — per Adobe Spectrum.
 
-**Графики:** собственный SVG-график метрик по шагам — без библиотеки. Причины: (1) нужен точный контроль над видом (общая ось, hairline-сетка, baseline пунктиром, никакого chartjunk); (2) uPlot в Phase 1 рисовал область графика неверно; (3) лишняя зависимость в библиотеке. Спарклайны в ячейках — тот же SVG. Подсказка по наведению (значение прогона и baseline на том же шаге) реализована вручную.
+**Charts:** our own SVG chart of the metrics by step — no library. The reasons: (1) we need precise control over the appearance (a common axis, a hairline grid, the baseline as a dashed line, no chartjunk); (2) uPlot drew the plot area incorrectly in Phase 1; (3) an extra dependency in a library. The sparklines in the cells are the same SVG. The hover tooltip (the value of the run and the baseline at the same step) is implemented by hand.
 
-**Данные:** собственный тонкий слой поверх сгенерированного клиента: типизированный `fetch`-клиент, кэш с тегами и инвалидацией, хуки `useQuery`-подобного вида. **Без TanStack Query** — сознательно, ради минимума зависимостей; эквивалентный API закрывает наши потребности (~150 строк).
+**Data:** our own thin layer over the generated client: a typed `fetch` client, a cache with tags and invalidation, `useQuery`-like hooks. **No TanStack Query** — deliberately, to keep the dependency count minimal; an equivalent API covers our needs (~150 lines). The generated client is the only place that knows the URLs: `listRuns(query)`, `getRun`, `artifactUrl`, `config`, `runAction`, `listEvals`, `compareEval`, `listDatasets`, `getDataset`, `meta` and the `streamLogs` SSE helper.
 
-**Стриминг:** SSE (Fetch + ReadableStream). WebSocket — только если понадобится двусторонняя интерактивность (playground).
+**Streaming:** SSE (Fetch + ReadableStream). WebSocket — only if two-way interactivity is needed (a playground).
 
-**Иконки:** один набор — Lucide, `currentColor`, `stroke-width` по весу текста рядом (1.5px @ 400 → 2.5px @ 700). Один SVG на иконку, состояния — из CSS.
+**Icons:** one set — Lucide, `currentColor`, `stroke-width` according to the weight of the text next to it (1.5px @ 400 → 2.5px @ 700). One SVG per icon, the states come from CSS.
 
-**Сборка:** Vite → статика в `python/frontedge/frontedge/ui/`, отдаётся тем же FastAPI. Один порт, Node не нужен в проде пользователя.
+**Build:** Vite → static assets in `python/frontedge/src/frontedge/static/`, served by the same FastAPI. One port, no Node in the user's production.
 
-### 6.3 Почему React (и альтернативы)
+### 6.3 Why React (and the alternatives)
 
 | | React | Vue 3 | Svelte 5 | Lit / Web Components |
 |---|---|---|---|---|
-| Готовые части экосистемы | TanStack Table/Virtual, Radix, Recharts, react-diff-viewer, cytoscape | TanStack Table (слабее), Reka UI, VueUse | TanStack (только svelte5), мало | нет — писать самим |
-| Наш объём кода | минимальный | +20–30% | +30% | +100% |
-| Скорость входа в проект | максимальная: React — самый распространённый стек, примеров и типизаций больше всего | высокая | средняя | средняя |
-| Переносимость в чужой проект | пользователь почти наверняка уже на React | | | любая стек |
-| Лицензия/риск | стандарт де-факто | | | «свой фреймворк» |
+| Ready-made parts of the ecosystem | TanStack Table/Virtual, Radix, Recharts, react-diff-viewer, cytoscape | TanStack Table (weaker), Reka UI, VueUse | TanStack (svelte5 only), few | none — write it ourselves |
+| Our volume of code | minimal | +20–30% | +30% | +100% |
+| Speed of onboarding | maximum: React is the most widespread stack, there are more examples and typings | high | medium | medium |
+| Portability into someone else's project | the user is almost certainly already on React | | | any stack |
+| Licence/risk | the de-facto standard | | | "your own framework" |
 
-**Решение: React 19 + TS.** Обоснования: (1) нужные нам части — таблицы, виртуализация, diff, граф трейса — готовы только там; (2) React — самый распространённый стек: больше примеров, типизаций и практик, ниже порог входа для контрибьютора; (3) мы всё равно не тащим экосистему «целиком» — зависимости ограничены Radix + TanStack Table/Virtual, графики написаны сами.
+**Decision: React 19 + TS.** The justifications: (1) the parts we need — tables, virtualisation, diff, the trace graph — are ready-made only there; (2) React is the most widespread stack: more examples, typings and practices, a lower barrier for a contributor; (3) we are not pulling the ecosystem in "whole" anyway — the dependencies are limited to Radix + TanStack Table/Virtual, the charts are written by us.
 
-**Альтернатива, если пользователь не на React:** компонентный слой можно отдать как Web Components (один разговорный слой) — но это отдельный проект и в v1 его нет.
+**An alternative, if the user is not on React:** the component layer could be shipped as Web Components (a one-time layer of glue) — but that is a separate project and there is none in v1.
 
-### 6.4 Контракт расширения (решение 2026-10-20)
+### 6.4 The extension contract (decision of 2026-10-20)
 
-Визуальный редактор **не делаем** (решение владельца): он превратил бы продукт из «фронтенда
-для ML» в конструктор интерфейсов и потребовал бы схему экрана как новый публичный контракт.
-Вместо него — слои, где смысл живёт в коде проекта, а вид — в конфигурации:
+We do **not** build a visual editor (owner decision): it would turn the product from a "frontend
+for ML" into an interface builder and would require a screen schema as a new public contract.
+Instead — layers where the meaning lives in the code of the project and the look lives in the
+configuration:
 
-- **L1 — готовые экраны.** `app.include_router(frontedge.mount(runs_provider=...))` — экраны
-  поверх фиксированной модели: прогоны, детали, сравнение оценок, датасет. Подключение =
-  провайдер (20–40 строк).
-- **L2 — расширение без редактора.** Конфигурация (`frontedge.toml` или JSON) — данные:
-  колонки, вкладки, объявленные действия; обработчики действий — код проекта; свои экраны —
-  на компонентах `@frontedge/ui` (React), без схемы и без движка рендера.
-- **L3 — визуальный редактор: не делаем.** Если понадобится — это форма над той же
-  конфигурацией, а не новый язык.
+- **L1 — ready-made screens.** `app.include_router(frontedge.mount(runs_provider=...))` — screens
+  over the fixed model: runs, details, the comparison of evals, the dataset. Connecting it =
+  a provider (20–40 lines).
+- **L2 — extension without an editor.** The configuration (`frontedge.toml` or JSON) — data:
+  columns, tabs, declared actions; the handlers of the actions — the code of the project; own
+  screens — on the `@frontedge/ui` components (React), without a schema and without a render
+  engine.
+- **L3 — visual editor: we do not build it.** If it is ever needed — it is a form over the same
+  configuration, not a new language.
 
-Кнопка в интерфейсе появляется **только** если действие объявлено в конфигурации и
-зарегистрирован обработчик: заглушек нет, это убирает целый класс «кнопок без логики».
+A button appears in the interface **only** if the action is declared in the configuration and a
+handler is registered: there are no stubs, this removes a whole class of "buttons without logic".
 
-**Документация обслуживает обе аудитории:** `docs/integration.md` — для человека, `AGENTS.md`
-в корне — для агента (тот же контракт в сокращённом виде и рецепт «добавить действие за
-10 минут»).
+**The documentation serves both audiences:** `docs/integration.md` — for a human, `AGENTS.md`
+in the root — for an agent (the same contract in a shortened form and the recipe "add an action
+in 10 minutes").
 
-### 6.5 Генератор типов
+### 6.5 The type generator
 
-- **Чистый Python**, без Node: `pydantic → JSON Schema → TypeScript`. Плюс: `pip install frontedge` не тянет Node; сборка монорепо не требует Node для питоновской части.
-- Читает `x-frontedge`-роли и обогащает типы семантикой (роль поля, словари статусов, формат чисел).
-- Артефакты: `types.ts` (типы + метаданные) и `client.ts` (типизированные методы + SSE-хелперы).
-- Референсная реализация: `openapi-typescript` — но своя генерация нужна ради `x-frontedge`; формат вывода совместим с его.
+- **Pure Python**, no Node: `pydantic → JSON Schema → TypeScript`. Plus: `pip install frontedge` does not pull Node; the build of the monorepo does not require Node for the Python part.
+- It reads the `x-frontedge` roles and enriches the types with semantics (the role of a field, the status vocabularies, the number format).
+- Artifacts: `types.ts` (types + metadata) and `client.ts` (typed methods + SSE helpers). The client covers the whole HTTP surface: `listRuns(query)` (with `search`, `status`, `dataset`, `limit`, `offset`), `getRun`, `artifactUrl`, `config`, `runAction`, `listEvals`, `compareEval`, `listDatasets`, `getDataset`, `meta` and the `streamLogs` SSE helper.
+- Reference implementation: `openapi-typescript` — but our own generation is needed for `x-frontedge`; the output format is compatible with its.
+
+### 6.6 The owner decisions of 2026-10-20
+
+Three decisions that shape the whole extension story; they are recorded here because the rest of
+the document refers to them.
+
+1. **No visual editor.** The interface is not a builder of interfaces. A screen schema would have
+   become a new public contract with its own versioning burden, and the editor would have had to
+   cover everything the configuration can already express. The configuration stays data.
+2. **The configuration stays data.** TOML or JSON (`python/frontedge/src/frontedge/config.py`):
+   the columns, the tabs, the density, the theme, the declared actions. It can be edited by hand,
+   from code and — later — by a tool, without changing the format. The meaning of a button lives
+   in the project: the handler is code (`python/frontedge/src/frontedge/screens/runs.py`), it is
+   registered by id and called through `runAction`.
+3. **The documentation serves both people and agents.** `docs/integration.md` is written for a
+   human developer, `AGENTS.md` in the root for an agent — the same contract in a shortened form
+   plus the recipes. Neither of them is a second source of truth: both describe the same public
+   API.
 
 ---
 
-## 7. Экраны v1
+## 7. The screens of v1
 
-### 7.1 Прогоны (список)
+### 7.1 Runs (list)
 
-Таблица: `name` (читаемый идентификатор, первая колонка, sticky) · status (иконка+слово+цвет) · лента прогона (одна ячейка на всю ширину) · dataset · git sha · started · duration · ключевые метрики (число + дельта к эталону + спарклайн).
+Table: `name` (readable identifier, first column, sticky) · status (icon+word+colour) · the run
+ribbon (one cell across the full width) · dataset · git sha · started · duration · the metric
+columns (value + delta to the baseline + sparkline).
 
-Правила: sticky header + sticky первая колонка; hairline-разделители, без зебры; числа справа, `tabular-nums`; отсутствие значения — тире «–»; фильтры показываются чипом «3 фильтра · сбросить»; колонки настраиваются (чекбоксы, без drag-only); сортировка кликом по заголовку, `aria-sort`; действия в строке — всегда видимые иконки с `aria-label` (не hover-only); массовые действия — панель при выборе ≥1 строки.
+**The columns come from the configuration.** The set and the order of the columns are taken from
+`run_columns` in the configuration (`frontedge.toml` or JSON): the known ids (`name`, `status`,
+`ribbon`, `dataset`, `gitSha`, `startedAt`, `durationMs`) and any metric name. A metric the
+library knows nothing about becomes a column built from the data — the value, the delta to the
+baseline, the sparkline — so the metrics of a project need no code in the library. An empty list
+means "show everything". On top of that set the columns menu (checkboxes, no drag-only) hides and
+shows columns.
 
-**Направление метрики в таблице** живёт в заголовке колонки («Accuracy ↑», «Loss ↓» с подсказкой «Больше — лучше»), а не в каждой ячейке: слово «лучше/хуже» в 200 строках съедало бы ширину колонки и дублировало заголовок. В карточках детального экрана слово остаётся — там есть место.
+**The baseline is chosen by the user.** A select in the header of the list picks the run the
+deltas are computed against; the configuration can pin a default (`baseline_run`). The chosen
+baseline is marked in the table.
 
-**Клавиатура:** строки — roving tabindex (в Tab-попадает одна строка), стрелки вверх/вниз, Home/End, PageUp/PageDown, Enter/Space открывают прогон. Виртуализация не должна терять фокус при переиспользовании строк.
+Rules: sticky header + sticky first column; hairline separators, no zebra; numbers right-aligned,
+`tabular-nums`; a missing value is an em dash "–"; filters are shown by the chip "3 filters ·
+reset"; sorting by clicking the header, `aria-sort`; row actions are always-visible buttons with
+`aria-label` (not hover-only); bulk actions — a panel when ≥1 row is selected.
 
-### 7.2 Прогон (детали)
+**The direction of the metric in the table** lives in the column header ("Accuracy ↑", "Loss ↓"
+with the hint "more is better"), not in every cell: the word "better/worse" in 200 rows would eat
+the width of the column and duplicate the header. On the cards of the detail screen the word
+stays — there is room there.
 
-Шапка: имя, статус, эталон, кнопки действий. Лента прогона, развёрнутая, с подписями стадий. Вкладки: **Метрики · Примеры · Логи · Артефакты · Провенанс**.
+**Live refresh.** The list refreshes itself: `live_refresh_seconds` in the configuration (0
+disables it). The timer only fires while the tab is visible, and the header shows when the list
+was last updated.
 
-- Метрики: график по шагам, все сиды/фолды (не одно среднее), общая ось с эталоном (эталон — жирнее и пунктиром), легенда идентичности прогонов, клик по точке → срез примеров.
-- Логи: строки с префиксом `ERROR`/`WARNING`/прогресс в тексте, tail-follow, «прокрутить вниз», экспорт, ellipsis во время стрима.
-- Провенанс: git sha, версия датасета, окружение, кто запустил, кто проверял, когда.
+**Server-side filtering and pagination.** The client asks for a page, not for everything:
+`listRuns(query)` takes `search`, `status`, `dataset`, `limit` and `offset`. A provider that
+implements `list_runs(request, query)` filters and paginates on its own side — then the total
+count arrives in the `X-Frontedge-Total` header; a provider that does not is filtered and
+paginated by the library itself, with the same parameters. The footer shows the range and the
+total, with Back/Forward.
 
-### 7.3 Diff оценок (eval)
+**Keyboard:** rows — roving tabindex (only one row is in the Tab order), up/down arrows,
+Home/End, PageUp/PageDown, Enter/Space open the run. Virtualisation must not lose the focus when
+the rows are reused.
 
-Примеры как строки, выровненные по id; колонки сгруппированы **Вход · Выход · Оценки**; эталон — крайний левый столбец; дельта = значение − эталон; агрегаты по типу (bool → доля, число → среднее, строка → без скаляра); переключатель «только различия»; формат числа (целое / процент / множитель) — переключается; side-by-side / unified.
+### 7.2 Run (details)
 
-### 7.4 Датасет
+Header: name, status, baseline, action buttons. The run ribbon, expanded, with the stage captions.
+Tabs: **Metrics · Examples · Logs · Artifacts · Provenance**.
 
-Список примеров с фильтрами, поиском, разметкой; версия датасета фиксирована; клик по примеру → вход, выход, ожидание, оценка, связь с прогоном.
+- Metrics: a chart by step, all seeds/folds (not a single mean), a common axis with the baseline (the baseline is heavier and dashed), the legend of run identities, a click on a point → a slice of examples.
+- Logs: lines with the prefix `ERROR`/`WARNING`/progress in the text, tail-follow, "scroll to the bottom", export, ellipsis while streaming.
+- Provenance: git sha, the version of the dataset, the environment, who started it, who checked it, when.
+
+### 7.3 Eval diff
+
+Examples as rows, aligned by id; the columns are grouped as **Input · Output · Scores**; the
+baseline is the leftmost column; a delta = value − baseline; aggregates by type (bool → fraction,
+number → mean, string → no scalar); the "differences only" switch; the number format (integer /
+percentage / multiplier) is switched; side-by-side / unified.
+
+### 7.4 Dataset
+
+A list of examples with filters, search and labels; the version of the dataset is pinned; a click
+on an example → input, output, expectation, score, the link with the run.
 
 ### 7.5 Eval diff (Phase 3)
 
-Сравнение двух прогонов по одной оценке. Правила из §3.2 (W&B Eval Tables, Run Comparer):
+The comparison of two runs over one eval. The rules from §3.2 (W&B Eval Tables, Run Comparer):
 
-- **примеры — строки**, выровненные по id; колонки сгруппированы по ролям: Вход · Выход · Оценки;
-- **эталонный прогон слева и закреплён**; дельта = значение прогона − значение эталона;
-- направление метрики (`maximize` / `minimize`) задаёт владелец: слово «лучше/хуже» выводится из
-  него, а не из цвета;
-- **«только различия»** — фильтр строк; изменённые примеры помечены стрелкой, а не цветом;
-- **формат числа переключается**: значение · процент · множитель относительно эталона
-  (процент около нуля врёт, множитель — нет);
-- **строка агрегатов** прилипает к низу таблицы: доля верных (для exact_match) или среднее
-  (для f1), плюс «изменено N из M»;
-- выбор оценки, эталона и сравниваемого прогона — в панели над таблицей.
+- **examples — rows**, aligned by id; the columns are grouped by roles: Input · Output · Scores;
+- **the baseline run is on the left and pinned**; a delta = the value of the run − the value of the baseline;
+- the direction of the metric (`maximize` / `minimize`) is set by the owner: the word "better/worse"
+  is derived from it, not from the colour;
+- **"differences only"** — a filter on the rows; the changed examples are marked with an arrow, not with a colour;
+- **the number format is switched**: value · percentage · multiplier relative to the baseline
+  (a percentage near zero lies, a multiplier does not);
+- **the row of aggregates** sticks to the bottom of the table: the fraction of correct ones (for exact_match) or the mean
+  (for f1), plus "changed N of M";
+- the choice of the eval, the baseline and the run being compared — in the panel above the table.
 
 ### 7.6 Dataset (Phase 3)
 
-Датасет как объект, а не как папка с файлами:
+The dataset as an object, not as a folder of files:
 
-- список датасетов слева (версия, размер, теги), детали справа;
-- вкладки **Примеры · Datasheet · Провенанс**;
-- **datasheet** — мотивация, состав, сбор, применения, ограничения: те же поля, что требует
-  research (arXiv 1803.09010), а не отдельный PDF;
-- поиск по тексту примера, оценка — числовой колонкой справа.
-
----
-
-## 8. План работ
-
-### Phase 0 — Согласование (текущий)
-Решение по продукту, стеку, имени, визуальному направлению. Результат: этот документ. **Гейт: утверждение человеком.**
-
-### Phase 1 — Дизайн-спрайк
-Vite + React + TS, мок-данные, **два экрана** (решение владельца): список прогонов и детали прогона, доведённые до продакшн-качества: токены, примитивы, состояния (default/loading/empty/error/live), лента прогона в строке таблицы и в шапке, таблица с виртуализацией. Скриншоты. Цель — утвердить визуальный язык, пока код дешёвый.
-
-### Phase 1.1 — Гейт качества (Phase 2 не начинается, пока не выполнен)
-
-1. **Контраст-тест токенов** — автоматический: текст ≥4.5:1, нетекстовые элементы (точки статуса, кольцо фокуса, линии графиков) ≥3:1, в обеих темах. Тест падает при нарушении.
-2. **axe-аудит** — без critical на ключевых экранах и состояниях.
-3. **Клавиатурный прогон** — таблица: стрелки, Home/End, PageUp/PageDown, Tab-переходы; видимый фокус; sticky-header не перекрывает сфокусированную строку; попапы закрываются по Escape и возвращают фокус.
-4. **Скриншоты** — Playwright, 1440 и 1280, светлая и тёмная темы.
-5. **Все состояния присутствуют** — loading, empty, error, live; у каждого осмысленный текст (по ux-writing: без извинений, без кодов ошибок в основном сообщении).
-6. **Ни одного дефолта** из §4.9 в коде.
-
-**Результат Phase 1 (2026-10-20):** ✅ контраст-тест — 38/38 проверок в обеих темах (`pnpm check:contrast`); ✅ axe — 0 нарушений critical/serious на 4 экранах и состояниях; ✅ клавиатура — стрелки, Home/End, PageUp/PageDown, Enter, фокус видим, Escape закрывает меню, `aria-sort` обновляется (`apps/spike/scripts/keyboard-check.mjs`); ✅ скриншоты 1440/1280, светлая и тёмная (`apps/spike/scripts/verify.mjs`).
-
-По ходу работы тесты нашли и починили: 3 провала контраста в светлой теме (warning/neutral на своих подложках, граница поля на sunken), обрезанные колонки, «сломанный» график на uPlot (заменён своим SVG), потерю фокуса при виртуализации.
-
-### Phase 2 — Вертикальный срез по-настоящему
-Тот же экран на настоящем FastAPI: `pip install -e python/frontedge`, `app.include_router(frontedge.runs(...))`, фейковый ML-бэкенд (синтетика: 200 прогонов, 5 датасетов, примеры с оценками), генератор TS-типов, SSE для live-логов, отдача статики тем же сервером. Один порт.
-
-**Результат Phase 2 (2026-10-20):** ✅ Python-пакет `frontedge` (модели, провайдеры, роутеры, SSE, раздача статики, CLI `frontedge gen`); ✅ TS-типы генерируются из pydantic-моделей и коммитятся в репозиторий, CI падает при расхождении; ✅ демо `examples/demo-ml` отдаёт интерфейс и API с одного порта (`http://127.0.0.1:8000/frontedge`); ✅ фронт работает и против мока, и против API через один слой источника данных; ✅ гейты качества зелёные и против демо (axe 0, клавиатура ок, контраст 38/38).
-
-Решения, принятые по ходу:
-- **Даты — ISO 8601** в JSON, TS-типы генерируются из Python, а не пишутся руками; расхождение исключено по построению.
-- **Base path** собранного интерфейса задаётся переменной `FE_BASE` (в демо `/frontedge/`), чтобы SPA работала под префиксом FastAPI.
-- **Модель Frontedge фиксирована и строгая**: ключевые поля обязательны, необязательны только действительно необязательные (артефактный URL, seed, baseline score).
-- **Один экран обслуживается одним слоем данных** (`mock` / `api`), переключение — переменная `VITE_DATA_SOURCE`.
-
-### Phase 3 — Три экрана
-Прогоны (список), Eval diff, Датасет — на тех же примитивах. Проверка переиспользования: сколько кода нового.
-
-**Результат Phase 3 (2026-10-20):** ✅ экран Eval diff (сравнение по оценке: примеры-строки, колонки по ролям, эталон слева, дельта, «только различия», переключатель формата числа, строка агрегатов); ✅ экран Dataset (список, примеры, datasheet, провенанс); ✅ бэкенд: провайдеры оценок и датасетов, эндпоинты `/api/evals`, `/api/evals/{id}/compare`, `/api/datasets`, `/api/datasets/{id}`; ✅ переиспользование: новые паттерны — `EvalCompareTable` и `DatasetTable`, оба на существующих примитивах (таблица, чип, вкладки, прокенанс); ✅ axe — 0 critical/serious на всех новых экранах, контраст — 38/38, клавиатура — ок.
-
-Решения, принятые по ходу:
-- **Umbrella-роутер**: `frontedge.mount(runs, evals=..., datasets=..., path="/frontedge")`; короткая запись `frontedge.runs(...)` осталась для экрана прогонов.
-- **Скроллящиеся таблицы получают `role="region"` и `tabindex=0`** — иначе они недоступны с клавиатуры (axe: scrollable-region-focusable).
-- **Строка агрегатов липнет к низу** таблицы: сводка не должна требовать прокрутки.
-- **Словарь ролей `x-frontedge` не расширялся**: новые поля укладываются в существующие роли.
-
-### Phase 4 — L1/L2 в публичном виде
-PyPI `frontedge`, npm `@frontedge/ui`, `frontedge init` (скаффолд), документация: `README.md` (человеческая), `docs/integration.md` + `AGENTS.md` (машинная: контракты, команды, типовые задачи), пример.
-
-### Phase 5 — L3 (CMS-слой)
-Схема экрана + рендер + визуальный редактор. Отдельный проект, только после подтверждённой пользы L1/L2.
-
-### Не в плане
-Визуальный редактор, auth, плагины, мобильный дизайн, лендинг, бенчмарки производительности фреймворка.
+- the list of datasets on the left (version, size, tags), the details on the right;
+- tabs **Examples · Datasheet · Provenance**;
+- the **datasheet** — motivation, composition, collection, applications, limitations: the same fields that
+  research requires (arXiv 1803.09010), and not a separate PDF;
+- a search over the text of an example, the score is a numeric column on the right.
 
 ---
 
-## 9. Риски
+## 8. The plan of work
 
-| Риск | Вероятность | Что делаем |
+### Phase 0 — Agreement (current)
+A decision on the product, the stack, the name, the visual direction. The result: this document. **The gate: approval by a human.**
+
+### Phase 1 — Design spike
+Vite + React + TS, mock data, **two screens** (owner decision): the runs list and the run detail,
+brought to production quality: the tokens, the primitives, the states (default/loading/empty/error/live), the run ribbon in a row of the table and in the header, a table with virtualisation. Screenshots. The goal — to approve the visual language while the code is still cheap.
+
+### Phase 1.1 — The quality gate (Phase 2 does not start until it is done)
+
+1. **A contrast test for the tokens** — automatic: text ≥4.5:1, non-text elements (status dots, the focus ring, chart lines) ≥3:1, in both themes. The test fails on a violation.
+2. **An axe audit** — no critical violations on the key screens and states.
+3. **A keyboard pass** — the table: arrows, Home/End, PageUp/PageDown, Tab transitions; a visible focus; the sticky header does not cover a focused row; popups close on Escape and return the focus.
+4. **Screenshots** — Playwright, 1440 and 1280, the light and the dark theme.
+5. **All states are present** — loading, empty, error, live; each with a meaningful text (per ux-writing: no apologies, no error codes in the main message).
+6. **Not one default** from §4.9 in the code.
+
+**The result of Phase 1 (2026-10-20):** ✅ contrast test — 38/38 checks in both themes (`pnpm check:contrast`); ✅ axe — 0 critical/serious violations on 4 screens and states; ✅ keyboard — arrows, Home/End, PageUp/PageDown, Enter, the focus is visible, Escape closes the menu, `aria-sort` updates (`apps/spike/scripts/keyboard-check.mjs`); ✅ screenshots 1440/1280, light and dark (`apps/spike/scripts/verify.mjs`).
+
+During the work the tests found and fixed: 3 contrast failures in the light theme (warning/neutral on their own backgrounds, the border of a field on a sunken surface), clipped columns, a "broken" chart on uPlot (replaced with our own SVG), the loss of the focus during virtualisation.
+
+### Phase 2 — A vertical slice for real
+The same screen on a real FastAPI: `pip install -e python/frontedge`, `app.include_router(frontedge.runs(...))`, a fake ML backend (synthetic: 200 runs, 5 datasets, examples with scores), the TS type generator, SSE for live logs, the static assets served by the same server. One port.
+
+**The result of Phase 2 (2026-10-20):** ✅ the Python package `frontedge` (models, providers, routers, SSE, serving the static assets, the CLI `frontedge gen`); ✅ the TS types are generated from the pydantic models and committed to the repository, CI fails if they diverge; ✅ the demo `examples/demo-ml` serves the interface and the API from one port (`http://127.0.0.1:8000/frontedge`); ✅ the frontend works against both the mock and the API through one data source layer; ✅ the quality gates are green against the demo too (axe 0, keyboard ok, contrast 38/38).
+
+Decisions taken along the way:
+- **Dates — ISO 8601** in JSON, the TS types are generated from Python and not written by hand; a divergence is excluded by construction.
+- **The base path** of the built interface is set by the `FE_BASE` variable (in the demo `/frontedge/`), so that the SPA works under the prefix of the FastAPI app.
+- **The Frontedge model is fixed and strict**: the key fields are required, optional are only the genuinely optional ones (the artifact URL, the seed, the baseline score).
+- **One screen is served by one data source layer** (`mock` / `api`), the switch is the `VITE_DATA_SOURCE` variable.
+
+### Phase 3 — Three screens
+Runs (list), Eval diff, Dataset — on the same primitives. A check of the reuse: how much new code.
+
+**The result of Phase 3 (2026-10-20):** ✅ the Eval diff screen (the comparison over an eval: examples as rows, the columns by roles, the baseline on the left, the delta, "differences only", the switch of the number format, the row of aggregates); ✅ the Dataset screen (the list, the examples, the datasheet, the provenance); ✅ the backend: the providers of the evals and the datasets, the endpoints `/api/evals`, `/api/evals/{id}/compare`, `/api/datasets`, `/api/datasets/{id}`; ✅ reuse: the new patterns — `EvalCompareTable` and `DatasetTable`, both on the existing primitives (table, chip, tabs, provenance); ✅ axe — 0 critical/serious on all the new screens, contrast — 38/38, keyboard — ok.
+
+Decisions taken along the way:
+- **An umbrella router**: `frontedge.mount(runs, evals=..., datasets=..., path="/frontedge")`; the short form `frontedge.runs(...)` stayed for the runs screen.
+- **The scrollable tables get `role="region"` and `tabindex=0"`** — otherwise they are unreachable with the keyboard (axe: scrollable-region-focusable).
+- **The row of aggregates sticks to the bottom** of the table: the summary must not require scrolling.
+- **The vocabulary of the `x-frontedge` roles was not extended**: the new fields fit into the existing roles.
+
+### Phase 4 — L1/L2 in public form
+PyPI `frontedge`, npm `@frontedge/ui`, `frontedge init` (a scaffold), documentation: `README.md` (human), `docs/integration.md` + `AGENTS.md` (machine: contracts, commands, typical tasks), an example.
+
+### Phase 5 — A layer over arbitrary user models
+A screen schema + a render layer driven by a manifest from the backend, so that a project that does not want to write an adapter can describe its models as data. Only the known screen types are rendered — free-form UI generation stays an anti-goal (§2). A separate project, only after the confirmed benefit of L1/L2. The visual editor is not part of it: the configuration stays data (owner decision, 2026-10-20).
+
+### Not in the plan
+The visual editor, auth, plugins, mobile design, a landing page, framework performance benchmarks.
+
+---
+
+## 9. Risks
+
+| Risk | Likelihood | What we do |
 |---|---|---|
-| «Ещё один админ-шаблон» — неотличим от Retool/Streamlit | средняя | Signature (лента прогона), ML-семантика в типах, плотность и правила из §4 |
-| Слишком много зависимостей в библиотеке | средняя | Radix + TanStack Table/Virtual; свой слой данных; свой SVG-график; Tailwind опционален |
-| Генератор типов превращается в «ещё один OpenAPI-тул» | средняя | `x-frontedge` — причина, по которой генератор наш, а не Orval |
-| Генерация UI по схеме даёт одинаковые экраны | высокая | Не генерируем UI по форме; генерируем типы и семантику |
-| Таблицы на 100k строк тормозят | средняя | Виртуализация, стабильный фокус при переиспользовании строк, мелкие overscan |
-| Фокус/скролл ломается на виртуализированных таблицах | высокая | Roving tabindex, якорь скролла, sticky-header учитывается в scroll-to-focused |
-| Интеграция не читается без документации | средняя | `AGENTS.md` в корне: контракты, команды, типовые задачи, анти-паттерны |
-| Двуязычность (русский UI + английские термины) расползается | высокая | Глоссарий: термины домена (run, dataset, eval) — английские, служебные слова — русские; таблица решений в словаре |
+| "Yet another admin template" — indistinguishable from Retool/Streamlit | medium | The signature (the run ribbon), the ML semantics in the types, the density and the rules from §4 |
+| Too many dependencies in the library | medium | Radix + TanStack Table/Virtual; our own data layer; our own SVG chart; Tailwind is optional |
+| The type generator becomes "yet another OpenAPI tool" | medium | `x-frontedge` is the reason the generator is ours and not Orval |
+| Generating the UI from the schema gives identical screens | high | We do not generate the UI by shape; we generate the types and the semantics |
+| Tables of 100k rows get slow | medium | Virtualisation, a stable focus when the rows are reused, small overscan |
+| The focus/scroll breaks on virtualised tables | high | Roving tabindex, a scroll anchor, the sticky header is taken into account in scroll-to-focused |
+| The integration is unreadable without documentation | medium | `AGENTS.md` in the root: contracts, commands, typical tasks, anti-patterns |
+| The terminology diverges from the ML ecosystem | medium | The glossary in §11: the domain terms are the same as in W&B/MLflow, and the decision table of the vocabulary lives there |
 
 ---
 
-## 10. Решения (закрыты 2026-10-20)
+## 10. Decisions (closed on 2026-10-20)
 
-Все шесть вопросов закрыты владельцем; ответы продублированы в таблице в начале документа.
+All six questions were closed by the owner; the answers are duplicated in the table at the beginning of the document.
 
-1. **React 19 + TS + Vite** — принято (§6.3).
-2. **Имя: `frontedge`** — PyPI `frontedge`, npm `@frontedge/ui` (§1).
-3. **Тема по умолчанию — светлая**, тёмная в настройках; цвета серий фиксированы между темами (§4.4).
-4. **Язык UI** — термины домена английские, служебные слова русские (§4.10).
-5. **Плотность 32px**, переключатель 28/40 (§4.6).
-6. **Пакеты** — PyPI `frontedge` занять сразу; npm — `@frontedge/ui`.
+1. **React 19 + TS + Vite** — accepted (§6.3).
+2. **The name: `frontedge`** — PyPI `frontedge`, npm `@frontedge/ui` (§1).
+3. **The default theme is the light one**, dark in the settings; the series colours are fixed across the themes (§4.4).
+4. **The interface language** — English by default with a Russian toggle; domain terms stay English in both (§4.10).
+5. **A density of 32px**, a switch of 28/40 (§4.6).
+6. **The packages** — take the PyPI name `frontedge` at once; npm — `@frontedge/ui`.
 
 ---
 
-## 11. Глоссарий
+## 11. Glossary
 
-Правило: термин домена — английский (это то, что пользователь ищет в W&B/MLflow и в документации), служебные слова — русские. Двуязычный вид («Прогон / Run») не используем нигде, кроме глоссария.
+Rule: a domain term is English (it is what the user looks for in W&B/MLflow and in the documentation) and stays English in both interface languages; service words are translated. The interface shows one language at a time, so the bilingual form is used nowhere; the glossary fixes the vocabulary.
 
-| Термин в UI | Значение | Английский в коде |
+| Term in the UI | Meaning | Identifier in the code |
 |---|---|---|
-| Run | один запуск эксперимента: метрики, параметры, артефакты, статус, стадии | `run` |
-| Baseline | прогон, с которым сравнивают; дельты считаются от него | `baseline` |
-| Дельта | значение минус значение baseline | `delta` |
-| Example | конкретный экземпляр датасета: вход, выход, ожидание, оценка | `example` |
-| Score | результат скорера на примере | `score` |
-| Dataset | версионированный набор примеров | `dataset` |
-| Eval | оценка: dataset × scorer × metric | `eval` |
-| Artifact | чекпойнт, лог, отчёт, версия датасета | `artifact` |
-| Trace / Span | дерево вызовов модели / один вызов | `trace`, `span` |
-| Провенанс | кто, когда, на какой версии данных и кода что запустил | `provenance` |
-| Свежесть | live / stale / partial — поверх статуса | `freshness` |
-| Стадия | этап прогона: prepare, train, eval, publish | `stage` |
-| Лента прогона | signature-элемент: полоса стадий и метрик по времени | `run ribbon` |
-| Статус | queued · running · succeeded · failed · cancelled · lost | `status` |
+| Run | a single experiment run: metrics, parameters, artifacts, status, stages | `run` |
+| Baseline | the run that others are compared against; the deltas are computed from it | `baseline` |
+| Delta | the value minus the value of the baseline | `delta` |
+| Example | a concrete instance of the dataset: input, output, expectation, score | `example` |
+| Score | the result of a scorer on an example | `score` |
+| Dataset | a versioned set of examples | `dataset` |
+| Eval | an evaluation: dataset × scorer × metric | `eval` |
+| Artifact | a checkpoint, a log, a report, a version of the dataset | `artifact` |
+| Trace / Span | the tree of the calls of the model / a single call | `trace`, `span` |
+| Provenance | who, when, on which version of the data and of the code, ran what | `provenance` |
+| Freshness | live / fresh / stale / partial — on top of the status | `freshness` |
+| Stage | a stage of the run: prepare, train, eval, publish | `stage` |
+| Run ribbon | the signature element: a bar of stages and metrics over time | `run ribbon` |
+| Status | queued · running · succeeded · failed · cancelled · lost | `status` |
