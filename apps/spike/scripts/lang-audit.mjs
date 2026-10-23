@@ -29,8 +29,10 @@ const ALLOWED_CYRILLIC = new Set([
   "apps/spike/src/i18n.ts",
   "packages/ui/src/format.ts",
 ]);
-const ALLOWED_LINE = "**English** · [Русский](README.ru.md)";
 const BINARY = /\.(png|jpe?g|gif|ico|woff2?|ttf|otf|zip|pdf)$/i;
+
+/** The only other exception: the language switcher on the English README. */
+const isLanguageSwitcher = (path, line) => path === "README.md" && line.includes("(README.ru.md)");
 
 const tracked = spawnSync("git", ["ls-files"], { encoding: "utf8" }).stdout.split(/\r?\n/).filter(Boolean);
 for (const file of tracked) {
@@ -38,7 +40,7 @@ for (const file of tracked) {
   if (BINARY.test(path) || ALLOWED_CYRILLIC.has(path)) continue;
   const lines = readFileSync(join(root, file), "utf8").split(/\r?\n/);
   lines.forEach((line, index) => {
-    if (CYRILLIC.test(line) && line.trim() !== ALLOWED_LINE) {
+    if (CYRILLIC.test(line) && !isLanguageSwitcher(path, line)) {
       report(`Cyrillic outside the dictionary: ${path}:${index + 1}`);
     }
   });
