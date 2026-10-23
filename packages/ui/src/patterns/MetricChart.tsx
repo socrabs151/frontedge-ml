@@ -193,7 +193,7 @@ export function MetricChart({
                 dominantBaseline="middle"
                 className="fe-chart__label"
               >
-                {formatMetric(tick, 2, lang)}
+                {formatMetric(tick, Math.min(digits, 2), lang)}
               </text>
             </g>
           ))}
