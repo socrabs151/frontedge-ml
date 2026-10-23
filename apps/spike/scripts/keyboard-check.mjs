@@ -1,7 +1,5 @@
-/** Клавиатурный прогон таблицы (гейт качества §8.1 п.3). */
+/** Keyboard pass over the table (quality gate §8.1, item 3). */
 import { chromium } from "playwright";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 const browser = await chromium.launch({ channel: "msedge" }).catch(() => chromium.launch());
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -22,41 +20,41 @@ const focusedIndex = () =>
 
 await page.locator(".fe-table__row").first().focus();
 const start = await focusedIndex();
-if (start === null) problems.push("строка не получила фокус");
+if (start === null) problems.push("the row did not take focus");
 
 await page.keyboard.press("ArrowDown");
 await wait(120);
 const afterDown = await focusedIndex();
-if (afterDown !== start + 1) problems.push(`ArrowDown: ожидали ${start + 1}, получили ${afterDown}`);
+if (afterDown !== start + 1) problems.push(`ArrowDown: expected ${start + 1}, got ${afterDown}`);
 
 await page.keyboard.press("ArrowUp");
 await wait(120);
 const afterUp = await focusedIndex();
-if (afterUp !== start) problems.push(`ArrowUp: ожидали ${start}, получили ${afterUp}`);
+if (afterUp !== start) problems.push(`ArrowUp: expected ${start}, got ${afterUp}`);
 
 await page.keyboard.press("End");
 await wait(200);
 const afterEnd = await focusedIndex();
-if (afterEnd === null || afterEnd < 100) problems.push(`End: не дошли в конец, получили ${afterEnd}`);
+if (afterEnd === null || afterEnd < 100) problems.push(`End: did not reach the end, got ${afterEnd}`);
 
 await page.keyboard.press("Home");
 await wait(200);
 const afterHome = await focusedIndex();
-if (afterHome !== 0) problems.push(`Home: ожидали 0, получили ${afterHome}`);
+if (afterHome !== 0) problems.push(`Home: expected 0, got ${afterHome}`);
 
 await page.keyboard.press("PageDown");
 await wait(200);
 const afterPage = await focusedIndex();
-if (afterPage === null || afterPage < 5) problems.push(`PageDown: ожидали прыжок, получили ${afterPage}`);
+if (afterPage === null || afterPage < 5) problems.push(`PageDown: expected a jump, got ${afterPage}`);
 
 await page.keyboard.press("PageUp");
 await wait(200);
 const afterPageUp = await focusedIndex();
 if (afterPageUp === null || afterPageUp > 5) {
-  problems.push(`PageUp: ожидали возврат, получили ${afterPageUp}`);
+  problems.push(`PageUp: expected a return, got ${afterPageUp}`);
 }
 
-// Кольцо фокуса видимо
+// The focus ring is visible
 const outline = await page.evaluate(() => {
   const node = document.querySelector(".fe-table__row");
   if (!node) return null;
@@ -65,25 +63,25 @@ const outline = await page.evaluate(() => {
   return { width: style.outlineWidth, style: style.outlineStyle };
 });
 if (!outline || outline.style === "none" || parseFloat(outline.width) < 2) {
-  problems.push(`кольцо фокуса слабое: ${JSON.stringify(outline)}`);
+  problems.push(`the focus ring is weak: ${JSON.stringify(outline)}`);
 }
 
-// Enter открывает прогон
+// Enter opens a run
 await page.keyboard.press("Enter");
 await page.waitForSelector(".fe-detail__head", { timeout: 8000 }).catch(() => {
-  problems.push("Enter не открыл прогон");
+  problems.push("Enter did not open a run");
 });
 
-// Меню колонок: Escape закрывает
+// The columns menu: Escape closes it
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector(".fe-table__row");
 await page.getByRole("button", { name: /Columns/ }).click();
 await page.waitForSelector(".fe-menu");
 await page.keyboard.press("Escape");
 await wait(300);
-if ((await page.locator(".fe-menu").count()) > 0) problems.push("меню не закрылось по Escape");
+if ((await page.locator(".fe-menu").count()) > 0) problems.push("the menu did not close on Escape");
 
-// Сортировка доступна с клавиатуры
+// Sorting is reachable from the keyboard
 await page.getByRole("button", { name: /Accuracy/ }).focus();
 await page.keyboard.press("Enter");
 await wait(250);
@@ -94,11 +92,11 @@ const sorted = await page.evaluate(() => {
   return th?.getAttribute("aria-sort");
 });
 if (sorted !== "ascending" && sorted !== "descending") {
-  problems.push(`aria-sort не обновился: ${sorted}`);
+  problems.push(`aria-sort did not update: ${sorted}`);
 }
 
 await browser.close();
 console.log(
-  problems.length === 0 ? "Клавиатура: все проверки пройдены." : `Проблемы:\n- ${problems.join("\n- ")}`,
+  problems.length === 0 ? "Keyboard: all checks passed." : `Problems:\n- ${problems.join("\n- ")}`,
 );
 process.exit(problems.length === 0 ? 0 : 1);

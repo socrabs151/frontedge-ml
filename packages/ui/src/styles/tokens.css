@@ -1,13 +1,13 @@
 /*
  * Frontedge — design tokens.
- * Значения — из docs/specs/2026-10-20-frontedge-design.md §4.
- * Контрастные значения проверяются скриптом packages/ui/scripts/check-contrast.mjs.
+ * Values come from docs/specs/2026-10-20-frontedge-design.md §4.
+ * Contrast values are checked by packages/ui/scripts/check-contrast.mjs.
  */
 
 :root {
   color-scheme: light;
 
-  /* --- Поверхности --------------------------------------------------- */
+  /* --- Surfaces --------------------------------------------------- */
   --canvas: #f7f7f4;
   --surface: #ffffff;
   --surface-sunken: #f1f1ed;
@@ -15,25 +15,25 @@
   --surface-hover: #f4f4f0;
   --surface-selected: #eef2fd;
 
-  /* --- Границы ------------------------------------------------------- */
-  --border: #dadad2; /* разделители: 1.41:1 к surface, 1.31:1 к canvas — их должно быть видно */
+  /* --- Borders ------------------------------------------------------- */
+  --border: #dadad2; /* separators: 1.41:1 against surface, 1.31:1 against canvas — they must stay visible */
   --border-strong: #d3d3cb;
-  --border-input: #8a8a83; /* 3.07:1 к surface — WCAG 1.4.11 для полей ввода */
+  --border-input: #8a8a83; /* 3.07:1 against surface — WCAG 1.4.11 for input fields */
 
-  /* --- Текст --------------------------------------------------------- */
+  /* --- Text --------------------------------------------------------- */
   --text-primary: #1a1a17;
   --text-secondary: #56564e;
   --text-tertiary: #64645c;
   --text-muted: #6f6f66;
   --text-inverse: #ffffff;
 
-  /* --- Акцент (единственный) ---------------------------------------- */
+  /* --- Accent (the only one) ---------------------------------------- */
   --accent: #2f56d9;
   --accent-hover: #2647b8;
   --accent-wash: #eef2fd;
   --accent-text: #ffffff;
 
-  /* --- Статусы процесса --------------------------------------------- */
+  /* --- Process statuses --------------------------------------------- */
   --status-success: #2f7a4d;
   --status-warning: #8a5d0f;
   --status-danger: #b0402f;
@@ -46,8 +46,8 @@
   --status-neutral-wash: #f0f0ec;
   --status-running-wash: #eef2fd;
 
-  /* --- Данные и графики --------------------------------------------- */
-  --data-ink: #8f8f88; /* оси, сетка, 3.25:1 */
+  /* --- Data and charts --------------------------------------------- */
+  --data-ink: #8f8f88; /* axes, grid, 3.25:1 */
   --data-ink-soft: #d8d8d2;
   --data-series-1: #1b9e77;
   --data-series-2: #d95f02;
@@ -58,12 +58,12 @@
   --data-series-7: #a6761d;
   --data-series-8: #666666;
 
-  /* --- Тени (только оверлеи, только в светлой теме) ------------------ */
+  /* --- Shadows (overlays only, light theme only) ------------------ */
   --overlay-shadow: 0 0 0 1px rgba(26, 26, 23, 0.06), 0 1px 2px -1px rgba(26, 26, 23, 0.08),
     0 4px 12px -2px rgba(26, 26, 23, 0.1);
   --overlay-shadow-sm: 0 0 0 1px rgba(26, 26, 23, 0.06), 0 1px 3px -1px rgba(26, 26, 23, 0.1);
 
-  /* --- Типографика --------------------------------------------------- */
+  /* --- Typography --------------------------------------------------- */
   --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
 
@@ -89,7 +89,7 @@
   --weight-medium: 500;
   --weight-semibold: 600;
 
-  /* --- Плотность ----------------------------------------------------- */
+  /* --- Density ----------------------------------------------------- */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -101,19 +101,19 @@
   --control-h: 28px;
   --control-h-sm: 24px;
 
-  /* --- Радиусы ------------------------------------------------------- */
+  /* --- Radii ------------------------------------------------------- */
   --radius-control: 6px;
   --radius-panel: 10px;
   --radius-pill: 9999px;
 
-  /* --- Движение ------------------------------------------------------ */
+  /* --- Motion ------------------------------------------------------ */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-inout: cubic-bezier(0.77, 0, 0.175, 1);
   --duration-press: 120ms;
   --duration-popover: 160ms;
   --duration-dialog: 220ms;
 
-  /* --- Прочее -------------------------------------------------------- */
+  /* --- Other -------------------------------------------------------- */
   --focus-ring-width: 2px;
   --focus-ring-color: var(--accent);
   --focus-ring-offset: 2px;
@@ -134,7 +134,7 @@
 
   --border: rgba(255, 255, 255, 0.12);
   --border-strong: rgba(255, 255, 255, 0.2);
-  --border-input: #6f6f66; /* 3.44:1 к surface — WCAG 1.4.11 */
+  --border-input: #6f6f66; /* 3.44:1 against surface — WCAG 1.4.11 */
 
   --text-primary: #f2f2ee;
   --text-secondary: #b6b6ad;

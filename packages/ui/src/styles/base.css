@@ -1,6 +1,6 @@
 /*
- * Базовый слой: сброс, элементы, фокус, скроллбары.
- * Никакого тяжёлого normalize — только то, что нужно продукту.
+ * Base layer: reset, elements, focus, scrollbars.
+ * No heavy normalize — only what the product needs.
  */
 
 *,
@@ -66,7 +66,7 @@ textarea {
   color: inherit;
 }
 
-/* Числа в таблицах и метриках не должны прыгать по ширине. */
+/* Numbers in tables and metrics must not jump in width. */
 .num,
 td.num,
 th.num {
@@ -88,7 +88,7 @@ th.num {
   color: var(--text-muted);
 }
 
-/* --- Фокус --------------------------------------------------------- */
+/* --- Focus --------------------------------------------------------- */
 
 :focus {
   outline: none;
@@ -100,7 +100,7 @@ th.num {
   border-radius: var(--radius-control);
 }
 
-/* --- Скроллбары ---------------------------------------------------- */
+/* --- Scrollbars ---------------------------------------------------- */
 
 * {
   scrollbar-width: thin;
@@ -123,7 +123,7 @@ th.num {
   background: transparent;
 }
 
-/* --- Доступность --------------------------------------------------- */
+/* --- Accessibility ------------------------------------------------- */
 
 .sr-only {
   position: absolute;

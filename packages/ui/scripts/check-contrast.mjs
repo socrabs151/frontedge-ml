@@ -1,9 +1,9 @@
 /**
- * Контраст-тест токенов (гейт качества §8.1 п.1).
- * Читает packages/ui/src/styles/tokens.css и проверяет пары токенов по WCAG 2.2.
- *   1.4.3  текст ≥ 4.5:1
- *   1.4.11 нетекстовые элементы (границы полей, точки статуса, линии) ≥ 3:1
- *   1.4.1  цвет не единственный носитель смысла — проверяется ревью, не здесь
+ * Token contrast test (the quality gate from §8.1, item 1).
+ * Reads packages/ui/src/styles/tokens.css and checks token pairs against WCAG 2.2.
+ *   1.4.3  text ≥ 4.5:1
+ *   1.4.11 non-text elements (input borders, status dots, lines) ≥ 3:1
+ *   1.4.1  colour is not the only carrier of meaning — checked in review, not here
  */
 
 import { readFileSync } from "node:fs";
@@ -16,7 +16,7 @@ const css = readFileSync(tokensPath, "utf8");
 
 function block(selector) {
   const index = css.indexOf(selector);
-  if (index === -1) throw new Error(`Не найден блок ${selector}`);
+  if (index === -1) throw new Error(`Block ${selector} not found`);
   const start = css.indexOf("{", index);
   let depth = 0;
   for (let i = start; i < css.length; i += 1) {
@@ -26,7 +26,7 @@ function block(selector) {
       if (depth === 0) return css.slice(start + 1, i);
     }
   }
-  throw new Error(`Не закрыт блок ${selector}`);
+  throw new Error(`Block ${selector} is not closed`);
 }
 
 function parseTokens(source) {
@@ -74,33 +74,33 @@ const themes = {
   dark: parseTokens(block('[data-theme="dark"]')),
 };
 
-/** [foreground, background, минимум, подпись] */
+/** [foreground, background, minimum, label] */
 const checks = [
-  ["text-primary", "surface", 4.5, "основной текст на карточке"],
-  ["text-primary", "canvas", 4.5, "основной текст на фоне"],
-  ["text-secondary", "surface", 4.5, "вторичный текст на карточке"],
-  ["text-secondary", "canvas", 4.5, "вторичный текст на фоне"],
-  ["text-tertiary", "surface", 4.5, "метаданные и заголовки колонок"],
-  ["text-tertiary", "canvas", 4.5, "метаданные на фоне"],
-  ["text-muted", "surface", 4.5, "плейсхолдеры и подписи"],
-  ["accent", "surface", 4.5, "акцент как текст"],
-  ["accent", "canvas", 4.5, "акцент на фоне"],
-  ["accent-text", "accent", 4.5, "текст на акцентной кнопке"],
-  ["status-success", "status-success-wash", 4.5, "статус «завершён»"],
-  ["status-warning", "status-warning-wash", 4.5, "статус «внимание»"],
-  ["status-danger", "status-danger-wash", 4.5, "статус «упал»"],
-  ["status-neutral", "status-neutral-wash", 4.5, "статус «ожидает»"],
-  ["status-running", "status-running-wash", 4.5, "статус «идёт»"],
-  ["border-input", "surface", 3, "граница поля ввода (1.4.11)"],
-  ["border-input", "surface-sunken", 3, "граница поля ввода на sunken"],
-  ["data-ink", "surface", 3, "оси и сетка графика (1.4.11)"],
-  ["accent", "surface", 3, "кольцо фокуса (2.4.13)"],
+  ["text-primary", "surface", 4.5, "primary text on a card"],
+  ["text-primary", "canvas", 4.5, "primary text on the canvas"],
+  ["text-secondary", "surface", 4.5, "secondary text on a card"],
+  ["text-secondary", "canvas", 4.5, "secondary text on the canvas"],
+  ["text-tertiary", "surface", 4.5, "metadata and column headers"],
+  ["text-tertiary", "canvas", 4.5, "metadata on the canvas"],
+  ["text-muted", "surface", 4.5, "placeholders and captions"],
+  ["accent", "surface", 4.5, "accent as text"],
+  ["accent", "canvas", 4.5, "accent on the canvas"],
+  ["accent-text", "accent", 4.5, "text on the accent button"],
+  ["status-success", "status-success-wash", 4.5, "status “completed”"],
+  ["status-warning", "status-warning-wash", 4.5, "status “warning”"],
+  ["status-danger", "status-danger-wash", 4.5, "status “failed”"],
+  ["status-neutral", "status-neutral-wash", 4.5, "status “queued”"],
+  ["status-running", "status-running-wash", 4.5, "status “running”"],
+  ["border-input", "surface", 3, "input border (1.4.11)"],
+  ["border-input", "surface-sunken", 3, "input border on sunken"],
+  ["data-ink", "surface", 3, "chart axes and grid (1.4.11)"],
+  ["accent", "surface", 3, "focus ring (2.4.13)"],
 ];
 
 /**
- * Разделители не подпадают под WCAG (1.4.11 — это про границы интерактивных элементов),
- * но в плотной таблице hairline — это и есть структура. Поэтому отдельный «порог
- * легибельности»: разделитель должен быть виден на фоне и на карточке.
+ * Separators fall outside WCAG (1.4.11 covers interactive element borders),
+ * but in a dense table the hairline is the structure. Hence a separate
+ * "legibility floor": a separator must be visible on the canvas and on a card.
  */
 const LEGIBILITY = [["border", "surface", 1.35], ["border", "canvas", 1.25]];
 
@@ -127,31 +127,31 @@ for (const row of rows) {
   const ratio = row.ratio === null ? "—" : `${row.ratio.toFixed(2)}:1`;
   const mark = row.status === "OK" ? "✓" : row.status === "FAIL" ? "✗" : "·";
   console.log(
-    `${mark} [${row.theme.padEnd(5)}] ${row.label.padEnd(width)} ${ratio.padStart(8)} (нужно ${row.min}:1) ${row.fgName} / ${row.bgName}`,
+    `${mark} [${row.theme.padEnd(5)}] ${row.label.padEnd(width)} ${ratio.padStart(8)} (needs ${row.min}:1) ${row.fgName} / ${row.bgName}`,
   );
 }
 
 console.log(
   failures === 0
-    ? `\nКонтраст: все ${rows.length} проверок пройдены.`
-    : `\nКонтраст: провалено ${failures} проверок из ${rows.length}.`,
+    ? `\nContrast: all ${rows.length} checks passed.`
+    : `\nContrast: ${failures} of ${rows.length} checks failed.`,
 );
 
-// --- Порог легибельности разделителей ------------------------------------
+// --- Separator legibility floor ------------------------------------------
 
 for (const [theme, tokens] of Object.entries(themes)) {
   for (const [fgName, bgName, min] of LEGIBILITY) {
     const fg = tokens.get(fgName);
     const bg = tokens.get(bgName);
     if (!fg || !bg || !fg.startsWith("#") || !bg.startsWith("#")) {
-      console.log(`· [${theme.padEnd(5)}] разделитель ${fgName} — полупрозрачный, проверяется глазами`);
+      console.log(`· [${theme.padEnd(5)}] separator ${fgName} — translucent, checked by eye`);
       continue;
     }
     const ratio = contrast(fg, bg);
     const status = ratio >= min ? "✓" : "✗";
     if (status === "✗") failures += 1;
     console.log(
-      `${status} [${theme.padEnd(5)}] разделитель ${fgName} на ${bgName} — ${ratio.toFixed(2)}:1 (нужно ${min}:1)`,
+      `${status} [${theme.padEnd(5)}] separator ${fgName} on ${bgName} — ${ratio.toFixed(2)}:1 (needs ${min}:1)`,
     );
   }
 }

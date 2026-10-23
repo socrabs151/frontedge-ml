@@ -1,4 +1,4 @@
-/** Скриншоты демо, собранного FastAPI (реальный API, а не мок). */
+/** Screenshots of the demo served by FastAPI (the real API, not the mock). */
 import { chromium } from "playwright";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,22 +19,22 @@ page.on("console", (m) => {
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector(".fe-table__row", { timeout: 15000 });
 await page.screenshot({ path: `${OUT}\\10-demo-runs.png` });
-console.log("скриншот: 10-demo-runs.png");
+console.log("screenshot: 10-demo-runs.png");
 
 const source = await page.locator(".sidebar__note").textContent();
-console.log("источник данных:", source?.trim());
+console.log("data source:", source?.trim());
 
 await page.locator(".fe-run-name").nth(3).click();
 await page.waitForSelector(".fe-detail__head", { timeout: 15000 });
 await page.waitForTimeout(1200);
 await page.screenshot({ path: `${OUT}\\11-demo-run-detail.png` });
-console.log("скриншот: 11-demo-run-detail.png");
+console.log("screenshot: 11-demo-run-detail.png");
 
-await page.getByRole("tab", { name: /Логи/ }).click();
+await page.getByRole("tab", { name: /Logs/ }).click();
 await page.waitForTimeout(2500);
 const logLines = await page.locator(".fe-logs__line").count();
-console.log("строк лога по SSE:", logLines);
+console.log("log lines over SSE:", logLines);
 await page.screenshot({ path: `${OUT}\\12-demo-logs.png` });
 
 await browser.close();
-console.log(errors.length === 0 ? "ошибок в консоли нет" : `ошибки:\n- ${errors.join("\n- ")}`);
+console.log(errors.length === 0 ? "no console errors" : `errors:\n- ${errors.join("\n- ")}`);

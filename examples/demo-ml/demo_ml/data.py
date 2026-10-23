@@ -1,7 +1,7 @@
-"""Синтетический ML-бэкенд: прогоны, примеры и логи.
+"""Synthetic ML backend: runs, examples and logs.
 
-Тот же генератор, что и в спайке, — только на Python: показывает, что фронт и бэкенд
-описывают одни и те же объекты.
+The same generator as in the spike, only in Python: it shows that the front and
+the backend describe the same objects.
 """
 
 from __future__ import annotations
@@ -119,7 +119,7 @@ def make_runs(count: int = 200) -> list[Run]:
                 MetricEvent(
                     stage=StageName.train,
                     step=int(60 * (0.3 + random_.random() * 0.5)),
-                    label="потеря выросла выше baseline",
+                    label="loss grew above baseline",
                     kind="regression",
                 )
             )
@@ -128,7 +128,7 @@ def make_runs(count: int = 200) -> list[Run]:
                 MetricEvent(
                     stage=StageName.eval,
                     step=48,
-                    label="сохранён чекпойнт",
+                    label="checkpoint saved",
                     kind="checkpoint",
                 )
             )
@@ -201,14 +201,14 @@ def make_runs(count: int = 200) -> list[Run]:
                     ),
                 ],
                 provenance=[
-                    ProvenanceEntry(label="Код", value=f"a3f19c2 ({GIT_SHAS[index % len(GIT_SHAS)]})", mono=True),
+                    ProvenanceEntry(label="Code", value=f"a3f19c2 ({GIT_SHAS[index % len(GIT_SHAS)]})", mono=True),
                     ProvenanceEntry(label="Dataset", value=DATASETS[index % len(DATASETS)], mono=True),
-                    ProvenanceEntry(label="Версия датасета", value="v3.1.0", mono=True),
-                    ProvenanceEntry(label="Запустил", value=OWNERS[index % len(OWNERS)]),
-                    ProvenanceEntry(label="Окружение", value="python 3.12 · cuda 12.4 · A10G", mono=True),
+                    ProvenanceEntry(label="Dataset version", value="v3.1.0", mono=True),
+                    ProvenanceEntry(label="Started by", value=OWNERS[index % len(OWNERS)]),
+                    ProvenanceEntry(label="Environment", value="python 3.12 · cuda 12.4 · A10G", mono=True),
                     ProvenanceEntry(
-                        label="Проверил",
-                        value="socrabs" if index % 3 == 0 else "не проверялось",
+                        label="Reviewed by",
+                        value="socrabs" if index % 3 == 0 else "not reviewed",
                     ),
                 ],
             )
@@ -218,17 +218,17 @@ def make_runs(count: int = 200) -> list[Run]:
 
 
 INPUTS = [
-    "В чём разница между RAG и fine-tuning?",
-    "Суммация: 12 пакетов по 250 г",
-    "Исправь цикл: while i < n: total += arr[i]; i += 1",
-    "Кто автор «Войны и мира» и когда написано?",
+    "What is the difference between RAG and fine-tuning?",
+    "Summation: 12 packs of 250 g",
+    "Fix the loop: while i < n: total += arr[i]; i += 1",
+    "Who wrote \"War and Peace\" and when was it written?",
 ]
 
 OUTPUTS = [
-    "RAG подтягивает контекст из внешней базы, fine-tuning меняет веса модели.",
-    "Итого 3000 г.",
-    "Цикл корректен, но читает только элементы до n-1.",
-    "Лев Толстой, 1869.",
+    "RAG pulls context from an external store, fine-tuning changes the model weights.",
+    "Total 3000 g.",
+    "The loop is correct, but it only reads the elements up to n-1.",
+    "Leo Tolstoy, 1869.",
 ]
 
 
@@ -251,14 +251,14 @@ def make_examples(count: int = 32) -> list[dict[str, Any]]:
 
 
 LOG_TEMPLATES: list[tuple[Literal["info", "progress", "warning", "error"], str]] = [
-    ("info", "загрузка чекпойта из s3://models/llm-base"),
-    ("info", "датасет squad-v2-ru: 48 271 пример"),
+    ("info", "loading checkpoint from s3://models/llm-base"),
+    ("info", "dataset squad-v2-ru: 48,271 examples"),
     ("progress", "epoch {step}/8 · loss {loss:.4f}"),
-    ("info", "вычисляю embeddings для батча"),
-    ("info", "сохранён промежуточный чекпойнт"),
-    ("warning", "loss растёт 3 шага подряд"),
-    ("error", "CUDA out of memory при батче 4096 — снизить до 2048"),
-    ("info", "оценка на eval-наборе: 1024 примера"),
+    ("info", "computing embeddings for the batch"),
+    ("info", "intermediate checkpoint saved"),
+    ("warning", "loss growing for 3 steps in a row"),
+    ("error", "CUDA out of memory with batch 4096 — reduce to 2048"),
+    ("info", "eval on the eval set: 1024 examples"),
 ]
 
 
@@ -274,12 +274,12 @@ def make_log_lines(count: int = 80) -> list[dict[str, Any]]:
     return lines
 
 
-# --- Оценки и датасеты ---------------------------------------------------
+# --- Evals and datasets ---------------------------------------------------
 
 EVALS: list[dict[str, Any]] = [
     {
         "id": "eval-squad-exact",
-        "name": "Точное совпадение",
+        "name": "Exact match",
         "dataset": "squad-v2-ru",
         "scorer": "exact_match",
         "metric": "accuracy",
@@ -288,7 +288,7 @@ EVALS: list[dict[str, Any]] = [
     },
     {
         "id": "eval-squad-f1",
-        "name": "F1 по токенам",
+        "name": "Token F1",
         "dataset": "squad-v2-ru",
         "scorer": "token_f1",
         "metric": "f1",
@@ -297,7 +297,7 @@ EVALS: list[dict[str, Any]] = [
     },
     {
         "id": "eval-support-judge",
-        "name": "LLM-судья: полезность",
+        "name": "LLM judge: helpfulness",
         "dataset": "support-2025",
         "scorer": "llm_judge",
         "metric": "helpfulness",
@@ -308,35 +308,35 @@ EVALS: list[dict[str, Any]] = [
 
 DATASHEETS: dict[str, list[tuple[str, str]]] = {
     "squad-v2-ru": [
-        ("Мотивация", "Проверка извлечения ответов из русскоязычных статей Википедии"),
-        ("Состав", "48 271 вопрос с коротким ответом, 3–4 аннотатора на пример"),
-        ("Сбор", "Перевод SQuAD v2 и ручная вычитка, 2024-11"),
-        ("Применения", "RAG, извлечение фактов, дообучение на коротких ответах"),
-        ("Ограничения", "Только английские аннотации переведены автоматически"),
+        ("Motivation", "Checking answer extraction from Russian Wikipedia articles"),
+        ("Composition", "48,271 short-answer questions, 3–4 annotators per example"),
+        ("Collection", "SQuAD v2 translation and manual proofreading, 2024-11"),
+        ("Applications", "RAG, fact extraction, fine-tuning on short answers"),
+        ("Limitations", "Only the English annotations were translated automatically"),
     ],
     "wiki-2024-qa": [
-        ("Мотивация", "Длинный контекст: вопросы по статьям целиком"),
-        ("Состав", "12 400 пар вопрос-статья, статьи до 8 000 слов"),
-        ("Сбор", "Дампы Википедии 2024, дедупликация по заголовку"),
-        ("Применения", "Проверка длинного контекста и цитируемости"),
+        ("Motivation", "Long context: questions over whole articles"),
+        ("Composition", "12,400 question-article pairs, articles up to 8,000 words"),
+        ("Collection", "2024 Wikipedia dumps, deduplicated by title"),
+        ("Applications", "Testing long context and citability"),
     ],
     "code-repair-v3": [
-        ("Мотивация", "Починка коротких функций по описанию ошибки"),
-        ("Состав", "8 120 задач из issue-трекеров, 3 языка"),
-        ("Сбор", "Открытые issue и pull request, фильтр по воспроизводимости"),
-        ("Применения", "Code LLM, авто-исправление, ревью"),
+        ("Motivation", "Fixing short functions from an error description"),
+        ("Composition", "8,120 tasks from issue trackers, 3 languages"),
+        ("Collection", "Open issues and pull requests, filtered by reproducibility"),
+        ("Applications", "Code LLM, auto-fix, review"),
     ],
     "support-2025": [
-        ("Мотивация", "Качество ответов поддержки в диалоге с клиентом"),
-        ("Состав", "31 500 диалогов, оценка LLM-судьёй по шкале 1–5"),
-        ("Сбор", "Обезличенные обращения из тикет-системы, 2025 H1"),
-        ("Применения", "Оценка полезности, детекция отказов"),
+        ("Motivation", "Quality of support replies in a customer conversation"),
+        ("Composition", "31,500 dialogs, LLM-judge rating on a 1–5 scale"),
+        ("Collection", "Anonymized tickets from the ticketing system, 2025 H1"),
+        ("Applications", "Helpfulness scoring, refusal detection"),
     ],
     "math-verify": [
-        ("Мотивация", "Проверка арифметики и рассуждений"),
-        ("Состав", "5 600 задач с пошаговым решением"),
-        ("Сбор", "Курируемая подборка, 2025-02"),
-        ("Применения", "Математика, reasoning-трейки"),
+        ("Motivation", "Checking arithmetic and reasoning"),
+        ("Composition", "5,600 tasks with a step-by-step solution"),
+        ("Collection", "Curated selection, 2025-02"),
+        ("Applications", "Mathematics, reasoning traces"),
     ],
 }
 
@@ -445,9 +445,9 @@ def make_datasets() -> list[DatasetInfo]:
                 tags=["production" if index < 3 else "research"],
                 datasheet=datasheet,
                 provenance=[
-                    ProvenanceEntry(label="Версия", value="v3.1.0", mono=True),
-                    ProvenanceEntry(label="Ответственный", value="socrabs"),
-                    ProvenanceEntry(label="Собрано", value="2025-11-04", mono=True),
+                    ProvenanceEntry(label="Version", value="v3.1.0", mono=True),
+                    ProvenanceEntry(label="Owner", value="socrabs"),
+                    ProvenanceEntry(label="Collected", value="2025-11-04", mono=True),
                 ],
             )
         )

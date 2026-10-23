@@ -1,3 +1,3 @@
-"""Демо-приложение frontedge."""
+"""Frontedge demo application."""
 
 __all__ = ["app"]

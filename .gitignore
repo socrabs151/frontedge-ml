@@ -4,10 +4,10 @@ dist/
 __pycache__/
 *.log
 
-# Собранный интерфейс кладётся в Python-пакет на этапе сборки
+# The built interface is copied into the Python package at build time
 python/frontedge/src/frontedge/static/index.html
 python/frontedge/src/frontedge/static/assets/
 
-# Локальные справочные материалы — не в репозитории
+# Local reference material stays out of the repository
 design-prompts-local/
 mockups-local/

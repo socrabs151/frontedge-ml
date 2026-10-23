@@ -19,7 +19,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/frontedge"]
-# Собранный интерфейс кладётся в src/frontedge/static (сборка: pnpm build && pnpm build:ui)
+# The built interface is copied into src/frontedge/static (build: pnpm build && pnpm build:ui)
 artifacts = ["src/frontedge/static/**"]
 
 [tool.ruff]

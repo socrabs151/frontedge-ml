@@ -27,11 +27,12 @@ FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps/spike/scripts/verify.mjs
 FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps/spike/scripts/keyboard-check.mjs
 ```
 
-CI runs all of these on every pull request, including the axe audit and the keyboard pass.
+CI runs all of these on every pull request, including the axe audit and the keyboard pass. It
+also regenerates the TypeScript types and fails when they differ from what is committed.
 
 ## House rules
 
-- **English** for commits, pull request descriptions and code comments.
+- **English** for commits, pull request descriptions, documentation and code comments.
 - **Conventional Commits**: `feat:`, `fix:`, `docs:`, `refactor:`, `chore:`, `test:`, `perf:`,
   `build:`, `ci:`. The subject is imperative, up to 72 characters, no trailing dot.
 - **Tokens, not literals.** Colour, spacing, radii and type sizes come from
@@ -44,6 +45,13 @@ CI runs all of these on every pull request, including the axe audit and the keyb
   `packages/ui/src/generated/` by hand.
 - **The interface does not invent behaviour.** Buttons come from declared actions, not from
   hardcoded handlers in components. See [docs/integration.md](docs/integration.md).
+- **The configuration is data.** What the interface shows is described by `UiConfig` in
+  `python/frontedge/src/frontedge/config.py` and lives in `frontedge.toml` (TOML or JSON). A new
+  key is a change of the public contract: add the field to `UiConfig` and describe it in
+  [docs/integration.md](docs/integration.md).
+- **Public vocabularies.** The `x-frontedge` roles, the status set, the freshness set and the
+  configuration keys are public contracts. Extend them freely; rename them only in a major
+  release.
 - **Design changes follow the design document**
   ([docs/specs/2026-10-20-frontedge-design.md](docs/specs/2026-10-20-frontedge-design.md)):
   status is icon + word + colour, "better" and "worse" are a sign and a word, tables instead

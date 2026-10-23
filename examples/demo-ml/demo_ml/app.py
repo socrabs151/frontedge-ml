@@ -1,4 +1,4 @@
-"""Демо: FastAPI-приложение с фейковым ML-бэкендом и смонтированным Frontedge.
+"""Demo: a FastAPI application with a fake ML backend and Frontedge mounted.
 
     uv run demo-ml
     → http://127.0.0.1:8000/frontedge
@@ -38,7 +38,7 @@ from .data import (
 
 
 class DemoRepository:
-    """Фейковый ML-бэкенд: прогоны в памяти."""
+    """Fake ML backend: runs in memory."""
 
     def __init__(self) -> None:
         self.runs: list[Run] = make_runs(200)
@@ -51,13 +51,13 @@ class DemoRepository:
 
 
 class DemoProvider:
-    """Источник данных для Frontedge."""
+    """Data source for Frontedge."""
 
     def __init__(self, repository: DemoRepository) -> None:
         self.repository = repository
 
     async def list_runs(self, request: Request, query: RunsQuery | None = None) -> RunsPage:
-        """Фильтрация и пагинация на стороне демо — как у настоящего бэкенда."""
+        """Filtering and pagination on the demo side — like a real backend."""
         runs = list(self.repository.runs)
         if query is not None:
             if query.search:
@@ -79,20 +79,20 @@ class DemoProvider:
         return next((run for run in self.repository.runs if run.id == run_id), None)
 
     async def stream_logs(self, request: Request, run_id: str) -> AsyncIterator[LogLine]:
-        """Логи приходят постепенно — как живой поток."""
+        """Logs arrive gradually — like a live stream."""
         for line in self.repository.logs_for(run_id):
             yield LogLine.model_validate(line)
             await asyncio.sleep(0.15)
 
     async def read_artifact(self, request: Request, artifact_id: str) -> bytes | None:
-        """Содержимое артефакта — в демо это текстовая заглушка."""
+        """Artifact content — in the demo it is a text stub."""
         if not artifact_id:
             return None
-        return f"Демо-артефакт {artifact_id}\n".encode("utf-8")
+        return f"Demo artifact {artifact_id}\n".encode("utf-8")
 
 
 class DemoEvalProvider:
-    """Оценки: датасет × скорер × метрика, сравнение двух прогонов."""
+    """Evals: dataset × scorer × metric, comparison of two runs."""
 
     async def list_evals(self, request: Request) -> Sequence[EvalSummary]:
         return make_evals()
@@ -117,7 +117,7 @@ class DemoEvalProvider:
 
 
 class DemoDatasetProvider:
-    """Датасеты: версии, datasheet, примеры."""
+    """Datasets: versions, datasheet, examples."""
 
     async def list_datasets(self, request: Request) -> Sequence[DatasetInfo]:
         return make_datasets()
@@ -126,24 +126,24 @@ class DemoDatasetProvider:
         return make_dataset_detail(dataset_id)
 
 
-# --- Действия проекта ----------------------------------------------------
-# Обработчик получает request и payload (здесь — id прогона) и возвращает
-# ActionResult. Библиотека только вызывает его и показывает результат.
+# --- Project actions -----------------------------------------------------
+# A handler gets the request and the payload (here — the run id) and returns
+# an ActionResult. The library only calls it and shows the result.
 
 
 async def stop_run(request: Request, payload: dict[str, Any]) -> ActionResult:
     run_id = payload.get("runId")
-    return ActionResult(ok=True, message=f"Прогон {run_id} остановлен")
+    return ActionResult(ok=True, message=f"Run {run_id} stopped")
 
 
 async def export_run(request: Request, payload: dict[str, Any]) -> ActionResult:
     run_id = payload.get("runId")
-    return ActionResult(ok=True, message=f"Метрики прогона {run_id} выгружены в CSV")
+    return ActionResult(ok=True, message=f"Run {run_id} metrics exported to CSV")
 
 
 async def rerun(request: Request, payload: dict[str, Any]) -> ActionResult:
     run_id = payload.get("runId")
-    return ActionResult(ok=True, message=f"Прогон {run_id} поставлен в очередь")
+    return ActionResult(ok=True, message=f"Run {run_id} queued")
 
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent / "frontedge.toml"

@@ -1,4 +1,4 @@
-/** Скриншоты и axe-аудит экранов Phase 3 (Eval diff, Dataset) на собранном демо. */
+/** Screenshots and the axe audit of the Phase 3 screens (Eval diff, Dataset) on the built demo. */
 import { chromium } from "playwright";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -20,7 +20,7 @@ page.on("console", (m) => {
 async function shoot(name) {
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${OUT}\\${name}.png` });
-  console.log(`скриншот: ${name}.png`);
+  console.log(`screenshot: ${name}.png`);
 }
 
 async function audit(label) {
@@ -28,7 +28,7 @@ async function audit(label) {
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
   const serious = results.violations.filter((v) => v.impact === "critical" || v.impact === "serious");
-  console.log(`axe [${label}]: нарушений ${results.violations.length}, critical/serious ${serious.length}`);
+  console.log(`axe [${label}]: ${results.violations.length} violations, ${serious.length} critical/serious`);
   for (const violation of results.violations) {
     console.log(`  - (${violation.impact}) ${violation.id}: ${violation.help} [${violation.nodes.length}]`);
     for (const node of violation.nodes.slice(0, 3)) console.log(`      ${node.target.join(" ")}`);
@@ -47,22 +47,22 @@ await page.waitForSelector(".fe-table--eval", { timeout: 15000 });
 await shoot("20-evals-light-1440");
 serious += await audit("eval diff light");
 
-// только различия
-await page.getByLabel("Только различия").check();
+// differences only
+await page.getByLabel("Differences only").check();
 await shoot("21-evals-only-diff-1440");
-await page.getByLabel("Только различия").uncheck();
+await page.getByLabel("Differences only").uncheck();
 
-// формат числа: процент
+// number format: percentage
 await page.getByRole("radio", { name: "73%" }).click();
 await page.waitForTimeout(250);
 await shoot("22-evals-percent-1440");
 await page.getByRole("radio", { name: "0.73" }).click();
 
-await page.getByRole("button", { name: /тёмную тему/i }).click();
+await page.getByRole("button", { name: /dark theme/i }).click();
 await page.waitForTimeout(250);
 await shoot("23-evals-dark-1440");
 serious += await audit("eval diff dark");
-await page.getByRole("button", { name: /светлую тему/i }).click();
+await page.getByRole("button", { name: /light theme/i }).click();
 
 // --- Datasets ---
 await page.getByRole("button", { name: /^Datasets$/ }).click();
@@ -73,13 +73,14 @@ serious += await audit("datasets light");
 
 await page.getByRole("tab", { name: /Datasheet/ }).click();
 await shoot("25-datasets-datasheet-1440");
-await page.getByRole("tab", { name: /Провенанс/ }).click();
+await page.getByRole("tab", { name: /Provenance/ }).click();
 await shoot("26-datasets-provenance-1440");
 
 await browser.close();
 console.log(
   errors.length === 0
-    ? "ошибок в консоли нет"
-    : `ошибки:\n- ${errors.join("\n- ")}`,
+    ? "no console errors"
+    : `errors:\n- ${errors.join("\n- ")}`,
 );
-console.log(serious === 0 ? "axe: critical/serious нет" : `axe: critical/serious — ${serious}`);
+console.log(serious === 0 ? "axe: no critical/serious" : `axe: ${serious} critical/serious`);
+process.exit(serious === 0 && errors.length === 0 ? 0 : 1);

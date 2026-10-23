@@ -1,5 +1,5 @@
 /**
- * Копирует собранный интерфейс в Python-пакет: apps/spike/dist -> python/frontedge/src/frontedge/static
+ * Copies the built interface into the Python package: apps/spike/dist -> python/frontedge/src/frontedge/static
  */
 import { cp, mkdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -11,7 +11,7 @@ const source = join(root, "apps", "spike", "dist");
 const target = join(root, "python", "frontedge", "src", "frontedge", "static");
 
 if (!existsSync(source)) {
-  console.error("Нет apps/spike/dist — сначала выполните pnpm build.");
+  console.error("apps/spike/dist is missing — run pnpm build first.");
   process.exit(1);
 }
 
@@ -20,4 +20,4 @@ for (const entry of ["index.html", "assets"]) {
   await rm(join(target, entry), { recursive: true, force: true });
 }
 await cp(source, target, { recursive: true });
-console.log(`Интерфейс скопирован: ${target}`);
+console.log(`Interface copied: ${target}`);

@@ -8,14 +8,14 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    // Относительные ассеты: собранный интерфейс работает под любым префиксом,
-    // который задаст FastAPI при монтировании.
+    // Relative assets: the built interface works under any prefix
+    // FastAPI sets when mounting.
     base: "./",
     plugins: [react()],
     resolve: {
       alias: {
-        // Приложение-спайк работает с исходниками библиотеки, а не с собранным
-        // пакетом: иначе сборка падает, если dist ещё не собран.
+        // The spike app works against the library sources, not the built
+        // package: otherwise the build fails when dist is not there yet.
         "@frontedge/ui/styles.css": `${uiSrc}/styles/index.css`,
         "@frontedge/ui": `${uiSrc}/index.ts`,
       },

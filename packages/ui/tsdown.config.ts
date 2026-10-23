@@ -6,7 +6,7 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
-  // React и его экосистема — ответственность потребителя.
+  // React and its ecosystem are the consumer's responsibility.
   external: ["react", "react-dom", "react/jsx-runtime"],
   treeshake: true,
 });
