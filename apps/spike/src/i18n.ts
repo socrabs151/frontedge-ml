@@ -14,6 +14,10 @@ const en = {
   "nav.datasets": "Datasets",
   "nav.language": "Language",
 
+  "topbar.density": "Table density",
+  "topbar.themeToDark": "Switch to the dark theme",
+  "topbar.themeToLight": "Switch to the light theme",
+
   "runs.title": "Runs",
   "runs.subtitle": "Runs of the project squad-ru-eval, base branch main",
   "runs.exportCsv": "Export CSV",
@@ -62,6 +66,7 @@ const en = {
   "evals.reference": "Reference",
   "evals.run": "Run",
   "evals.onlyDiff": "Differences only",
+  "evals.numberFormat": "Number format",
   "evals.compareError": "Could not compare the runs",
   "evals.compareErrorHint": "The data source did not answer: {error}. Try another pair of runs.",
   "evals.aggregateNote": "The aggregate is {aggregate}. The direction is set by the owner of the metric.",
@@ -81,11 +86,16 @@ const en = {
 
 export type AppStringKey = keyof typeof en;
 
-const ru: Record<AppStringKey, string> = {  "nav.experiments": "Эксперименты",
+const ru: Record<AppStringKey, string> = {
+  "nav.experiments": "Эксперименты",
   "nav.runs": "Runs",
   "nav.evals": "Evals",
   "nav.datasets": "Datasets",
   "nav.language": "Язык",
+
+  "topbar.density": "Плотность таблицы",
+  "topbar.themeToDark": "Переключить на тёмную тему",
+  "topbar.themeToLight": "Переключить на светлую тему",
 
   "runs.title": "Runs",
   "runs.subtitle": "Прогоны проекта squad-ru-eval, базовая ветка main",
@@ -136,6 +146,7 @@ const ru: Record<AppStringKey, string> = {  "nav.experiments": "Эксперим
   "evals.reference": "Эталон",
   "evals.run": "Прогон",
   "evals.onlyDiff": "Только различия",
+  "evals.numberFormat": "Формат числа",
   "evals.compareError": "Не удалось сравнить прогоны",
   "evals.compareErrorHint":
     "Источник данных не ответил: {error}. Попробуйте другую пару прогонов.",

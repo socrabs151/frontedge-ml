@@ -9,9 +9,29 @@ The following are **public contracts** and change only in a major release:
 - the `x-frontedge` role vocabulary;
 - the canonical status set (`queued · running · succeeded · failed · cancelled · lost`);
 - the freshness set (`live · fresh · stale · partial`);
+- the interface configuration keys (`density`, `theme`, `run_columns`, `eval_tabs`, `actions`,
+  `live_refresh_seconds`, `baseline_run`, `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
 ## [Unreleased]
+
+### Added
+
+- Server-side filtering and pagination of the runs list: a provider may accept
+  `list_runs(request, query)` and answer with a `RunsPage`; the total number of runs is sent in
+  the `X-Frontedge-Total` header.
+- Artifact content: `GET /api/artifacts/{id}/content` for providers that implement
+  `read_artifact`.
+- Failure reasons: `Run.error` and `Run.exit_code` reach the client as `error` and `exitCode`.
+- The runs table is built from the configured columns.
+- The list of runs refreshes on its own (`live_refresh_seconds`), and the baseline run for the
+  deltas can be picked in the interface (`baseline_run`).
+
+### Changed
+
+- The interface is English by default with a Russian toggle. Numbers, durations, relative times
+  and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
+  Eval) stay English in both.
 
 ## [0.1.0] — 2026-10-22
 

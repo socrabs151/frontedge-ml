@@ -114,7 +114,7 @@ function Shell() {
               ]}
             />
             <Segmented
-              ariaLabel="Table density"
+              ariaLabel={t("topbar.density")}
               value={density}
               onChange={setDensity}
               options={[
@@ -127,7 +127,7 @@ function Shell() {
               type="button"
               className="fe-icon-btn"
               onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              aria-label={theme === "light" ? "Switch to the dark theme" : "Switch to the light theme"}
+              aria-label={t(theme === "light" ? "topbar.themeToDark" : "topbar.themeToLight")}
             >
               {theme === "light" ? <Moon size={15} aria-hidden /> : <Sun size={15} aria-hidden />}
             </button>

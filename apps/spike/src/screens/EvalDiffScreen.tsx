@@ -143,7 +143,7 @@ export function EvalDiffScreen({
         </label>
         <div className="fe-toolbar__spacer" />
         <Segmented
-          ariaLabel="Number format"
+          ariaLabel={t("evals.numberFormat")}
           value={format}
           onChange={setFormat}
           options={FORMAT_OPTIONS}

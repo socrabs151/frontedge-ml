@@ -4,6 +4,7 @@ import {
   LoadingRows,
   ProvenanceList,
   Tabs,
+  useI18n,
 } from "@frontedge/ui";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -13,6 +14,8 @@ import { errorMessage, source } from "../data/source";
 
 export function DatasetScreen() {
   const t = useAppT();
+  const { lang } = useI18n();
+  const locale = lang === "ru" ? "ru-RU" : "en-US";
   const [datasets, setDatasets] = useState<DatasetInfo[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<DatasetDetail | null>(null);
@@ -131,19 +134,20 @@ export function DatasetScreen() {
     <div className="fe-datasets">
       <div className="fe-datasets__list" role="list" aria-label={t("nav.datasets")}>
         {datasets.map((dataset) => (
-          <button
-            key={dataset.id}
-            type="button"
-            className="fe-datasets__item"
-            aria-current={dataset.id === selectedId}
-            onClick={() => setSelectedId(dataset.id)}
-          >
-            <span className="fe-datasets__name">{dataset.name}</span>
-            <span className="fe-datasets__meta">
-              {dataset.version} · {dataset.examplesCount.toLocaleString("en-US")}{" "}
-              {t("datasets.examples")}
-            </span>
-          </button>
+          <div key={dataset.id} role="listitem">
+            <button
+              type="button"
+              className="fe-datasets__item"
+              aria-current={dataset.id === selectedId}
+              onClick={() => setSelectedId(dataset.id)}
+            >
+              <span className="fe-datasets__name">{dataset.name}</span>
+              <span className="fe-datasets__meta">
+                {dataset.version} · {dataset.examplesCount.toLocaleString(locale)}{" "}
+                {t("datasets.examples")}
+              </span>
+            </button>
+          </div>
         ))}
       </div>
 
@@ -155,7 +159,7 @@ export function DatasetScreen() {
                 <h2 className="fe-runs__title fe-runs__title--small">{detail.name}</h2>
                 <p className="fe-runs__subtitle">
                   {t("datasets.version")} <span className="mono">{detail.version}</span> ·{" "}
-                  {detail.examplesCount.toLocaleString("en-US")} {t("datasets.examples")} ·{" "}
+                  {detail.examplesCount.toLocaleString(locale)} {t("datasets.examples")} ·{" "}
                   {(detail.tags ?? []).join(", ")}
                 </p>
               </div>
