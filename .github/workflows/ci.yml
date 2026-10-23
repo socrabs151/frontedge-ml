@@ -94,3 +94,8 @@ jobs:
         env:
           FE_BASE_URL: http://127.0.0.1:8000/frontedge
         run: node apps/spike/scripts/keyboard-check.mjs
+
+      - name: Phase 3 screens audit
+        env:
+          FE_BASE_URL: http://127.0.0.1:8000/frontedge
+        run: node apps/spike/scripts/phase3-shots.mjs
