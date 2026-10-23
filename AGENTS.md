@@ -26,6 +26,7 @@ uv sync --all-packages            # the Python workspace
 uv run --package frontedge pytest python/frontedge/tests -q
 node apps/spike/scripts/verify.mjs         # screenshots + axe (a running dev server is required)
 node apps/spike/scripts/keyboard-check.mjs # keyboard pass over the table
+pnpm check:lang                            # language audit: English repo and interface, switched by the toggle
 ```
 
 Against the running demo: `FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps/spike/scripts/verify.mjs`.
@@ -93,4 +94,5 @@ drifted from the models.
 2. `pnpm check:contrast` — every pair passes.
 3. `node apps/spike/scripts/verify.mjs` — axe: 0 critical/serious; look at the screenshots.
 4. `node apps/spike/scripts/keyboard-check.mjs` — the keyboard still works.
-5. Check against §4 of the design document: no defaults crept in that are not in there.
+5. `pnpm check:lang` — no Cyrillic outside the dictionaries; no untranslated literal.
+6. Check against §4 of the design document: no defaults crept in that are not in there.

@@ -16,6 +16,7 @@ uv sync --all-packages
 pnpm typecheck
 pnpm check:contrast
 pnpm build:ui
+pnpm check:lang --no-browser
 uv run --package frontedge pytest python/frontedge/tests -q
 ```
 
@@ -25,10 +26,12 @@ Browser gates need a running demo and a Chromium-family browser:
 pnpm demo                                   # in one terminal
 FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps/spike/scripts/verify.mjs
 FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps/spike/scripts/keyboard-check.mjs
+FE_BASE_URL=http://127.0.0.1:8000/frontedge pnpm check:lang
 ```
 
-CI runs all of these on every pull request, including the axe audit and the keyboard pass. It
-also regenerates the TypeScript types and fails when they differ from what is committed.
+CI runs all of these on every pull request, including the axe audit, the keyboard pass and the
+language audit. It also regenerates the TypeScript types and fails when they differ from what is
+committed.
 
 ## House rules
 

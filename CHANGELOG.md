@@ -26,6 +26,9 @@ The following are **public contracts** and change only in a major release:
 - The runs table is built from the configured columns.
 - The list of runs refreshes on its own (`live_refresh_seconds`), and the baseline run for the
   deltas can be picked in the interface (`baseline_run`).
+- The language audit (`pnpm check:lang`): Cyrillic is allowed only in the dictionaries and the
+  Russian README, the two dictionaries must agree, a component may not carry a visible literal,
+  and the English interface is checked in a browser for stray Cyrillic.
 
 ### Changed
 

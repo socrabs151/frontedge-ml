@@ -172,6 +172,7 @@ pnpm dev                # the spike app on http://localhost:5173
 pnpm demo               # the demo on FastAPI: http://127.0.0.1:8000/frontedge
 pnpm typecheck
 pnpm check:contrast     # WCAG contrast of every token pair, both themes
+pnpm check:lang         # English repository and interface, Russian only through the toggle
 pnpm build:ui           # build the interface into the Python package
 uv sync --all-packages
 uv run --package frontedge pytest python/frontedge/tests -q

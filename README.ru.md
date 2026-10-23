@@ -172,6 +172,7 @@ pnpm dev                # спайк на http://localhost:5173
 pnpm demo               # демо на FastAPI: http://127.0.0.1:8000/frontedge
 pnpm typecheck
 pnpm check:contrast     # контраст каждой пары токенов по WCAG 2.2, обе темы
+pnpm check:lang         # английский репозиторий и интерфейс, русский — только через тумблер
 pnpm build:ui           # сборка интерфейса в Python-пакет
 uv sync --all-packages
 uv run --package frontedge pytest python/frontedge/tests -q
