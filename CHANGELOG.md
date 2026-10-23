@@ -37,6 +37,13 @@ The following are **public contracts** and change only in a major release:
 - Provider output is validated where it enters the library. A mapping is coerced into the model;
   anything else is a 502 whose `detail` names the method and the position instead of a 500 from
   the serializer. A bad log line becomes a visible error line in the stream.
+- The OpenAPI schema describes the responses: `RunPayload`, `EvalSummary`, `EvalComparison`,
+  `DatasetInfo`, `DatasetDetail`, `Meta`, `UiConfig` and `ActionResult` are referenced from the
+  paths instead of bare `object`, so generic tools see the same contract as the generated client.
+- `frontedge check --provider module:object` calls a provider the way the server will and
+  validates every answer; `--evals` and `--datasets` include the other two sources.
+- A documentation test compiles every Python example, loads every TOML example, validates the
+  configuration examples against `UiConfig`, and parses every documented CLI command.
 
 ### Changed
 

@@ -9,6 +9,8 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
+import importlib
 import json
 import sys
 from pathlib import Path
@@ -19,6 +21,16 @@ from pydantic import ValidationError
 from . import __version__
 from .config import ActionResult, ActionSpec, UiConfig, load_config_file
 from .gen import generate_client, generate_types
+from .models import DatasetDetail, DatasetInfo, EvalSummary, Run, RunsPage, RunsQuery
+from .providers import (
+    ProviderError,
+    adapt_provider,
+    as_model_or_none,
+    as_models,
+    provider_accepts_query,
+    provider_has_logs,
+    provider_reads_artifacts,
+)
 from .models import (
     Artifact,
     DatasetDetail,
@@ -152,7 +164,154 @@ def _describe(config_path: Path, config: UiConfig) -> str:
     return "\n".join(lines)
 
 
+def _load_object(spec: str) -> Any:
+    """``module:attribute`` (a dotted attribute is allowed) from the current directory."""
+    module_name, _, attribute = spec.partition(":")
+    if not module_name or not attribute:
+        raise ValueError(f"expected module:attribute, got {spec!r}")
+    module = importlib.import_module(module_name)
+    target: Any = module
+    for part in attribute.split("."):
+        target = getattr(target, part)
+    return target
+
+
+def _dummy_request() -> Any:
+    """A request with no body and no app: enough for headers, query and path."""
+    from starlette.requests import Request
+
+    async def receive() -> dict[str, Any]:
+        return {"type": "http.disconnect"}
+
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": "GET",
+        "scheme": "http",
+        "path": "/",
+        "raw_path": b"/",
+        "query_string": b"",
+        "root_path": "",
+        "headers": [],
+        "client": ("127.0.0.1", 0),
+        "server": ("localhost", 8000),
+    }
+    return Request(scope, receive)
+
+
+async def _provider_report(args: argparse.Namespace) -> dict[str, Any]:
+    """Call the provider the way the server will and validate every answer."""
+    request = _dummy_request()
+    errors: list[dict[str, str]] = []
+    report: dict[str, Any] = {"query": False, "logs": False, "artifacts": False}
+
+    try:
+        provider = adapt_provider(_load_object(args.provider))
+    except Exception as error:  # noqa: BLE001 - the message is the product here
+        return {"ok": False, "errors": [{"field": "provider", "message": str(error)}]}
+
+    report["query"] = provider_accepts_query(provider)
+    report["logs"] = provider_has_logs(provider)
+    report["artifacts"] = provider_reads_artifacts(provider)
+
+    try:
+        runs = as_models(await provider.list_runs(request), Run, "list_runs")
+        report["runs"] = len(runs)
+        if report["query"]:
+            page = await provider.list_runs(request, RunsQuery(limit=1))  # type: ignore[call-arg]
+            items = page.items if isinstance(page, RunsPage) else page
+            as_models(items, Run, "list_runs(request, query)")
+
+        wanted = args.run_id or (runs[0].id if runs else None)
+        if wanted:
+            run = as_model_or_none(await provider.get_run(request, wanted), Run, "get_run")
+            if run is None:
+                if args.run_id:
+                    errors.append(
+                        {"field": "get_run", "message": f"returned None for {args.run_id}"}
+                    )
+            else:
+                report["run"] = run.id
+    except ProviderError as error:
+        errors.append({"field": "runs", "message": str(error)})
+
+    if args.evals:
+        try:
+            evals = _load_object(args.evals)
+            report["evals"] = len(
+                as_models(await evals.list_evals(request), EvalSummary, "list_evals")
+            )
+        except (ProviderError, AttributeError, ImportError) as error:
+            errors.append({"field": "evals", "message": str(error)})
+
+    if args.datasets:
+        try:
+            datasets = _load_object(args.datasets)
+            listed = as_models(
+                await datasets.list_datasets(request), DatasetInfo, "list_datasets"
+            )
+            report["datasets"] = len(listed)
+            if listed:
+                detail = as_model_or_none(
+                    await datasets.get_dataset(request, listed[0].id),
+                    DatasetDetail,
+                    "get_dataset",
+                )
+                if detail is None:
+                    errors.append(
+                        {
+                            "field": "get_dataset",
+                            "message": f"returned None for {listed[0].id}",
+                        }
+                    )
+        except (ProviderError, AttributeError, ImportError) as error:
+            errors.append({"field": "datasets", "message": str(error)})
+
+    return {"ok": not errors, "errors": errors, **report}
+
+
+def _print_provider_report(report: dict[str, Any]) -> None:
+    def flag(name: str) -> str:
+        return "yes" if report.get(name) else "no"
+
+    print("providers: OK" if report["ok"] else "providers: problem(s)")
+    if "runs" in report:
+        print(f"  list_runs: {report['runs']} run(s)")
+    if "run" in report:
+        print(f"  get_run: {report['run']}")
+    print(f"  query: {flag('query')}")
+    print(f"  logs: {flag('logs')}")
+    print(f"  artifacts: {flag('artifacts')}")
+    if report.get("evals") is not None:
+        print(f"  evals: {report['evals']}")
+    if report.get("datasets") is not None:
+        print(f"  datasets: {report['datasets']}")
+    for error in report["errors"]:
+        print(f"  - {error['field']}: {error['message']}", file=sys.stderr)
+
+
+def _check_providers(args: argparse.Namespace) -> int:
+    report = asyncio.run(_provider_report(args))
+    if args.json:
+        print(json.dumps(report, indent=2, ensure_ascii=False))
+    else:
+        _print_provider_report(report)
+    return 0 if report["ok"] else 1
+
+
 def _check(args: argparse.Namespace) -> int:
+    if args.provider:
+        status = _check_providers(args)
+        if status != 0:
+            return status
+        # A provider that answers is half the check; the configuration is the other half.
+        try:
+            path = _config_path(args.path)
+        except FileNotFoundError:
+            return 0
+        args.path = str(path)
+
     try:
         path = _config_path(args.path)
     except FileNotFoundError as error:
@@ -187,7 +346,8 @@ def _check(args: argparse.Namespace) -> int:
     return 0
 
 
-def main(argv: list[str] | None = None) -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """The parser is public so a test can check that the documented commands exist."""
     parser = argparse.ArgumentParser(prog="frontedge", description="Frontedge tools")
     parser.add_argument("--version", action="version", version=f"frontedge {__version__}")
     sub = parser.add_subparsers(dest="command")
@@ -209,15 +369,32 @@ def main(argv: list[str] | None = None) -> int:
     schema = sub.add_parser("schema", help="print the JSON Schema of frontedge.toml")
     schema.add_argument("--out", default=None, help="write to a file instead of stdout")
 
-    check = sub.add_parser("check", help="validate a configuration file")
+    check = sub.add_parser("check", help="validate a configuration file or a provider")
     check.add_argument(
         "path",
         nargs="?",
         default=None,
         help="frontedge.toml or frontedge.json (default: the one in the current directory)",
     )
+    check.add_argument(
+        "--provider",
+        default=None,
+        metavar="MODULE:OBJECT",
+        help="call a runs provider and validate its answers before the server starts",
+    )
+    check.add_argument("--evals", default=None, metavar="MODULE:OBJECT")
+    check.add_argument("--datasets", default=None, metavar="MODULE:OBJECT")
+    check.add_argument(
+        "--run-id",
+        default=None,
+        help="which run to fetch from the provider (default: the first listed)",
+    )
     check.add_argument("--json", action="store_true", help="machine-readable output")
+    return parser
 
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
     args = parser.parse_args(argv)
 
     if args.command == "gen":

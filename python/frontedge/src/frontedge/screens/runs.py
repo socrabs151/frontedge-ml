@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import functools
-import json
-from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable
 from itertools import count
 from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
 
 from ..config import ActionResult, UiConfig, load_config
 from ..models import (
@@ -22,6 +22,7 @@ from ..models import (
     RunsPage,
     RunsQuery,
 )
+from ..meta import Meta, build_meta
 from ..providers import (
     DatasetProvider,
     EvalProvider,
@@ -45,60 +46,27 @@ _log_ids = count(1)
 ActionHandler = Callable[[Request, dict[str, Any]], Awaitable[Any]]
 
 
+class RunPayload(Run):
+    """A run as the API returns it: the domain fields plus the resolved log stream URL."""
+
+    log_stream_url: str
+
+
+def _run_payload(run: Run, path: str) -> RunPayload:
+    return RunPayload(
+        **run.model_dump(),
+        log_stream_url=f"{path}/api/runs/{run.id}/logs/stream",
+    )
+
+
 def _json_model(model: Any) -> Any:
     """Serialization to camelCase, like in the generated TypeScript types."""
     return model.model_dump(mode="json", by_alias=True)
 
 
-def _json(data: Any) -> str:
-    return json.dumps(data, ensure_ascii=False, default=str)
-
-
 async def _empty_logs() -> AsyncIterator[tuple[str, Any]]:
     return
     yield  # pragma: no cover
-
-
-def _run_payload(run: Run, path: str) -> dict[str, Any]:
-    payload = _json_model(run)
-    payload["logStreamUrl"] = f"{path}/api/runs/{run.id}/logs/stream"
-    return payload
-
-
-def meta(
-    *,
-    runs: Any = None,
-    evals: Any = None,
-    datasets: Any = None,
-    actions: Sequence[str] = (),
-) -> dict[str, Any]:
-    """Metadata the interface and a tool need to know: the vocabulary and the capabilities."""
-    from .. import __version__
-
-    screens = ["runs", "run"]
-    if evals is not None:
-        screens.append("evals")
-    if datasets is not None:
-        screens.append("datasets")
-
-    return {
-        "name": "frontedge",
-        "version": __version__,
-        "statuses": ["queued", "running", "succeeded", "failed", "cancelled", "lost"],
-        "freshness": ["live", "fresh", "stale", "partial"],
-        "metricDirections": ["maximize", "minimize", "none"],
-        "capabilities": {
-            "screens": screens,
-            "actions": list(actions),
-            "runs": {
-                "query": runs is not None and provider_accepts_query(runs),
-                "logs": runs is not None and provider_has_logs(runs),
-                "artifacts": runs is not None and provider_reads_artifacts(runs),
-            },
-            "evals": evals is not None,
-            "datasets": datasets is not None,
-        },
-    }
 
 
 def _provider_errors(endpoint: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
@@ -138,16 +106,22 @@ def _build_router(
 
     # --- Runs -------------------------------------------------------------
 
-    @router.get("/api/runs", tags=["frontedge"])
+    @router.get(
+        "/api/runs",
+        tags=["frontedge"],
+        response_model=list[RunPayload],
+        responses={200: {"headers": {"X-Frontedge-Total": {"schema": {"type": "integer"}}}}},
+    )
     @_provider_errors
     async def list_runs(
         request: Request,
+        response: Response,
         limit: int | None = None,
         offset: int = 0,
         search: str | None = None,
         status: str | None = None,
         dataset: str | None = None,
-    ) -> Response:
+    ) -> list[RunPayload]:
         """A list of runs.
 
         If the provider accepts ``list_runs(request, query)``, the selection goes
@@ -165,14 +139,12 @@ def _build_router(
         if provider_accepts_query(source):
             result = await source.list_runs(request, query)  # type: ignore[call-arg]
             if isinstance(result, RunsPage):
-                body = [_run_payload(run, path) for run in as_models(result.items, Run, "list_runs")]
-                return Response(
-                    content=_json(body),
-                    media_type="application/json",
-                    headers={"X-Frontedge-Total": str(result.total)},
-                )
+                runs_ = as_models(result.items, Run, "list_runs")
+                response.headers["X-Frontedge-Total"] = str(result.total)
+                return [_run_payload(run, path) for run in runs_]
             runs_ = as_models(result, Run, "list_runs")
-            total = len(runs_)
+            response.headers["X-Frontedge-Total"] = str(len(runs_))
+            return [_run_payload(run, path) for run in runs_]
         else:
             runs_ = as_models(await source.list_runs(request), Run, "list_runs")
             total = len(runs_)
@@ -189,21 +161,28 @@ def _build_router(
             if query.limit is not None:
                 runs_ = runs_[: query.limit]
 
-        return Response(
-            content=_json([_run_payload(run, path) for run in runs_]),
-            media_type="application/json",
-            headers={"X-Frontedge-Total": str(total)},
-        )
+        response.headers["X-Frontedge-Total"] = str(total)
+        return [_run_payload(run, path) for run in runs_]
 
-    @router.get("/api/runs/{run_id}", tags=["frontedge"])
+    @router.get("/api/runs/{run_id}", tags=["frontedge"], response_model=RunPayload)
     @_provider_errors
-    async def get_run(request: Request, run_id: str) -> dict[str, Any]:
+    async def get_run(request: Request, run_id: str) -> RunPayload:
         run = as_model_or_none(await source.get_run(request, run_id), Run, "get_run")
         if run is None:
             raise HTTPException(status_code=404, detail="Run not found")
         return _run_payload(run, path)
 
-    @router.get("/api/runs/{run_id}/logs/stream", tags=["frontedge"])
+    @router.get(
+        "/api/runs/{run_id}/logs/stream",
+        tags=["frontedge"],
+        response_class=StreamingResponse,
+        responses={
+            200: {
+                "description": "Server-sent events, one `log` event per line",
+                "content": {"text/event-stream": {"schema": {"type": "string"}}},
+            }
+        },
+    )
     @_provider_errors
     async def stream_logs(request: Request, run_id: str) -> Response:
         if not provider_has_logs(source):
@@ -224,7 +203,17 @@ def _build_router(
 
     # --- Artifacts --------------------------------------------------------
 
-    @router.get("/api/artifacts/{artifact_id}/content", tags=["frontedge"])
+    @router.get(
+        "/api/artifacts/{artifact_id}/content",
+        tags=["frontedge"],
+        response_class=Response,
+        responses={
+            200: {
+                "description": "Raw artifact content",
+                "content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}},
+            }
+        },
+    )
     @_provider_errors
     async def artifact_content(request: Request, artifact_id: str) -> Response:
         """Artifact content — if the provider can serve it."""
@@ -247,22 +236,25 @@ def _build_router(
 
     # --- Evals ------------------------------------------------------------
 
-    @router.get("/api/evals", tags=["frontedge"])
+    @router.get("/api/evals", tags=["frontedge"], response_model=list[EvalSummary])
     @_provider_errors
-    async def list_evals(request: Request) -> list[dict[str, Any]]:
+    async def list_evals(request: Request) -> list[EvalSummary]:
         if evals is None:
             return []
-        items = as_models(await evals.list_evals(request), EvalSummary, "list_evals")
-        return [_json_model(item) for item in items]
+        return as_models(await evals.list_evals(request), EvalSummary, "list_evals")
 
-    @router.get("/api/evals/{eval_id}/compare", tags=["frontedge"])
+    @router.get(
+        "/api/evals/{eval_id}/compare",
+        tags=["frontedge"],
+        response_model=EvalComparison,
+    )
     @_provider_errors
     async def compare_evals(
         request: Request,
         eval_id: str,
         reference: str,
         comparison: str,
-    ) -> dict[str, Any]:
+    ) -> EvalComparison:
         if evals is None:
             raise HTTPException(status_code=404, detail="Eval screens are not connected")
         result = as_model_or_none(
@@ -272,21 +264,24 @@ def _build_router(
         )
         if result is None:
             raise HTTPException(status_code=404, detail="Eval not found")
-        return _json_model(result)
+        return result
 
     # --- Datasets ---------------------------------------------------------
 
-    @router.get("/api/datasets", tags=["frontedge"])
+    @router.get("/api/datasets", tags=["frontedge"], response_model=list[DatasetInfo])
     @_provider_errors
-    async def list_datasets(request: Request) -> list[dict[str, Any]]:
+    async def list_datasets(request: Request) -> list[DatasetInfo]:
         if datasets is None:
             return []
-        items = as_models(await datasets.list_datasets(request), DatasetInfo, "list_datasets")
-        return [_json_model(item) for item in items]
+        return as_models(await datasets.list_datasets(request), DatasetInfo, "list_datasets")
 
-    @router.get("/api/datasets/{dataset_id}", tags=["frontedge"])
+    @router.get(
+        "/api/datasets/{dataset_id}",
+        tags=["frontedge"],
+        response_model=DatasetDetail,
+    )
     @_provider_errors
-    async def get_dataset(request: Request, dataset_id: str) -> dict[str, Any]:
+    async def get_dataset(request: Request, dataset_id: str) -> DatasetDetail:
         if datasets is None:
             raise HTTPException(status_code=404, detail="Dataset screens are not connected")
         result = as_model_or_none(
@@ -294,29 +289,35 @@ def _build_router(
         )
         if result is None:
             raise HTTPException(status_code=404, detail="Dataset not found")
-        return _json_model(result)
+        return result
 
     # --- Metadata and interface -------------------------------------------
 
-    @router.get("/api/meta", tags=["frontedge"])
-    async def get_meta() -> dict[str, Any]:
-        return meta(runs=source, evals=evals, datasets=datasets, actions=handlers.keys())
+    @router.get("/api/meta", tags=["frontedge"], response_model=Meta)
+    async def get_meta() -> Meta:
+        return build_meta(runs=source, evals=evals, datasets=datasets, actions=handlers.keys())
 
-    @router.get("/api/config", tags=["frontedge"])
-    async def get_config() -> dict[str, Any]:
+    @router.get("/api/config", tags=["frontedge"], response_model=UiConfig)
+    async def get_config() -> UiConfig:
         """Interface configuration: columns, tabs, declared actions."""
-        return _json_model(ui_config)
+        return ui_config
 
-    @router.post("/api/actions/{action_id}", tags=["frontedge"])
-    async def run_action(action_id: str, request: Request, payload: dict[str, Any] | None = None) -> Any:
+    @router.post(
+        "/api/actions/{action_id}",
+        tags=["frontedge"],
+        response_model=ActionResult,
+    )
+    async def run_action(
+        action_id: str, request: Request, payload: dict[str, Any] | None = None
+    ) -> ActionResult:
         """Run a project action. The library only knows the id."""
         handler = handlers.get(action_id)
         if handler is None:
             raise HTTPException(status_code=404, detail=f"Action is not declared: {action_id}")
         result = await handler(request, payload or {})
         if isinstance(result, ActionResult):
-            return _json_model(result)
-        return {"ok": True, "message": None, "data": result if isinstance(result, dict) else {}}
+            return result
+        return ActionResult(data=result if isinstance(result, dict) else {})
 
     @router.api_route(
         "/api/{rest:path}",

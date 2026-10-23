@@ -45,10 +45,10 @@ Against the running demo: `FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps
 
 ## Contracts
 
-**Tokens** come from `packages/ui/src/styles/tokens.css` only and carry the `fe-` prefix
-(`--fe-surface`, not `--surface`), so the npm package never overwrites the host application's
-variables. Do not write hex values, pixel radii or font sizes in components: a new colour is a
-line in `tokens.css` plus a line in `packages/ui/scripts/check-contrast.mjs`.
+**Tokens** come from `packages/ui/src/styles/tokens.css` only and carry the `fe-` prefix — the
+token is `--fe-surface`, never the bare name — so the npm package never overwrites the host
+application's variables. Do not write hex values, pixel radii or font sizes in components: a new
+colour is a line in `tokens.css` plus a line in `packages/ui/scripts/check-contrast.mjs`.
 
 **Base styles are scoped** to `.fe-root` and to the portalled surfaces (`.fe-menu`,
 `.fe-tooltip`). A screen mounted into someone else's page must sit inside `.fe-root`; the

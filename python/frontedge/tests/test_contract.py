@@ -259,6 +259,39 @@ class TestConfigAndActions:
         assert payload["actions"][0]["placement"] == "runs"
 
 
+class TestOpenApi:
+    """The schema is a contract for tools that never read our TypeScript."""
+
+    def schema_of(self, path: str) -> Any:
+        spec = client_for().get("/openapi.json").json()
+        return spec["paths"][f"/frontedge/api/{path}"]["get"]["responses"]["200"]["content"][
+            "application/json"
+        ]["schema"]
+
+    def test_runs_list_is_typed(self) -> None:
+        schema = self.schema_of("runs")
+        assert schema["type"] == "array"
+        assert schema["items"]["$ref"].endswith("/RunPayload")
+
+    def test_run_detail_is_typed(self) -> None:
+        assert self.schema_of("runs/{run_id}")["$ref"].endswith("/RunPayload")
+
+    def test_meta_is_typed(self) -> None:
+        assert self.schema_of("meta")["$ref"].endswith("/Meta")
+
+    def test_config_is_typed(self) -> None:
+        assert self.schema_of("config")["$ref"].endswith("/UiConfig")
+
+    def test_components_have_properties(self) -> None:
+        spec = client_for().get("/openapi.json").json()
+        payload = spec["components"]["schemas"]["RunPayload"]
+        assert {"id", "name", "status", "metrics", "logStreamUrl"} <= set(payload["properties"])
+        meta = spec["components"]["schemas"]["Meta"]
+        assert "capabilities" in meta["properties"]
+        capabilities = spec["components"]["schemas"]["Capabilities"]
+        assert {"screens", "actions", "runs"} <= set(capabilities["properties"])
+
+
 class TestMetaCapabilities:
     def test_function_provider_has_no_extra_capabilities(self) -> None:
         capabilities = client_for().get("/frontedge/api/meta").json()["capabilities"]
@@ -384,6 +417,89 @@ class TestProviderContract:
         response = client_for(BrokenArtifact()).get("/frontedge/api/artifacts/a/content")
         assert response.status_code == 502
         assert "expected bytes" in response.json()["detail"]
+
+
+class TestProviderCheck:
+    """`frontedge check --provider` calls the adapter the way the server will."""
+
+    GOOD = """
+from datetime import UTC, datetime
+from frontedge import Run
+
+
+def make():
+    return Run(
+        id="run-1", name="exp-1", status="succeeded", dataset="demo", git_sha="abc1234",
+        started_at=datetime.now(UTC), duration_ms=10, owner="tester",
+        metrics={}, series={}, metric_direction={}, stages=[],
+    )
+
+
+class Provider:
+    async def list_runs(self, request, query=None):
+        return [make()]
+
+    async def get_run(self, request, run_id):
+        return make()
+
+
+provider = Provider()
+"""
+
+    BROKEN = """
+class Provider:
+    async def list_runs(self, request):
+        return ["not a run"]
+
+    async def get_run(self, request, run_id):
+        return None
+
+
+provider = Provider()
+"""
+
+    def install(self, monkeypatch: Any, tmp_path: Any, name: str, source: str) -> None:
+        (tmp_path / f"{name}.py").write_text(source, encoding="utf-8")
+        monkeypatch.syspath_prepend(str(tmp_path))
+        monkeypatch.chdir(tmp_path)
+
+    def test_good_provider_passes(self, tmp_path: Any, monkeypatch: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        self.install(monkeypatch, tmp_path, "provider_good", self.GOOD)
+        assert main(["check", "--provider", "provider_good:provider"]) == 0
+        out = capsys.readouterr().out
+        assert "providers: OK" in out
+        assert "list_runs: 1 run(s)" in out
+        assert "query: yes" in out
+
+    def test_broken_provider_names_the_method(
+        self, tmp_path: Any, monkeypatch: Any, capsys: Any
+    ) -> None:
+        from frontedge.cli import main
+
+        self.install(monkeypatch, tmp_path, "provider_broken", self.BROKEN)
+        assert main(["check", "--provider", "provider_broken:provider"]) == 1
+        err = capsys.readouterr().err
+        assert "list_runs item 0 returned str" in err
+
+    def test_unknown_module_is_a_clear_error(
+        self, tmp_path: Any, monkeypatch: Any, capsys: Any
+    ) -> None:
+        from frontedge.cli import main
+
+        monkeypatch.chdir(tmp_path)
+        assert main(["check", "--provider", "no_such_module_xyz:provider"]) == 1
+        assert "no_such_module_xyz" in capsys.readouterr().err
+
+    def test_json_report(self, tmp_path: Any, monkeypatch: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        self.install(monkeypatch, tmp_path, "provider_json", self.GOOD)
+        assert main(["check", "--provider", "provider_json:provider", "--json"]) == 0
+        report = json.loads(capsys.readouterr().out)
+        assert report["ok"] is True
+        assert report["runs"] == 1
 
 
 class TestCli:

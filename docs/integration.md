@@ -130,10 +130,32 @@ class MyProvider:
 app.include_router(frontedge.mount(MyProvider()))
 ```
 
-The provider has to implement `stream_logs`: a provider without it is wrapped for the log
-stream, and the wrapper does not pass the query on.
+`stream_logs` is optional: without it the log stream stays empty. `read_artifact` is optional too.
 
 The total is returned in the `X-Frontedge-Total` header of `GET /api/runs`.
+
+### Check the provider before the server starts
+
+```bash
+frontedge check --provider myapp.providers:provider
+frontedge check --provider myapp.providers:provider --evals myapp.providers:evals --json
+```
+
+The command imports `module:object`, calls `list_runs`, `get_run`, the query path (when the
+signature supports it), `list_evals` and `list_datasets`, and validates every answer the same way
+the server does. It prints what the provider can do and exits with 1 on a contract mistake:
+
+```
+providers: OK
+  list_runs: 200 run(s)
+  get_run: exp-001
+  query: yes
+  logs: yes
+  artifacts: no
+```
+
+The request is a stub: headers, query and path are empty. A provider that reads application state
+from `request.app` cannot be checked this way — start the server and call `/api/runs` instead.
 
 ## 4. What gets mounted
 
@@ -229,7 +251,8 @@ frontedge schema --out frontedge.schema.json
 
 `check` exits with 1 and names the field for every problem (an unknown key, a wrong enum value,
 a duplicate action id or column). `schema` prints the JSON Schema of the file, which an editor or
-an agent can use to validate it before any Python code runs.
+an agent can use to validate it before any Python code runs. `check --provider` validates the
+provider as well (see §3).
 
 All of the keys of `UiConfig`:
 
