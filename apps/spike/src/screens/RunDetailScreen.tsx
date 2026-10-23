@@ -144,7 +144,7 @@ export function RunDetailScreen({
         <div className="fe-detail__stack">
           <div className="fe-metric-cards">
             <MetricCard
-              label="Accuracy"
+              label={t("metric.accuracy")}
               value={run.metrics.accuracy}
               baseline={baseline?.metrics.accuracy}
               direction={run.metricDirection?.accuracy ?? "none"}
@@ -152,7 +152,7 @@ export function RunDetailScreen({
               color="var(--data-series-1)"
             />
             <MetricCard
-              label="Loss"
+              label={t("metric.loss")}
               value={run.metrics.loss}
               baseline={baseline?.metrics.loss}
               direction={run.metricDirection?.loss ?? "none"}
@@ -160,7 +160,7 @@ export function RunDetailScreen({
               color="var(--data-series-2)"
             />
             <MetricCard
-              label="F1"
+              label={t("metric.f1")}
               value={run.metrics.f1}
               baseline={baseline?.metrics.f1}
               direction={run.metricDirection?.f1 ?? "none"}
@@ -168,7 +168,7 @@ export function RunDetailScreen({
               color="var(--data-series-3)"
             />
             <MetricCard
-              label="Tokens"
+              label={t("metric.tokens")}
               value={run.metrics.tokens}
               baseline={baseline?.metrics.tokens}
               direction="none"
@@ -178,13 +178,13 @@ export function RunDetailScreen({
 
           <div className="fe-detail__grid">
             <MetricChart
-              label="Accuracy over steps"
+              label={t("metric.accuracy")}
               series={accuracySeries}
               baselineSeries={baselineAccuracy}
               color="var(--data-series-1)"
             />
             <MetricChart
-              label="Loss over steps"
+              label={t("metric.loss")}
               series={lossSeries}
               baselineSeries={baseline?.series.loss ?? []}
               color="var(--data-series-2)"
@@ -210,9 +210,7 @@ export function RunDetailScreen({
               />
               {t("evals.onlyDiff")}
             </label>
-            <span className="fe-note fe-note--inline">
-              Score is the share of matches; the delta is relative to the baseline.
-            </span>
+              <span className="fe-note fe-note--inline">{t("detail.scoreNote")}</span>
           </div>
           {examples.length === 0 ? (
             <p className="fe-note">{t("detail.examplesMissing")}</p>
@@ -277,7 +275,7 @@ export function RunDetailScreen({
           {run.freshness === "live" ? (
             <span className="fe-freshness fe-freshness--live">
               <span className="fe-freshness__dot" aria-hidden />
-              live
+              {t("freshness.live")}
             </span>
           ) : null}
         </div>
@@ -317,17 +315,19 @@ export function RunDetailScreen({
 
       <div className="fe-detail__meta">
         <span className="fe-detail__meta-item">
-          <span className="muted">Dataset</span> <span className="mono">{run.dataset}</span>
+          <span className="muted">{t("detail.dataset")}</span>{" "}
+          <span className="mono">{run.dataset}</span>
         </span>
         <span className="fe-detail__meta-item">
-          <span className="muted">Git</span> <span className="mono">{run.gitSha}</span>
+          <span className="muted">{t("detail.git")}</span> <span className="mono">{run.gitSha}</span>
         </span>
         <span className="fe-detail__meta-item">
-          <span className="muted">Baseline</span>{" "}
-          <span className="mono">{baseline?.name ?? "not selected"}</span>
+          <span className="muted">{t("tag.baseline")}</span>{" "}
+          <span className="mono">{baseline?.name ?? t("detail.notSelected")}</span>
         </span>
         <span className="fe-detail__meta-item">
-          <span className="muted">Seed</span> <span className="mono num">{run.seed}</span>
+          <span className="muted">{t("detail.seed")}</span>{" "}
+          <span className="mono num">{run.seed}</span>
         </span>
       </div>
 

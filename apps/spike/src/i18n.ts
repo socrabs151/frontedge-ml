@@ -50,6 +50,11 @@ const en = {
   "detail.restart": "Restart",
   "detail.stop": "Stop",
   "detail.reason": "Reason",
+  "detail.dataset": "Dataset",
+  "detail.git": "Git",
+  "detail.seed": "Seed",
+  "detail.notSelected": "not selected",
+  "detail.scoreNote": "Score is the share of matches; the delta is relative to the baseline.",
   "detail.exitCode": "exit code {code}",
   "detail.download": "Download",
   "detail.examplesMissing":
@@ -67,6 +72,9 @@ const en = {
   "evals.run": "Run",
   "evals.onlyDiff": "Differences only",
   "evals.numberFormat": "Number format",
+  "evals.formatValue": "Value as is",
+  "evals.formatPercent": "Percent",
+  "evals.formatRelative": "Multiplier against the reference",
   "evals.compareError": "Could not compare the runs",
   "evals.compareErrorHint": "The data source did not answer: {error}. Try another pair of runs.",
   "evals.aggregateNote": "The aggregate is {aggregate}. The direction is set by the owner of the metric.",
@@ -82,6 +90,8 @@ const en = {
   "datasets.version": "Version",
   "datasets.examples": "examples",
   "datasets.tags": "Tags",
+
+  "freshness.live": "live",
 } as const;
 
 export type AppStringKey = keyof typeof en;
@@ -130,6 +140,11 @@ const ru: Record<AppStringKey, string> = {
   "detail.restart": "Перезапустить",
   "detail.stop": "Остановить",
   "detail.reason": "Причина",
+  "detail.dataset": "Dataset",
+  "detail.git": "Git",
+  "detail.seed": "Сид",
+  "detail.notSelected": "не выбран",
+  "detail.scoreNote": "Score — доля совпадений; дельта считается к Baseline.",
   "detail.exitCode": "код выхода {code}",
   "detail.download": "Скачать",
   "detail.examplesMissing":
@@ -147,6 +162,9 @@ const ru: Record<AppStringKey, string> = {
   "evals.run": "Run",
   "evals.onlyDiff": "Только различия",
   "evals.numberFormat": "Формат числа",
+  "evals.formatValue": "Как есть",
+  "evals.formatPercent": "Проценты",
+  "evals.formatRelative": "Множитель к Reference",
   "evals.compareError": "Не удалось сравнить Runs",
   "evals.compareErrorHint":
     "Источник данных не ответил: {error}. Попробуйте другую пару Runs.",
@@ -164,6 +182,8 @@ const ru: Record<AppStringKey, string> = {
   "datasets.version": "Версия",
   "datasets.examples": "Example",
   "datasets.tags": "Теги",
+
+  "freshness.live": "онлайн",
 };
 
 const dictionaries = {

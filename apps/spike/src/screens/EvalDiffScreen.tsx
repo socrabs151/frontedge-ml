@@ -11,12 +11,6 @@ import type { EvalComparison, EvalSummary, Run } from "@frontedge/ui";
 import { useAppT } from "../i18n";
 import { errorMessage, source } from "../data/source";
 
-const FORMAT_OPTIONS: Array<{ value: DeltaFormat; label: string; title: string }> = [
-  { value: "value", label: "0.73", title: "Value as is" },
-  { value: "percent", label: "73%", title: "Percent" },
-  { value: "relative", label: "×1.04", title: "Multiplier against the reference" },
-];
-
 export function EvalDiffScreen({
   runs,
   baselineId,
@@ -33,6 +27,11 @@ export function EvalDiffScreen({
   const [error, setError] = useState<string | null>(null);
   const [onlyDiff, setOnlyDiff] = useState(false);
   const [format, setFormat] = useState<DeltaFormat>("value");
+  const formatOptions: Array<{ value: DeltaFormat; label: string; title: string }> = [
+    { value: "value", label: "0.73", title: t("evals.formatValue") },
+    { value: "percent", label: "73%", title: t("evals.formatPercent") },
+    { value: "relative", label: "×1.04", title: t("evals.formatRelative") },
+  ];
 
   useEffect(() => {
     let cancelled = false;
@@ -146,7 +145,7 @@ export function EvalDiffScreen({
           ariaLabel={t("evals.numberFormat")}
           value={format}
           onChange={setFormat}
-          options={FORMAT_OPTIONS}
+          options={formatOptions}
         />
       </div>
 

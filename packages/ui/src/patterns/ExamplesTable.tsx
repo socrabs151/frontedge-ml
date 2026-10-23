@@ -35,7 +35,7 @@ export function ExamplesTable({
           <thead>
             <tr>
               <th scope="col" className="fe-table__th fe-table__th--sticky">
-                Example
+                {t("column.example")}
               </th>
               <th scope="col" className="fe-table__th">
                 {t("column.input")}

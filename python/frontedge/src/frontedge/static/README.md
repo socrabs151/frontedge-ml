@@ -1,4 +1,5 @@
-# Собранный интерфейс Frontedge.
+# The built Frontedge interface
 
-Содержимое — результат `pnpm build` (приложение apps/spike), скопированный сюда
-скриптом `pnpm build:ui`. В репозитории не хранится: файлы генерируются на сборке.
+The contents are the output of `pnpm build` (the `apps/spike` application), copied here by the
+`pnpm build:ui` script. They are not stored in the repository: the files are generated at build
+time.

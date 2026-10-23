@@ -62,7 +62,7 @@ export function EvalCompareTable({
           <thead>
             <tr className="fe-table__group-row">
               <th scope="col" className="fe-table__th fe-table__th--sticky fe-table__th--group">
-                Example
+                {t("column.example")}
               </th>
               <th scope="col" className="fe-table__th fe-table__th--group">
                 {t("column.input")}
@@ -76,13 +76,13 @@ export function EvalCompareTable({
             </tr>
             <tr>
               <th scope="col" className="fe-table__th fe-table__th--sticky">
-                id
+                {t("column.id")}
               </th>
               <th scope="col" className="fe-table__th">
-                text
+                {t("column.text")}
               </th>
               <th scope="col" className="fe-table__th">
-                answer
+                {t("column.answer")}
               </th>
               <th scope="col" className="fe-table__th fe-table__th--num">
                 {t("column.reference")}

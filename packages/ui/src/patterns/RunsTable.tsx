@@ -167,8 +167,8 @@ export function RunsTable({
         },
       }) as ColumnDef<Run, unknown>;
 
-    fixed.accuracy = metric("accuracy", "Accuracy", "var(--data-series-1)");
-    fixed.loss = metric("loss", "Loss", "var(--data-series-2)");
+    fixed.accuracy = metric("accuracy", t("metric.accuracy"), "var(--data-series-1)");
+    fixed.loss = metric("loss", t("metric.loss"), "var(--data-series-2)");
 
     // Any other metric of the project: the column is built from the data.
     const custom = (id: string) =>

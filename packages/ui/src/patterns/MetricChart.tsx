@@ -156,13 +156,13 @@ export function MetricChart({
         {extraSeries.length > 0 ? (
           <span className="fe-chart__key">
             <span className="fe-chart__swatch fe-chart__swatch--muted" aria-hidden />
-            other seeds
+            {t("metric.otherSeeds")}
           </span>
         ) : null}
         {baselineSeries && baselineSeries.length > 1 ? (
           <span className="fe-chart__key">
             <span className="fe-chart__swatch fe-chart__swatch--dashed" aria-hidden />
-            baseline
+            {t("tag.baseline")}
           </span>
         ) : null}
       </div>

@@ -30,7 +30,7 @@ export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelinePr
   const total = measured.reduce((sum, stage) => sum + (toTime(stage.endedAt!) - toTime(stage.startedAt)), 0);
 
   if (total <= 0) {
-    return <p className="fe-note">The run has not started yet.</p>;
+    return <p className="fe-note">{t("timeline.notStarted")}</p>;
   }
 
   return (

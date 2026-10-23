@@ -39,9 +39,10 @@ export function MetricCell({
   withSparkline = true,
   showWord = false,
   label,
-  baselineLabel = "Baseline",
+  baselineLabel,
 }: MetricCellProps) {
   const { t, lang } = useI18n();
+  const baselineText = baselineLabel ?? t("tag.baseline");
   const hasBaseline = baseline !== undefined && Number.isFinite(baseline);
   const delta = hasBaseline && value !== undefined ? value - baseline : undefined;
   const deltaMeta = delta !== undefined ? describeDelta(delta, direction) : undefined;
@@ -52,7 +53,7 @@ export function MetricCell({
       {delta !== undefined && deltaMeta ? (
         <span
           className="fe-metric__delta num"
-          title={`${delta > 0 ? "+" : "−"}${formatMetric(Math.abs(delta), digits, lang)} ${t("delta.toBaseline", { baseline: baselineLabel })}`}
+          title={`${delta > 0 ? "+" : "−"}${formatMetric(Math.abs(delta), digits, lang)} ${t("delta.toBaseline", { baseline: baselineText })}`}
         >
           <span aria-hidden>{deltaMeta.sign}</span>
           {formatDelta(delta, digits, lang)}
@@ -82,7 +83,7 @@ export function MetricCard({
   series,
   color = "var(--data-series-1)",
   digits = 3,
-  baselineLabel = "Baseline",
+  baselineLabel,
 }: {
   label: string;
   value: number | undefined;
@@ -94,6 +95,7 @@ export function MetricCard({
   baselineLabel?: string;
 }) {
   const { t, lang } = useI18n();
+  const baselineText = baselineLabel ?? t("tag.baseline");
   const hasBaseline = baseline !== undefined && Number.isFinite(baseline);
   const delta = hasBaseline && value !== undefined ? value - baseline : undefined;
   const deltaMeta = delta !== undefined ? describeDelta(delta, direction) : undefined;
@@ -120,7 +122,7 @@ export function MetricCard({
           {deltaMeta.word ? (
             <span className="fe-metric-card__word">{t(`delta.${deltaMeta.word}`)}</span>
           ) : null}
-          <span className="fe-metric-card__baseline">{t("delta.toBaseline", { baseline: baselineLabel })}</span>
+          <span className="fe-metric-card__baseline">{t("delta.toBaseline", { baseline: baselineText })}</span>
         </div>
       ) : null}
     </div>
