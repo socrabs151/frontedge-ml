@@ -29,12 +29,21 @@ export interface RunsPage {
   total: number;
 }
 
+export interface FrontedgeCapabilities {
+  screens: Array<"runs" | "run" | "evals" | "datasets">;
+  actions: string[];
+  runs: { query: boolean; logs: boolean; artifacts: boolean };
+  evals: boolean;
+  datasets: boolean;
+}
+
 export interface FrontedgeMeta {
   name: string;
   version: string;
   statuses: string[];
   freshness: string[];
   metricDirections: string[];
+  capabilities: FrontedgeCapabilities;
 }
 
 export function createClient(options: FrontedgeClientOptions = {
@@ -42,12 +51,23 @@ export function createClient(options: FrontedgeClientOptions = {
   const basePath = options.basePath ?? "/frontedge/api";
   const doFetch = options.fetch ?? globalThis.fetch.bind(globalThis);
 
+  // The server explains a provider mistake in `detail`; show that instead of a bare status.
+  async function failure(response: Response, path: string): Promise<Error> {
+    const body = (await response.json().catch(() => null)) as { detail?: unknown } | null;
+    const detail = typeof body?.detail === "string" ? body.detail : null;
+    return new Error(
+      detail
+        ? `frontedge: ${detail}`
+        : `frontedge: ${response.status} ${response.statusText} (${path})`,
+    );
+  }
+
   async function json<T>(path: string): Promise<T> {
     const response = await doFetch(`${basePath}${path}`, {
       headers: { accept: "application/json" },
     });
     if (!response.ok) {
-      throw new Error(`frontedge: ${response.status} ${response.statusText} (${path})`);
+      throw await failure(response, path);
     }
     return (await response.json()) as T;
   }
@@ -59,7 +79,7 @@ export function createClient(options: FrontedgeClientOptions = {
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
-      throw new Error(`frontedge: ${response.status} ${response.statusText} (${path})`);
+      throw await failure(response, path);
     }
     return (await response.json()) as T;
   }

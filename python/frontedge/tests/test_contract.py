@@ -259,6 +259,133 @@ class TestConfigAndActions:
         assert payload["actions"][0]["placement"] == "runs"
 
 
+class TestMetaCapabilities:
+    def test_function_provider_has_no_extra_capabilities(self) -> None:
+        capabilities = client_for().get("/frontedge/api/meta").json()["capabilities"]
+        assert capabilities["screens"] == ["runs", "run"]
+        assert capabilities["runs"] == {"query": False, "logs": False, "artifacts": False}
+        assert capabilities["evals"] is False
+        assert capabilities["datasets"] is False
+        assert capabilities["actions"] == []
+
+    def test_full_provider_reports_every_capability(self) -> None:
+        class Full:
+            async def list_runs(self, request: Any, query: Any = None) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+            async def stream_logs(self, request: Any, run_id: str) -> Any:
+                yield log_line("hello")
+
+            async def read_artifact(self, request: Any, artifact_id: str) -> bytes:
+                return b"data"
+
+        class EvalStub:
+            async def list_evals(self, request: Any) -> list[Any]:
+                return []
+
+            async def compare_evals(self, request: Any, eval_id: str, reference: str, comparison: str) -> Any:
+                return None
+
+        class DatasetStub:
+            async def list_datasets(self, request: Any) -> list[Any]:
+                return []
+
+            async def get_dataset(self, request: Any, dataset_id: str) -> Any:
+                return None
+
+        async def stop(request: Any, payload: dict[str, Any]) -> frontedge.ActionResult:
+            return frontedge.ActionResult()
+
+        app = FastAPI()
+        app.include_router(
+            frontedge.mount(
+                Full(),
+                evals=EvalStub(),
+                datasets=DatasetStub(),
+                actions={"stop": stop},
+            )
+        )
+        capabilities = TestClient(app).get("/frontedge/api/meta").json()["capabilities"]
+        assert capabilities["screens"] == ["runs", "run", "evals", "datasets"]
+        assert capabilities["runs"] == {"query": True, "logs": True, "artifacts": True}
+        assert capabilities["evals"] is True
+        assert capabilities["datasets"] is True
+        assert capabilities["actions"] == ["stop"]
+
+
+class TestProviderContract:
+    """A provider that breaks the types must say so, not fail with a 500."""
+
+    def test_wrong_item_type_is_a_bad_gateway(self) -> None:
+        class Broken:
+            async def list_runs(self, request: Any) -> list[Any]:
+                return ["nope"]
+
+            async def get_run(self, request: Any, run_id: str) -> Any:
+                return None
+
+        response = client_for(Broken()).get("/frontedge/api/runs")
+        assert response.status_code == 502
+        assert "list_runs item 0 returned str, expected Run" in response.json()["detail"]
+
+    def test_mapping_is_coerced_into_a_model(self) -> None:
+        class Coarse:
+            async def list_runs(self, request: Any) -> list[Any]:
+                return [make_run().model_dump()]
+
+            async def get_run(self, request: Any, run_id: str) -> Any:
+                return make_run().model_dump()
+
+        client = client_for(Coarse())
+        assert client.get("/frontedge/api/runs").status_code == 200
+        assert client.get("/frontedge/api/runs/run-000").status_code == 200
+
+    def test_incomplete_mapping_names_the_field(self) -> None:
+        class Broken:
+            async def list_runs(self, request: Any) -> list[Any]:
+                return [{"id": "run-000"}]
+
+            async def get_run(self, request: Any, run_id: str) -> Any:
+                return None
+
+        detail = client_for(Broken()).get("/frontedge/api/runs").json()["detail"]
+        assert "not a valid Run" in detail
+        assert "name" in detail
+
+    def test_wrong_log_line_becomes_a_visible_stream_error(self) -> None:
+        class BrokenLogs:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run:
+                return make_run()
+
+            async def stream_logs(self, request: Any, run_id: str) -> Any:
+                yield "not a line"
+
+        response = client_for(BrokenLogs()).get("/frontedge/api/runs/run-000/logs/stream")
+        assert response.status_code == 200
+        assert "stream_logs returned str, expected LogLine" in response.text
+
+    def test_artifact_of_the_wrong_type_is_a_bad_gateway(self) -> None:
+        class BrokenArtifact:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run:
+                return make_run()
+
+            async def read_artifact(self, request: Any, artifact_id: str) -> str:
+                return "not bytes"
+
+        response = client_for(BrokenArtifact()).get("/frontedge/api/artifacts/a/content")
+        assert response.status_code == 502
+        assert "expected bytes" in response.json()["detail"]
+
+
 class TestCli:
     """The commands an agent or a person runs before the server starts."""
 

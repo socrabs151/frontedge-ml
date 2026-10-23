@@ -8,10 +8,11 @@ provider, the decision stays with the user's application.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
-from typing import Any, Protocol, runtime_checkable
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterable, Mapping, Sequence
+from typing import Any, Protocol, TypeVar, runtime_checkable
 
 from fastapi import Request
+from pydantic import BaseModel, ValidationError
 
 from .models import DatasetDetail, DatasetInfo, EvalComparison, EvalSummary, LogLine, Run
 
@@ -20,9 +21,60 @@ __all__ = [
     "DatasetProvider",
     "EvalProvider",
     "FrontedgeProvider",
+    "ProviderError",
     "ProviderInput",
     "adapt_provider",
+    "as_model",
+    "as_models",
 ]
+
+ModelT = TypeVar("ModelT", bound=BaseModel)
+
+
+class ProviderError(RuntimeError):
+    """The provider broke the contract: a wrong type instead of a Frontedge model.
+
+    Raised at the boundary, right where the data enters the library, so the message names the
+    method and the position instead of surfacing as a 500 from the serializer.
+    """
+
+
+def _type_name(value: Any) -> str:
+    if value is None:
+        return "None"
+    return type(value).__name__
+
+
+def as_model(value: Any, model: type[ModelT], where: str) -> ModelT:
+    """A model instance, or a mapping that validates into one. Anything else — ProviderError."""
+    if isinstance(value, model):
+        return value
+    if isinstance(value, Mapping):
+        try:
+            return model.model_validate(value)
+        except ValidationError as error:
+            fields = ", ".join(".".join(str(part) for part in item["loc"]) for item in error.errors())
+            raise ProviderError(
+                f"{where} returned a mapping that is not a valid {model.__name__} "
+                f"(check {fields})"
+            ) from error
+    raise ProviderError(f"{where} returned {_type_name(value)}, expected {model.__name__}")
+
+
+def as_model_or_none(value: Any, model: type[ModelT], where: str) -> ModelT | None:
+    """Like :func:`as_model`, but ``None`` means "not found" and stays ``None``."""
+    if value is None:
+        return None
+    return as_model(value, model, where)
+
+
+def as_models(values: Any, model: type[ModelT], where: str) -> list[ModelT]:
+    """A validated sequence of models. Reports the index of the first bad item."""
+    if isinstance(values, (str, bytes, Mapping)) or not isinstance(values, Iterable):
+        raise ProviderError(
+            f"{where} returned {_type_name(values)}, expected a sequence of {model.__name__}"
+        )
+    return [as_model(item, model, f"{where} item {index}") for index, item in enumerate(values)]
 
 
 @runtime_checkable

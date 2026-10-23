@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import functools
 import json
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from itertools import count
 from pathlib import Path
 from typing import Any
@@ -11,12 +12,25 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request, Response
 
 from ..config import ActionResult, UiConfig, load_config
-from ..models import LogLine, Run, RunsPage, RunsQuery
+from ..models import (
+    DatasetDetail,
+    DatasetInfo,
+    EvalComparison,
+    EvalSummary,
+    LogLine,
+    Run,
+    RunsPage,
+    RunsQuery,
+)
 from ..providers import (
     DatasetProvider,
     EvalProvider,
+    ProviderError,
     ProviderInput,
     adapt_provider,
+    as_model,
+    as_model_or_none,
+    as_models,
     provider_accepts_query,
     provider_has_logs,
     provider_reads_artifacts,
@@ -51,9 +65,21 @@ def _run_payload(run: Run, path: str) -> dict[str, Any]:
     return payload
 
 
-def meta() -> dict[str, Any]:
-    """Metadata the interface needs to know."""
+def meta(
+    *,
+    runs: Any = None,
+    evals: Any = None,
+    datasets: Any = None,
+    actions: Sequence[str] = (),
+) -> dict[str, Any]:
+    """Metadata the interface and a tool need to know: the vocabulary and the capabilities."""
     from .. import __version__
+
+    screens = ["runs", "run"]
+    if evals is not None:
+        screens.append("evals")
+    if datasets is not None:
+        screens.append("datasets")
 
     return {
         "name": "frontedge",
@@ -61,7 +87,35 @@ def meta() -> dict[str, Any]:
         "statuses": ["queued", "running", "succeeded", "failed", "cancelled", "lost"],
         "freshness": ["live", "fresh", "stale", "partial"],
         "metricDirections": ["maximize", "minimize", "none"],
+        "capabilities": {
+            "screens": screens,
+            "actions": list(actions),
+            "runs": {
+                "query": runs is not None and provider_accepts_query(runs),
+                "logs": runs is not None and provider_has_logs(runs),
+                "artifacts": runs is not None and provider_reads_artifacts(runs),
+            },
+            "evals": evals is not None,
+            "datasets": datasets is not None,
+        },
     }
+
+
+def _provider_errors(endpoint: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
+    """A broken provider contract is a bad gateway, not an internal error.
+
+    The detail names the method and the position, so the person who wired the provider can fix
+    it instead of reading a serializer traceback.
+    """
+
+    @functools.wraps(endpoint)
+    async def wrapper(*args: Any, **kwargs: Any) -> Any:
+        try:
+            return await endpoint(*args, **kwargs)
+        except ProviderError as error:
+            raise HTTPException(status_code=502, detail=str(error)) from error
+
+    return wrapper
 
 
 def _build_router(
@@ -85,6 +139,7 @@ def _build_router(
     # --- Runs -------------------------------------------------------------
 
     @router.get("/api/runs", tags=["frontedge"])
+    @_provider_errors
     async def list_runs(
         request: Request,
         limit: int | None = None,
@@ -110,16 +165,16 @@ def _build_router(
         if provider_accepts_query(source):
             result = await source.list_runs(request, query)  # type: ignore[call-arg]
             if isinstance(result, RunsPage):
-                body = [_run_payload(run, path) for run in result.items]
+                body = [_run_payload(run, path) for run in as_models(result.items, Run, "list_runs")]
                 return Response(
                     content=_json(body),
                     media_type="application/json",
                     headers={"X-Frontedge-Total": str(result.total)},
                 )
-            runs_ = list(result)
+            runs_ = as_models(result, Run, "list_runs")
             total = len(runs_)
         else:
-            runs_ = list(await source.list_runs(request))
+            runs_ = as_models(await source.list_runs(request), Run, "list_runs")
             total = len(runs_)
             if query.search:
                 needle = query.search.strip().lower()
@@ -141,29 +196,36 @@ def _build_router(
         )
 
     @router.get("/api/runs/{run_id}", tags=["frontedge"])
+    @_provider_errors
     async def get_run(request: Request, run_id: str) -> dict[str, Any]:
-        run = await source.get_run(request, run_id)
+        run = as_model_or_none(await source.get_run(request, run_id), Run, "get_run")
         if run is None:
             raise HTTPException(status_code=404, detail="Run not found")
         return _run_payload(run, path)
 
     @router.get("/api/runs/{run_id}/logs/stream", tags=["frontedge"])
+    @_provider_errors
     async def stream_logs(request: Request, run_id: str) -> Response:
         if not provider_has_logs(source):
             return sse_response(_empty_logs())
-        run = await source.get_run(request, run_id)
+        run = as_model_or_none(await source.get_run(request, run_id), Run, "get_run")
         if run is None:
             raise HTTPException(status_code=404, detail="Run not found")
 
         async def events() -> AsyncIterator[tuple[str, Any]]:
-            async for line in source.stream_logs(request, run_id):
-                yield "log", _json_model(line)
+            try:
+                async for line in source.stream_logs(request, run_id):
+                    yield "log", _json_model(as_model(line, LogLine, "stream_logs"))
+            except ProviderError as error:
+                # The response is already open: the only honest move is a visible error line.
+                yield "log", _json_model(log_line(str(error), level="error"))
 
         return sse_response(events())
 
     # --- Artifacts --------------------------------------------------------
 
     @router.get("/api/artifacts/{artifact_id}/content", tags=["frontedge"])
+    @_provider_errors
     async def artifact_content(request: Request, artifact_id: str) -> Response:
         """Artifact content — if the provider can serve it."""
         if not provider_reads_artifacts(source):
@@ -173,6 +235,10 @@ def _build_router(
         data = await source.read_artifact(request, artifact_id)
         if data is None:
             raise HTTPException(status_code=404, detail="Artifact not found")
+        if not isinstance(data, (bytes, bytearray)):
+            raise ProviderError(
+                f"read_artifact returned {type(data).__name__}, expected bytes"
+            )
         return Response(
             content=data,
             media_type="application/octet-stream",
@@ -182,12 +248,15 @@ def _build_router(
     # --- Evals ------------------------------------------------------------
 
     @router.get("/api/evals", tags=["frontedge"])
+    @_provider_errors
     async def list_evals(request: Request) -> list[dict[str, Any]]:
         if evals is None:
             return []
-        return [_json_model(item) for item in await evals.list_evals(request)]
+        items = as_models(await evals.list_evals(request), EvalSummary, "list_evals")
+        return [_json_model(item) for item in items]
 
     @router.get("/api/evals/{eval_id}/compare", tags=["frontedge"])
+    @_provider_errors
     async def compare_evals(
         request: Request,
         eval_id: str,
@@ -196,7 +265,11 @@ def _build_router(
     ) -> dict[str, Any]:
         if evals is None:
             raise HTTPException(status_code=404, detail="Eval screens are not connected")
-        result = await evals.compare_evals(request, eval_id, reference, comparison)
+        result = as_model_or_none(
+            await evals.compare_evals(request, eval_id, reference, comparison),
+            EvalComparison,
+            "compare_evals",
+        )
         if result is None:
             raise HTTPException(status_code=404, detail="Eval not found")
         return _json_model(result)
@@ -204,16 +277,21 @@ def _build_router(
     # --- Datasets ---------------------------------------------------------
 
     @router.get("/api/datasets", tags=["frontedge"])
+    @_provider_errors
     async def list_datasets(request: Request) -> list[dict[str, Any]]:
         if datasets is None:
             return []
-        return [_json_model(item) for item in await datasets.list_datasets(request)]
+        items = as_models(await datasets.list_datasets(request), DatasetInfo, "list_datasets")
+        return [_json_model(item) for item in items]
 
     @router.get("/api/datasets/{dataset_id}", tags=["frontedge"])
+    @_provider_errors
     async def get_dataset(request: Request, dataset_id: str) -> dict[str, Any]:
         if datasets is None:
             raise HTTPException(status_code=404, detail="Dataset screens are not connected")
-        result = await datasets.get_dataset(request, dataset_id)
+        result = as_model_or_none(
+            await datasets.get_dataset(request, dataset_id), DatasetDetail, "get_dataset"
+        )
         if result is None:
             raise HTTPException(status_code=404, detail="Dataset not found")
         return _json_model(result)
@@ -222,7 +300,7 @@ def _build_router(
 
     @router.get("/api/meta", tags=["frontedge"])
     async def get_meta() -> dict[str, Any]:
-        return meta()
+        return meta(runs=source, evals=evals, datasets=datasets, actions=handlers.keys())
 
     @router.get("/api/config", tags=["frontedge"])
     async def get_config() -> dict[str, Any]:

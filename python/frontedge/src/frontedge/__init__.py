@@ -28,7 +28,13 @@ from .models import (
     StageName,
     role,
 )
-from .providers import CallableProvider, DatasetProvider, EvalProvider, FrontedgeProvider
+from .providers import (
+    CallableProvider,
+    DatasetProvider,
+    EvalProvider,
+    FrontedgeProvider,
+    ProviderError,
+)
 from .screens import mount, runs
 
 __version__ = "0.1.0"
@@ -52,6 +58,7 @@ __all__ = [
     "MetricDirection",
     "MetricEvent",
     "MetricPoint",
+    "ProviderError",
     "ProvenanceEntry",
     "Run",
     "RunStatus",

@@ -52,7 +52,8 @@ line in `tokens.css` plus a line in `packages/ui/scripts/check-contrast.mjs`.
 
 **Base styles are scoped** to `.fe-root` and to the portalled surfaces (`.fe-menu`,
 `.fe-tooltip`). A screen mounted into someone else's page must sit inside `.fe-root`; the
-document itself (margin, fonts) stays the host's business.
+document itself (margin, fonts) stays the host's business. Utility classes are prefixed too:
+`fe-num`, `fe-mono`, `fe-muted`, `fe-dim`.
 
 **Class names** carry the `fe-` prefix. A component in `packages/ui/src/components` is a
 primitive; one in `packages/ui/src/patterns` is an ML pattern (it knows about run, dataset, eval,
@@ -78,6 +79,9 @@ validate with `frontedge check`, and use `frontedge schema` for the JSON Schema 
 `get_dataset`). Mount them with
 `frontedge.mount(runs, evals=..., datasets=..., path="/frontedge")`. The library has no
 authentication: the `request` is passed to the provider, so access control stays in the app.
+Provider output is validated at the boundary: mappings are coerced into the models, an impossible
+value is a 502 whose `detail` names the method and the position. `/api/meta` reports which
+capabilities the installation has (screens, actions, query, logs, artifacts).
 
 **Types** are generated from the Python models: `packages/ui/src/generated/types.ts`
 (`pnpm gen:types`). Never edit them by hand — change the pydantic model in

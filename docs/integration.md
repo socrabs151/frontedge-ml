@@ -152,13 +152,53 @@ The total is returned in the `X-Frontedge-Total` header of `GET /api/runs`.
 | `GET /frontedge/api/datasets` | a list of datasets (if `datasets=` is connected) |
 | `GET /frontedge/api/datasets/{id}` | a dataset with its examples |
 | `GET /frontedge/api/config` | the interface configuration (see §5) |
-| `GET /frontedge/api/meta` | the status, freshness and metric-direction vocabularies |
+| `GET /frontedge/api/meta` | the status, freshness and metric-direction vocabularies, plus the capabilities (see below) |
 | `POST /frontedge/api/actions/{id}` | runs a project action (see §6) |
 
 The built interface is served under the mount path, with an SPA fallback for the paths outside
 `/api`.
 
 An unknown path under `/frontedge/api/` answers 404 in JSON, not HTML.
+
+### 4.1 Capabilities
+
+`/api/meta` says what the mounted installation can do, so a tool (or your own code) does not
+have to guess from the configuration:
+
+```json
+{
+  "name": "frontedge",
+  "version": "0.1.0",
+  "statuses": ["queued", "running", "succeeded", "failed", "cancelled", "lost"],
+  "freshness": ["live", "fresh", "stale", "partial"],
+  "metricDirections": ["maximize", "minimize", "none"],
+  "capabilities": {
+    "screens": ["runs", "run", "evals", "datasets"],
+    "actions": ["stop", "export"],
+    "runs": { "query": true, "logs": true, "artifacts": false },
+    "evals": true,
+    "datasets": true
+  }
+}
+```
+
+`runs.query` tells whether the provider filters and paginates itself (`list_runs(request, query)`),
+`logs` — whether `stream_logs` exists, `artifacts` — whether `read_artifact` exists. `screens` and
+`actions` come from what you passed to `mount`.
+
+### 4.2 A broken provider
+
+A provider that returns the wrong type is not a server bug, so the library answers **502** with a
+`detail` that names the method and the position:
+
+```json
+{ "detail": "list_runs item 3 returned dict, expected Run" }
+```
+
+Mapping values are validated into the model first, so a provider that returns plain dicts keeps
+working; only an impossible value fails. A bad log line arrives in the stream as an error line
+(`level: "error"`) instead of killing the connection. The generated client shows `detail` as-is,
+so the message reaches the person who wired the provider.
 
 ## 5. Configuration: what to show
 
@@ -277,11 +317,11 @@ export function MyRuns({ runs }: { runs: Run[] }) {
       <tbody>
         {runs.map((run) => (
           <tr key={run.id} className="fe-table__row">
-            <td className="fe-table__td mono">{run.name}</td>
+            <td className="fe-table__td fe-mono">{run.name}</td>
             <td className="fe-table__td">
               <StatusBadge status={run.status} />
             </td>
-            <td className="fe-table__td num">{run.metrics.accuracy?.toFixed(3)}</td>
+            <td className="fe-table__td fe-num">{run.metrics.accuracy?.toFixed(3)}</td>
           </tr>
         ))}
       </tbody>
