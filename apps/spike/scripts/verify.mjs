@@ -40,12 +40,51 @@ async function audit(label) {
   return serious.length;
 }
 
+/** Sparklines in one column share a baseline, and no metric cell overflows its column. */
+async function checkMetricCells() {
+  const result = await page.evaluate(() => {
+    const groups = new Map();
+    let clipped = 0;
+    for (const row of document.querySelectorAll(".fe-table__row")) {
+      [...row.querySelectorAll("td")].forEach((cell, index) => {
+        const spark = cell.querySelector(".fe-metric__spark");
+        if (spark) {
+          if (!groups.has(index)) groups.set(index, []);
+          groups.get(index).push(spark.getBoundingClientRect().right);
+        }
+        if (cell.querySelector(".fe-metric") && cell.scrollWidth > cell.clientWidth + 1) {
+          clipped += 1;
+        }
+      });
+    }
+    const misaligned = [...groups.entries()]
+      .filter(([, rights]) => rights.length > 1)
+      .map(([index, rights]) => ({
+        column: index,
+        spread: Math.round((Math.max(...rights) - Math.min(...rights)) * 10) / 10,
+      }))
+      .filter((entry) => entry.spread > 1);
+    return { misaligned, clipped };
+  });
+  console.log(
+    result.misaligned.length === 0 && result.clipped === 0
+      ? "metric cells: sparklines aligned, no clipping"
+      : `metric cells: ${result.misaligned.length} misaligned column(s), ${result.clipped} clipped cell(s)`,
+  );
+  for (const entry of result.misaligned) {
+    console.log(`  - column ${entry.column}: sparklines differ by ${entry.spread}px`);
+  }
+  return result.misaligned.length + result.clipped;
+}
+
 let seriousTotal = 0;
+let layoutProblems = 0;
 
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector(".fe-table__row");
 await shoot("01-runs-light-1440");
 seriousTotal += await audit("runs light");
+layoutProblems += await checkMetricCells();
 
 // dark theme
 await page.getByRole("button", { name: /dark theme/i }).click();
@@ -80,5 +119,10 @@ await page.waitForSelector(".fe-table__row");
 await shoot("07-runs-light-1280");
 
 await browser.close();
-console.log(seriousTotal === 0 ? "\naxe: no critical/serious." : `\naxe: ${seriousTotal} critical/serious`);
-process.exit(seriousTotal === 0 ? 0 : 1);
+console.log(
+  seriousTotal === 0
+    ? "\naxe: no critical/serious."
+    : `\naxe: ${seriousTotal} critical/serious`,
+);
+if (layoutProblems > 0) console.log(`layout: ${layoutProblems} problem(s)`);
+process.exit(seriousTotal === 0 && layoutProblems === 0 ? 0 : 1);

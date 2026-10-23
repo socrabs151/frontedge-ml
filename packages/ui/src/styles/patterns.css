@@ -162,10 +162,23 @@
 /* --- Metric -------------------------------------------------------- */
 
 .fe-metric {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: var(--fe-space-2);
+  gap: 6px;
   min-width: 0;
+  width: 100%;
+  /* The sparkline is taken out of the flow, so a wide delta never pushes it. */
+  padding-right: 30px;
+}
+
+.fe-metric__spark {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
 }
 
 .fe-metric__value {

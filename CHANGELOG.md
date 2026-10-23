@@ -63,6 +63,9 @@ The following are **public contracts** and change only in a major release:
   `fe-muted`, `dim` → `fe-dim`, so they cannot collide with the host application.
 - The run screen no longer hardcodes accuracy, loss, F1 and tokens; the same code path serves
   any metric.
+- The sparkline in a metric cell is pinned to the cell's right edge: the graphs of a column share
+  one baseline even when the deltas differ in width. The cell no longer clips its content, and the
+  browser gate checks both.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

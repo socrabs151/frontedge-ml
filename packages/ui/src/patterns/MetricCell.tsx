@@ -63,13 +63,17 @@ export function MetricCell({
         </span>
       ) : null}
       {withSparkline && series && series.length > 1 ? (
-        <Sparkline
-          values={series}
-          color={color}
-          width={34}
-          height={14}
-          label={t("metric.dynamics", { label: label ?? "" })}
-        />
+        // Pinned to the right edge: the sparklines of a column must share one baseline, and the
+        // delta before them is as wide as its number.
+        <span className="fe-metric__spark">
+          <Sparkline
+            values={series}
+            color={color}
+            width={24}
+            height={14}
+            label={t("metric.dynamics", { label: label ?? "" })}
+          />
+        </span>
       ) : null}
     </span>
   );

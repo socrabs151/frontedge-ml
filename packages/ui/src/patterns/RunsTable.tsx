@@ -83,9 +83,9 @@ export function RunsTable({
       name: columnHelper.accessor("name", {
         id: "name",
         header: "Run",
-        size: 140,
+        size: 126,
         cell: (info) => (
-          <span className="fe-run-name">
+          <span className="fe-run-name" title={info.getValue()}>
             <span className="fe-run-name__dot" aria-hidden />
             <span className="fe-mono">{info.getValue()}</span>
             {info.row.original.id === baselineId ? (
@@ -105,7 +105,7 @@ export function RunsTable({
       ribbon: columnHelper.display({
         id: "ribbon",
         header: () => t("column.stages"),
-        size: 85,
+        size: 80,
         enableSorting: false,
         cell: (info) => (
           <RunRibbon stages={info.row.original.stages} events={info.row.original.events} height={6} />
@@ -115,8 +115,12 @@ export function RunsTable({
       dataset: columnHelper.accessor("dataset", {
         id: "dataset",
         header: "Dataset",
-        size: 112,
-        cell: (info) => <span className="fe-mono">{info.getValue()}</span>,
+        size: 110,
+        cell: (info) => (
+          <span className="fe-mono" title={info.getValue()}>
+            {info.getValue()}
+          </span>
+        ),
       }) as ColumnDef<Run, unknown>,
 
       gitSha: columnHelper.accessor("gitSha", {
@@ -129,7 +133,7 @@ export function RunsTable({
       startedAt: columnHelper.accessor("startedAt", {
         id: "startedAt",
         header: () => t("column.started"),
-        size: 110,
+        size: 100,
         cell: (info) => (
           <span title={formatAbsoluteTime(toTime(info.getValue()), lang)}>
             {formatRelativeTime(toTime(info.getValue()), now, lang)}
@@ -140,7 +144,7 @@ export function RunsTable({
       durationMs: columnHelper.accessor("durationMs", {
         id: "durationMs",
         header: () => t("column.duration"),
-        size: 85,
+        size: 80,
         cell: (info) => <span className="fe-num">{formatDuration(info.getValue(), lang)}</span>,
       }) as ColumnDef<Run, unknown>,
     };
@@ -171,7 +175,7 @@ export function RunsTable({
             </span>
           );
         },
-        size: 142,
+        size: 150,
         cell: (info) => {
           const run = info.row.original;
           const spec = specFor(id);
@@ -204,7 +208,7 @@ export function RunsTable({
             </span>
           );
         },
-        size: 130,
+        size: 150,
         cell: (info) => {
           const run = info.row.original;
           const spec = specFor(id);
