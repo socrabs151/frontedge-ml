@@ -122,11 +122,18 @@ run_columns = ["name", "status", "ribbon", "dataset", "accuracy", "bleu"]
 baseline_run = "exp-039"
 live_refresh_seconds = 5
 page_size = 50
+
+[[metrics]]
+id = "bleu"
+label = "BLEU"
+direction = "maximize"
+digits = 2
 ```
 
-Any metric the project reports becomes a column: add `bleu` to `run_columns` and it shows up
-with its own delta against the baseline. Filtering, search and pagination run on the server
-when the provider takes a `list_runs(request, query)` signature.
+Any metric the project reports becomes a first-class object: add `bleu` to `run_columns` for the
+table, declare it in `[[metrics]]` for the run screen — a card with the delta and a chart from
+its series. Filtering, search and pagination run on the server when the provider takes a
+`list_runs(request, query)` signature.
 
 For your own screens, use the components directly:
 

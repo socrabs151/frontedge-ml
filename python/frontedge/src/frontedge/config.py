@@ -19,9 +19,12 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
+from .models import MetricDirection
+
 __all__ = [
     "ActionResult",
     "ActionSpec",
+    "MetricSpec",
     "UiConfig",
     "load_config",
     "load_config_file",
@@ -52,6 +55,24 @@ class ActionResult(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
+class MetricSpec(BaseModel):
+    """A metric of the project: what to call it and how to read it.
+
+    The metric id is the key in ``Run.metrics``. Everything else is presentation: the interface
+    already has the values, the direction and the series, but only the project knows that
+    ``bleu`` is written "BLEU", has two digits and is better when it is higher.
+    """
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, extra="forbid")
+
+    id: str
+    label: str | None = None
+    digits: int | None = Field(default=None, ge=0, le=6)
+    direction: MetricDirection | None = None
+    #: Whether the run screen draws a chart for this metric (a card is always drawn).
+    chart: bool = True
+
+
 class UiConfig(BaseModel):
     """Project interface configuration."""
 
@@ -60,6 +81,8 @@ class UiConfig(BaseModel):
     density: Literal["compact", "default", "comfortable"] | None = None
     theme: Literal["light", "dark"] | None = None
     run_columns: list[str] = Field(default_factory=list)
+    #: The metrics of the project. An empty list means "every metric a run returns".
+    metrics: list[MetricSpec] = Field(default_factory=list)
     eval_tabs: list[str] = Field(default_factory=list)
     actions: list[ActionSpec] = Field(default_factory=list)
     #: How often to refresh the run list, in seconds. 0 — never refresh.

@@ -18,6 +18,7 @@ export type {
   MetricDirection,
   MetricEvent,
   MetricPoint,
+  MetricSpec,
   ProvenanceEntry,
   Run,
   RunStatus,

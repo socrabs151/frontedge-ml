@@ -134,10 +134,18 @@ export interface ActionSpec {
   danger?: boolean;
   description?: string | null;
 }
+export interface MetricSpec {
+  id: string;
+  label?: string | null;
+  digits?: number | null;
+  direction?: MetricDirection | null;
+  chart?: boolean;
+}
 export interface UiConfig {
   density?: "compact" | "default" | "comfortable" | null;
   theme?: "light" | "dark" | null;
   runColumns?: string[];
+  metrics?: MetricSpec[];
   evalTabs?: string[];
   actions?: ActionSpec[];
   liveRefreshSeconds?: number;

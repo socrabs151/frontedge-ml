@@ -132,9 +132,39 @@ export function RunDetailScreen({
     );
   }
 
-  const accuracySeries = run.series.accuracy ?? [];
-  const lossSeries = run.series.loss ?? [];
-  const baselineAccuracy = baseline?.series.accuracy ?? [];
+  const specs = config?.metrics ?? [];
+  const specById = new Map(specs.map((spec) => [spec.id, spec]));
+  const knownLabels: Record<string, string> = {
+    accuracy: t("metric.accuracy"),
+    loss: t("metric.loss"),
+    f1: t("metric.f1"),
+    tokens: t("metric.tokens"),
+  };
+
+  /*
+   * The project's metrics come from the configuration; without it, everything the run returns.
+   * Nothing here is specific to accuracy or loss: any metric gets a card, and a chart when it
+   * has a series.
+   */
+  const metricIds =
+    specs.length > 0 ? specs.map((spec) => spec.id) : Object.keys(run.metrics).sort();
+  const metrics = metricIds.map((id, index) => {
+    const spec = specById.get(id);
+    const series = run.series[id] ?? [];
+    return {
+      id,
+      label: spec?.label ?? knownLabels[id] ?? id,
+      value: run.metrics[id],
+      baseline: baseline?.metrics[id],
+      direction: run.metricDirection?.[id] ?? spec?.direction ?? "none",
+      digits: spec?.digits ?? undefined,
+      color: `var(--fe-data-series-${(index % 8) + 1})`,
+      series,
+      baselineSeries: baseline?.series[id] ?? [],
+      chart: spec?.chart !== false && series.length > 1,
+    };
+  });
+  const charted = metrics.filter((metric) => metric.chart);
 
   const items = [
     {
@@ -143,53 +173,34 @@ export function RunDetailScreen({
       content: (
         <div className="fe-detail__stack">
           <div className="fe-metric-cards">
-            <MetricCard
-              label={t("metric.accuracy")}
-              value={run.metrics.accuracy}
-              baseline={baseline?.metrics.accuracy}
-              direction={run.metricDirection?.accuracy ?? "none"}
-              series={accuracySeries.map((point) => point.value)}
-              color="var(--fe-data-series-1)"
-            />
-            <MetricCard
-              label={t("metric.loss")}
-              value={run.metrics.loss}
-              baseline={baseline?.metrics.loss}
-              direction={run.metricDirection?.loss ?? "none"}
-              series={lossSeries.map((point) => point.value)}
-              color="var(--fe-data-series-2)"
-            />
-            <MetricCard
-              label={t("metric.f1")}
-              value={run.metrics.f1}
-              baseline={baseline?.metrics.f1}
-              direction={run.metricDirection?.f1 ?? "none"}
-              series={(run.series.f1 ?? []).map((point) => point.value)}
-              color="var(--fe-data-series-3)"
-            />
-            <MetricCard
-              label={t("metric.tokens")}
-              value={run.metrics.tokens}
-              baseline={baseline?.metrics.tokens}
-              direction="none"
-              digits={0}
-            />
+            {metrics.map((metric) => (
+              <MetricCard
+                key={metric.id}
+                label={metric.label}
+                value={metric.value}
+                baseline={metric.baseline}
+                direction={metric.direction}
+                digits={metric.digits}
+                series={metric.series.map((point) => point.value)}
+                color={metric.color}
+              />
+            ))}
           </div>
 
-          <div className="fe-detail__grid">
-            <MetricChart
-              label={t("metric.accuracy")}
-              series={accuracySeries}
-              baselineSeries={baselineAccuracy}
-              color="var(--fe-data-series-1)"
-            />
-            <MetricChart
-              label={t("metric.loss")}
-              series={lossSeries}
-              baselineSeries={baseline?.series.loss ?? []}
-              color="var(--fe-data-series-2)"
-            />
-          </div>
+          {charted.length > 0 ? (
+            <div className="fe-detail__grid">
+              {charted.map((metric) => (
+                <MetricChart
+                  key={metric.id}
+                  label={metric.label}
+                  series={metric.series}
+                  baselineSeries={metric.baselineSeries}
+                  color={metric.color}
+                  digits={metric.digits}
+                />
+              ))}
+            </div>
+          ) : null}
 
           <p className="fe-note">{t("detail.seedsNote")}</p>
         </div>

@@ -17,7 +17,7 @@ import { useI18n } from "../i18n/I18nProvider";
 import { formatAbsoluteTime, formatDuration, formatMetric, formatRelativeTime, toTime } from "../format";
 import { MetricCell } from "./MetricCell";
 import { RunRibbon } from "./RunRibbon";
-import type { Run } from "../types";
+import type { MetricSpec, Run } from "../types";
 
 const columnHelper = createColumnHelper<Run>();
 
@@ -40,6 +40,8 @@ export interface RunsTableProps {
   rowActions?: RowAction[];
   /** Column order and set: known ids or metric names. */
   columnIds?: string[];
+  /** The project's metric metadata: labels, digits, direction. */
+  metricSpecs?: MetricSpec[];
 }
 
 const KNOWN_COLUMNS = [
@@ -64,6 +66,7 @@ export function RunsTable({
   onOpenRun,
   rowActions = [],
   columnIds,
+  metricSpecs = [],
 }: RunsTableProps) {
   const { t, lang } = useI18n();
   const [sorting, setSorting] = useState<SortingState>([{ id: "startedAt", desc: true }]);
@@ -95,7 +98,7 @@ export function RunsTable({
       status: columnHelper.accessor("status", {
         id: "status",
         header: () => t("column.status"),
-        size: 110,
+        size: 120,
         cell: (info) => <StatusBadge status={info.getValue()} />,
       }) as ColumnDef<Run, unknown>,
 
@@ -112,7 +115,7 @@ export function RunsTable({
       dataset: columnHelper.accessor("dataset", {
         id: "dataset",
         header: "Dataset",
-        size: 120,
+        size: 112,
         cell: (info) => <span className="fe-mono">{info.getValue()}</span>,
       }) as ColumnDef<Run, unknown>,
 
@@ -142,54 +145,78 @@ export function RunsTable({
       }) as ColumnDef<Run, unknown>,
     };
 
-    // The accuracy and loss metrics: value, delta against the baseline, sparkline.
-    const metric = (id: "accuracy" | "loss", label: string, color: string) =>
+    const specFor = (id: string) => metricSpecs.find((spec) => spec.id === id);
+
+    const arrow = (direction: string) =>
+      direction === "maximize" ? "↑" : direction === "minimize" ? "↓" : "·";
+
+    const directionTitle = (direction: string) =>
+      direction === "maximize"
+        ? t("metric.higherBetter")
+        : direction === "minimize"
+          ? t("metric.lowerBetter")
+          : t("column.directionOwned");
+
+    // The built-in metrics: value, delta against the baseline, sparkline.
+    const metric = (id: "accuracy" | "loss", color: string) =>
       columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
         id,
-        header: () => (
-          <span title={t(id === "accuracy" ? "metric.higherBetter" : "metric.lowerBetter")}>
-            {label} <span aria-hidden>{id === "accuracy" ? "↑" : "↓"}</span>
-          </span>
-        ),
-        size: 150,
+        header: () => {
+          const spec = specFor(id);
+          const direction = spec?.direction ?? (id === "accuracy" ? "maximize" : "minimize");
+          return (
+            <span title={directionTitle(direction)}>
+              {spec?.label ?? t(`metric.${id}`)}{" "}
+              <span aria-hidden>{arrow(direction)}</span>
+            </span>
+          );
+        },
+        size: 142,
         cell: (info) => {
           const run = info.row.original;
+          const spec = specFor(id);
           return (
             <MetricCell
               value={run.metrics[id]}
               baseline={baseline?.metrics[id]}
-              direction={run.metricDirection?.[id] ?? "none"}
+              direction={run.metricDirection?.[id] ?? spec?.direction ?? "none"}
               series={run.series?.[id]?.map((point) => point.value)}
+              digits={spec?.digits ?? undefined}
               color={color}
-              label={id}
+              label={spec?.label ?? id}
             />
           );
         },
       }) as ColumnDef<Run, unknown>;
 
-    fixed.accuracy = metric("accuracy", t("metric.accuracy"), "var(--fe-data-series-1)");
-    fixed.loss = metric("loss", t("metric.loss"), "var(--fe-data-series-2)");
+    fixed.accuracy = metric("accuracy", "var(--fe-data-series-1)");
+    fixed.loss = metric("loss", "var(--fe-data-series-2)");
 
-    // Any other metric of the project: the column is built from the data.
+    // Any other metric of the project: the column is built from the data and the spec.
     const custom = (id: string) =>
       columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
         id,
-        header: () => (
-          <span title={t("column.directionOwned")}>
-            {id} <span aria-hidden>·</span>
-          </span>
-        ),
-        size: 140,
+        header: () => {
+          const spec = specFor(id);
+          return (
+            <span title={directionTitle(spec?.direction ?? "none")}>
+              {spec?.label ?? id} <span aria-hidden>{arrow(spec?.direction ?? "none")}</span>
+            </span>
+          );
+        },
+        size: 130,
         cell: (info) => {
           const run = info.row.original;
+          const spec = specFor(id);
           return (
             <MetricCell
               value={run.metrics[id]}
               baseline={baseline?.metrics[id]}
-              direction={run.metricDirection?.[id] ?? "none"}
+              direction={run.metricDirection?.[id] ?? spec?.direction ?? "none"}
               series={run.series?.[id]?.map((point) => point.value)}
+              digits={spec?.digits ?? undefined}
               color="var(--fe-data-series-3)"
-              label={id}
+              label={spec?.label ?? id}
             />
           );
         },
@@ -228,7 +255,7 @@ export function RunsTable({
     }
 
     return built;
-  }, [baseline, baselineId, columnIds, lang, now, rowActions]);
+  }, [baseline, baselineId, columnIds, lang, metricSpecs, now, rowActions]);
 
   const table = useReactTable({
     data: runs,

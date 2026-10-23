@@ -9,8 +9,8 @@ The following are **public contracts** and change only in a major release:
 - the `x-frontedge` role vocabulary;
 - the canonical status set (`queued · running · succeeded · failed · cancelled · lost`);
 - the freshness set (`live · fresh · stale · partial`);
-- the interface configuration keys (`density`, `theme`, `run_columns`, `eval_tabs`, `actions`,
-  `live_refresh_seconds`, `baseline_run`, `page_size`);
+- the interface configuration keys (`density`, `theme`, `run_columns`, `metrics`, `eval_tabs`,
+  `actions`, `live_refresh_seconds`, `baseline_run`, `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
 ## [Unreleased]
@@ -44,6 +44,10 @@ The following are **public contracts** and change only in a major release:
   validates every answer; `--evals` and `--datasets` include the other two sources.
 - A documentation test compiles every Python example, loads every TOML example, validates the
   configuration examples against `UiConfig`, and parses every documented CLI command.
+- Metrics are project data, not screen code: `[[metrics]]` declares an id, label, digits,
+  direction and whether to chart it. The run screen draws a card for every metric and a chart
+  from its series; without a list it shows everything the run returns. The runs table uses the
+  same labels and digits.
 
 ### Changed
 
@@ -57,6 +61,8 @@ The following are **public contracts** and change only in a major release:
 - `frontedge.toml` rejects unknown keys instead of ignoring them.
 - Utility classes carry the `fe-` prefix: `num` → `fe-num`, `mono` → `fe-mono`, `muted` →
   `fe-muted`, `dim` → `fe-dim`, so they cannot collide with the host application.
+- The run screen no longer hardcodes accuracy, loss, F1 and tokens; the same code path serves
+  any metric.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

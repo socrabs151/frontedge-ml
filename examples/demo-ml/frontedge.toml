@@ -5,7 +5,38 @@ density = "default"
 theme = "light"
 
 # Which columns to show in the run list. An empty list — show all.
-run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss"]
+run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss", "bleu"]
+
+# Metrics of the project: the run screen draws a card for each one, and a chart when the run
+# has a series for it. Without this list, every metric a run returns is shown.
+# "bleu" is a metric the interface knows nothing about — it appears because the project declares it.
+
+[[metrics]]
+id = "accuracy"
+label = "Accuracy"
+direction = "maximize"
+
+[[metrics]]
+id = "loss"
+label = "Loss"
+direction = "minimize"
+
+[[metrics]]
+id = "f1"
+label = "F1"
+direction = "maximize"
+
+[[metrics]]
+id = "bleu"
+label = "BLEU"
+direction = "maximize"
+digits = 2
+
+[[metrics]]
+id = "tokens"
+label = "Tokens"
+digits = 0
+chart = false
 
 # Actions — what the project can do with its runs.
 # Handlers are registered in code: demo_ml/app.py -> actions={...}

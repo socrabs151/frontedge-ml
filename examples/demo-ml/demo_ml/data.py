@@ -107,11 +107,14 @@ def make_runs(count: int = 200) -> list[Run]:
         started_at = NOW - timedelta(minutes=age_minutes)
         accuracy = 0.79 + random_.random() * 0.13
         loss = 0.24 + random_.random() * 1.1
+        # A project-specific metric: the interface knows nothing about it until the config says so.
+        bleu = 0.21 + random_.random() * 0.12
         duration_ms = int(max(45_000, 61 * 1000 * (3 + random_.random() * 6)))
 
         accuracy_series = _series(random_, accuracy - 0.06, accuracy)
         loss_series = _series(random_, loss + 0.9, loss)
         f1_series = _series(random_, accuracy - 0.09, accuracy - 0.03)
+        bleu_series = _series(random_, bleu - 0.05, bleu)
 
         events: list[MetricEvent] = []
         if random_.random() > 0.72:
@@ -157,9 +160,15 @@ def make_runs(count: int = 200) -> list[Run]:
                     "accuracy": round(accuracy, 4),
                     "loss": round(loss, 4),
                     "f1": round(accuracy - 0.03 + random_.random() * 0.05, 4),
+                    "bleu": round(bleu, 4),
                     "tokens": int(1_200_000 + random_.random() * 4_000_000),
                 },
-                series={"accuracy": accuracy_series, "loss": loss_series, "f1": f1_series},
+                series={
+                    "accuracy": accuracy_series,
+                    "loss": loss_series,
+                    "f1": f1_series,
+                    "bleu": bleu_series,
+                },
                 baseline_series={
                     "accuracy": [
                         MetricPoint(step=p.step, value=round(p.value - 0.014, 4))
@@ -174,6 +183,7 @@ def make_runs(count: int = 200) -> list[Run]:
                     "accuracy": MetricDirection.maximize,
                     "loss": MetricDirection.minimize,
                     "f1": MetricDirection.maximize,
+                    "bleu": MetricDirection.maximize,
                 },
                 stages=_stages(random_, started_at, status),
                 events=events,

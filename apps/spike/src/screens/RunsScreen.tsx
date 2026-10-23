@@ -279,6 +279,7 @@ export function RunsScreen({
             onOpenRun={onOpenRun}
             rowActions={rowActions}
             columnIds={config?.runColumns}
+            metricSpecs={config?.metrics}
           />
           {total > runs.length || offset > 0 ? (
             <div className="fe-toolbar fe-toolbar--pagination">

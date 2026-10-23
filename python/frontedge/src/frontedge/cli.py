@@ -19,7 +19,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from . import __version__
-from .config import ActionResult, ActionSpec, UiConfig, load_config_file
+from .config import ActionResult, ActionSpec, MetricSpec, UiConfig, load_config_file
 from .gen import generate_client, generate_types
 from .models import DatasetDetail, DatasetInfo, EvalSummary, Run, RunsPage, RunsQuery
 from .providers import (
@@ -60,6 +60,7 @@ MODELS = [
     UiConfig,
     ActionSpec,
     ActionResult,
+    MetricSpec,
 ]
 
 DEFAULT_CONFIG_NAMES = ("frontedge.toml", "frontedge.json")
@@ -141,6 +142,16 @@ def _config_problems(path: Path) -> list[dict[str, str]]:
                 {"field": f"run_columns.{index}", "message": f"duplicate column: {column}"}
             )
         seen_columns.add(column)
+
+    seen_metrics: set[str] = set()
+    for index, metric in enumerate(config.metrics):
+        if not metric.id.strip():
+            problems.append({"field": f"metrics.{index}.id", "message": "the id is empty"})
+        elif metric.id in seen_metrics:
+            problems.append(
+                {"field": f"metrics.{index}.id", "message": f"duplicate metric id: {metric.id}"}
+            )
+        seen_metrics.add(metric.id)
     return problems
 
 

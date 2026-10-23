@@ -232,7 +232,15 @@ visual editor: the format is the same.
 density = "default"          # compact | default | comfortable
 theme = "light"              # light | dark
 
-run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss"]
+run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss", "bleu"]
+
+# The metrics of the project. The run screen draws a card for each one and a chart when the run
+# has a series for it. An empty list shows every metric a run returns.
+[[metrics]]
+id = "bleu"
+label = "BLEU"
+direction = "maximize"
+digits = 2
 ```
 
 ```python
@@ -261,6 +269,7 @@ All of the keys of `UiConfig`:
 | `density` | `compact`, `default` or `comfortable` — the row height (28/32/40 px) |
 | `theme` | `light` or `dark` |
 | `run_columns` | which columns to show in the list of runs; an empty list shows all of them |
+| `metrics` | the project's metrics: label, digits, direction and whether to chart (see below) |
 | `eval_tabs` | which tabs to show on the evaluation screen |
 | `actions` | the declared actions (see §6) |
 | `live_refresh_seconds` | how often the list of runs refreshes, in seconds; `0` disables it |
@@ -270,6 +279,30 @@ All of the keys of `UiConfig`:
 The available run columns are `name`, `status`, `ribbon`, `dataset`, `gitSha`, `startedAt`,
 `durationMs`, `accuracy` and `loss` — plus any metric name of your own data, which is built from
 the `metrics` dictionary.
+
+### 5.1 Your own metrics
+
+A metric is just a key in `Run.metrics`; the series, the baseline and the direction come with the
+data. `[[metrics]]` adds the presentation the library cannot guess:
+
+```toml
+[[metrics]]
+id = "bleu"            # the key in Run.metrics
+label = "BLEU"         # what the table, the card and the chart say
+digits = 2             # 3 by default
+direction = "maximize" # fallback when the run has no metric_direction for it
+chart = true           # false — a card without a chart (counts, sizes)
+```
+
+Rules:
+
+- a card is drawn for every listed metric, even without a series;
+- a chart is drawn when `chart` is not `false` **and** `Run.series[id]` has more than one point;
+- the order of the list is the order of the cards and the charts;
+- an empty `metrics` list means "every metric the run returns", sorted by id;
+- the direction from `Run.metric_direction` wins over the config; the config only fills the gap;
+- the same list drives `run_columns`: a metric id in that list gets the configured label and
+  digits in the table too.
 
 ## 6. How to add an action (a button)
 

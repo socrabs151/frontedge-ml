@@ -84,6 +84,36 @@ class TestPublicApi:
         assert adapt_provider(Minimal()) is not None
 
 
+class TestCustomMetrics:
+    """A project's own metric is not a special case: it comes from the config and the data."""
+
+    def test_metrics_reach_the_client(self, tmp_path: Any) -> None:
+        file = tmp_path / "frontedge.toml"
+        file.write_text(
+            '[[metrics]]\nid = "bleu"\nlabel = "BLEU"\ndigits = 2\n',
+            encoding="utf-8",
+        )
+        app = FastAPI()
+        app.include_router(frontedge.mount(runs_provider, config=file))
+        config = TestClient(app).get("/frontedge/api/config").json()
+        assert config["metrics"] == [
+            {"id": "bleu", "label": "BLEU", "digits": 2, "direction": None, "chart": True}
+        ]
+
+    def test_an_unknown_metric_key_is_rejected(self, tmp_path: Any) -> None:
+        from frontedge.config import UiConfig
+
+        with pytest.raises(Exception):
+            UiConfig.model_validate({"metrics": [{"id": "bleu", "precision": 2}]})
+
+    def test_metric_spec_is_in_the_schema(self) -> None:
+        from frontedge.config import UiConfig
+
+        schema = UiConfig.model_json_schema(by_alias=False)
+        assert "metrics" in schema["properties"]
+        assert "MetricSpec" in schema["$defs"]
+
+
 class TestHttp:
     def test_runs_list(self) -> None:
         response = client_for().get("/frontedge/api/runs")
@@ -538,6 +568,17 @@ class TestCli:
         assert main(["check", str(file)]) == 1
         err = capsys.readouterr().err
         assert "page_sise" in err
+
+    def test_check_reports_duplicate_metric_ids(self, tmp_path: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        file = tmp_path / "frontedge.toml"
+        file.write_text(
+            '[[metrics]]\nid = "bleu"\n\n[[metrics]]\nid = "bleu"\n',
+            encoding="utf-8",
+        )
+        assert main(["check", str(file)]) == 1
+        assert "duplicate metric id: bleu" in capsys.readouterr().err
 
     def test_check_reports_duplicate_action_ids(self, tmp_path: Any, capsys: Any) -> None:
         from frontedge.cli import main

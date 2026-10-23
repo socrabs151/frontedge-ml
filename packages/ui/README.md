@@ -95,12 +95,15 @@ The pattern takes the ids of the columns and the actions and builds the table it
   onColumnVisibilityChange={setVisibility}
   onOpenRun={openRun}
   columnIds={config.runColumns}
+  metricSpecs={config.metrics}
   rowActions={[{ id: "stop", label: "Stop", danger: true, onClick: stop }]}
 />
 ```
 
 An unknown column id is built from the `metrics` dictionary of the run, so a project can show
-its own metrics without touching the package.
+its own metrics without touching the package. `metricSpecs` (the `[[metrics]]` of
+`frontedge.toml`) supplies the label, the number of digits and the direction; without it the
+column uses the metric id and three digits.
 
 ## Types
 
