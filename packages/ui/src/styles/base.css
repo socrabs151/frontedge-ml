@@ -83,24 +83,24 @@
 }
 
 /* Numbers in tables and metrics must not jump in width. */
-.num,
-td.num,
-th.num {
+.fe-num,
+td.fe-num,
+th.fe-num {
   font-variant-numeric: tabular-nums lining-nums;
   text-align: right;
 }
 
-.mono {
+.fe-mono {
   font-family: var(--fe-font-mono);
   font-size: 0.92em;
   letter-spacing: -0.01em;
 }
 
-.muted {
+.fe-muted {
   color: var(--fe-text-tertiary);
 }
 
-.dim {
+.fe-dim {
   color: var(--fe-text-muted);
 }
 

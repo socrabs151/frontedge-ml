@@ -84,7 +84,7 @@ export function RunsTable({
         cell: (info) => (
           <span className="fe-run-name">
             <span className="fe-run-name__dot" aria-hidden />
-            <span className="mono">{info.getValue()}</span>
+            <span className="fe-mono">{info.getValue()}</span>
             {info.row.original.id === baselineId ? (
               <span className="fe-run-name__tag">{t("tag.baseline")}</span>
             ) : null}
@@ -113,14 +113,14 @@ export function RunsTable({
         id: "dataset",
         header: "Dataset",
         size: 120,
-        cell: (info) => <span className="mono">{info.getValue()}</span>,
+        cell: (info) => <span className="fe-mono">{info.getValue()}</span>,
       }) as ColumnDef<Run, unknown>,
 
       gitSha: columnHelper.accessor("gitSha", {
         id: "gitSha",
         header: "Git",
         size: 70,
-        cell: (info) => <span className="mono dim">{info.getValue().slice(0, 7)}</span>,
+        cell: (info) => <span className="fe-mono fe-dim">{info.getValue().slice(0, 7)}</span>,
       }) as ColumnDef<Run, unknown>,
 
       startedAt: columnHelper.accessor("startedAt", {
@@ -138,7 +138,7 @@ export function RunsTable({
         id: "durationMs",
         header: () => t("column.duration"),
         size: 85,
-        cell: (info) => <span className="num">{formatDuration(info.getValue(), lang)}</span>,
+        cell: (info) => <span className="fe-num">{formatDuration(info.getValue(), lang)}</span>,
       }) as ColumnDef<Run, unknown>,
     };
 
@@ -399,7 +399,7 @@ export function RunsTable({
         </table>
       </div>
       <div className="fe-table__footer">
-        <span className="num">{runs.length}</span> {t("footer.runs")}
+        <span className="fe-num">{runs.length}</span> {t("footer.runs")}
         {baselineId ? (
           <span className="fe-table__footer-note">
             {t("footer.deltasToBaseline")}

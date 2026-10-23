@@ -59,19 +59,19 @@ export function ExamplesTable({
               const better = direction === "maximize" ? (delta ?? 0) > 0 : (delta ?? 0) < 0;
               return (
                 <tr key={example.id} className="fe-table__row">
-                  <td className="fe-table__td fe-table__td--sticky mono">{example.id}</td>
+                  <td className="fe-table__td fe-table__td--sticky fe-mono">{example.id}</td>
                   <td className="fe-table__td fe-table__td--clip" title={example.input}>
                     {example.input}
                   </td>
                   <td className="fe-table__td fe-table__td--clip" title={example.output}>
                     {example.output}
                   </td>
-                  <td className="fe-table__td fe-table__td--num num">
+                  <td className="fe-table__td fe-table__td--num fe-num">
                     {example.score.toFixed(2)}
                   </td>
                   <td
                     className={clsx(
-                      "fe-table__td fe-table__td--num num",
+                      "fe-table__td fe-table__td--num fe-num",
                       delta !== null && delta !== 0 && (better ? "fe-delta--better" : "fe-delta--worse"),
                     )}
                   >

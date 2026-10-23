@@ -32,6 +32,11 @@ The following are **public contracts** and change only in a major release:
 - `frontedge schema` prints the JSON Schema of `frontedge.toml`; `frontedge check` validates a
   file and names every problem — an unknown key, a wrong enum value, a duplicate action id or
   column — with a `--json` mode for tools.
+- `/api/meta` reports capabilities: which screens are mounted, which actions are declared, and
+  whether the runs provider supports server-side query, log streaming and artifact content.
+- Provider output is validated where it enters the library. A mapping is coerced into the model;
+  anything else is a 502 whose `detail` names the method and the position instead of a 500 from
+  the serializer. A bad log line becomes a visible error line in the stream.
 
 ### Changed
 
@@ -43,6 +48,8 @@ The following are **public contracts** and change only in a major release:
 - Components fall back to English when no `I18nProvider` is mounted, so a single pattern can be
   dropped into an existing application.
 - `frontedge.toml` rejects unknown keys instead of ignoring them.
+- Utility classes carry the `fe-` prefix: `num` → `fe-num`, `mono` → `fe-mono`, `muted` →
+  `fe-muted`, `dim` → `fe-dim`, so they cannot collide with the host application.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

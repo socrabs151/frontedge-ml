@@ -30,7 +30,7 @@ export function MyRuns({ runs }: { runs: Run[] }) {
         <tbody>
           {runs.map((run) => (
             <tr key={run.id} className="fe-table__row">
-              <td className="fe-table__td mono">{run.name}</td>
+              <td className="fe-table__td fe-mono">{run.name}</td>
               <td className="fe-table__td">
                 <StatusBadge status={run.status} />
               </td>

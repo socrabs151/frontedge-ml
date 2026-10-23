@@ -58,7 +58,7 @@ export function LogStream({
             {t("log.streamClosed")}
           </span>
         )}
-        <span className="fe-logs__count num">
+        <span className="fe-logs__count fe-num">
           {lines.length} {t("log.lines")}
         </span>
         {!pinned ? (
@@ -84,7 +84,7 @@ export function LogStream({
         {lines.map((line) => (
           <div key={line.id} className={`fe-logs__line fe-logs__line--${line.level}`}>
             <span className="fe-logs__level">{LEVEL_LABEL[line.level]}</span>
-            <span className="fe-logs__time num">
+            <span className="fe-logs__time fe-num">
               {new Date(line.at).toLocaleTimeString("en-GB", { hour12: false })}
             </span>
             <span className="fe-logs__text">{line.text}</span>

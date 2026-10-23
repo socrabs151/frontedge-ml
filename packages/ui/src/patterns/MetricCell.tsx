@@ -49,10 +49,10 @@ export function MetricCell({
 
   return (
     <span className="fe-metric">
-      <span className="fe-metric__value num">{formatMetric(value, digits, lang)}</span>
+      <span className="fe-metric__value fe-num">{formatMetric(value, digits, lang)}</span>
       {delta !== undefined && deltaMeta ? (
         <span
-          className="fe-metric__delta num"
+          className="fe-metric__delta fe-num"
           title={`${delta > 0 ? "+" : "−"}${formatMetric(Math.abs(delta), digits, lang)} ${t("delta.toBaseline", { baseline: baselineText })}`}
         >
           <span aria-hidden>{deltaMeta.sign}</span>
@@ -104,7 +104,7 @@ export function MetricCard({
     <div className="fe-metric-card">
       <div className="fe-metric-card__label">{label}</div>
       <div className="fe-metric-card__row">
-        <span className="fe-metric-card__value num">{formatMetric(value, digits, lang)}</span>
+        <span className="fe-metric-card__value fe-num">{formatMetric(value, digits, lang)}</span>
         {series && series.length > 1 ? (
           <Sparkline
             values={series}
@@ -116,7 +116,7 @@ export function MetricCard({
         ) : null}
       </div>
       {delta !== undefined && deltaMeta ? (
-        <div className="fe-metric-card__delta num">
+        <div className="fe-metric-card__delta fe-num">
           <span aria-hidden>{deltaMeta.sign}</span>
           {formatDelta(delta, digits, lang)}
           {deltaMeta.word ? (

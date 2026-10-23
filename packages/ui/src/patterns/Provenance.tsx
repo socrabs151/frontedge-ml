@@ -6,7 +6,7 @@ export function ProvenanceList({ entries }: { entries: ProvenanceEntry[] }) {
       {entries.map((entry) => (
         <div key={entry.label} className="fe-provenance__row">
           <dt className="fe-provenance__label">{entry.label}</dt>
-          <dd className={entry.mono ? "fe-provenance__value mono" : "fe-provenance__value"}>
+          <dd className={entry.mono ? "fe-provenance__value fe-mono" : "fe-provenance__value"}>
             {entry.value}
           </dd>
         </div>

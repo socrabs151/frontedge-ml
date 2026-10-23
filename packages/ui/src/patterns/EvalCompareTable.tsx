@@ -118,7 +118,7 @@ export function EvalCompareTable({
               return (
                 <tr key={example.id} className="fe-table__row">
                   <td className="fe-table__td fe-table__td--sticky">
-                    <span className="fe-eval__id mono">{example.id}</span>
+                    <span className="fe-eval__id fe-mono">{example.id}</span>
                     {example.changed ? (
                       <span
                         className="fe-eval__changed"
@@ -135,15 +135,15 @@ export function EvalCompareTable({
                   <td className="fe-table__td fe-table__td--clip" title={example.output}>
                     {example.output}
                   </td>
-                  <td className="fe-table__td fe-table__td--num num">
+                  <td className="fe-table__td fe-table__td--num fe-num">
                     {formatScore(reference, format, reference)}
                   </td>
-                  <td className="fe-table__td fe-table__td--num num">
+                  <td className="fe-table__td fe-table__td--num fe-num">
                     {formatScore(comparisonScore, format, reference)}
                   </td>
                   <td
                     className={clsx(
-                      "fe-table__td fe-table__td--num num",
+                      "fe-table__td fe-table__td--num fe-num",
                       delta !== null && delta !== 0 && "fe-eval__delta",
                     )}
                   >
@@ -171,13 +171,13 @@ export function EvalCompareTable({
                   changed: comparison.changed,
                 })}
               </td>
-              <td className="fe-table__td fe-table__td--num num">
+              <td className="fe-table__td fe-table__td--num fe-num">
                 {comparison.referenceAggregate.toFixed(3)}
               </td>
-              <td className="fe-table__td fe-table__td--num num">
+              <td className="fe-table__td fe-table__td--num fe-num">
                 {comparison.comparisonAggregate.toFixed(3)}
               </td>
-              <td className="fe-table__td fe-table__td--num num fe-eval__delta">
+              <td className="fe-table__td fe-table__td--num fe-num fe-eval__delta">
                 {aggregateDelta > 0 ? "+" : aggregateDelta < 0 ? "−" : "±"}
                 {Math.abs(aggregateDelta).toFixed(3)}
                 {aggregateMeta.word ? (

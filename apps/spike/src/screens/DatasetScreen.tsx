@@ -158,7 +158,7 @@ export function DatasetScreen() {
               <div>
                 <h2 className="fe-runs__title fe-runs__title--small">{detail.name}</h2>
                 <p className="fe-runs__subtitle">
-                  {t("datasets.version")} <span className="mono">{detail.version}</span> ·{" "}
+                  {t("datasets.version")} <span className="fe-mono">{detail.version}</span> ·{" "}
                   {detail.examplesCount.toLocaleString(locale)} {t("datasets.examples")} ·{" "}
                   {(detail.tags ?? []).join(", ")}
                 </p>

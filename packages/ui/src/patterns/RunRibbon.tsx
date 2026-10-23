@@ -89,7 +89,7 @@ export function RunRibbon({
           {measured.map((stage) => (
             <span key={stage.name} className="fe-ribbon__label">
               {stage.name}
-              <span className="fe-ribbon__label-time num">
+              <span className="fe-ribbon__label-time fe-num">
                 {formatDuration(toTime(stage.endedAt ?? stage.startedAt) - toTime(stage.startedAt), lang)}
               </span>
             </span>

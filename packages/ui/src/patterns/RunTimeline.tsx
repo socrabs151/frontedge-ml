@@ -67,7 +67,7 @@ export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelinePr
           return (
             <div key={stage.name} className="fe-timeline__label" style={{ width: `${share}%` }}>
               <span className="fe-timeline__name">{stage.name}</span>
-              <span className="fe-timeline__time num">{formatDuration(duration, lang)}</span>
+              <span className="fe-timeline__time fe-num">{formatDuration(duration, lang)}</span>
               {stage.status !== "succeeded" ? (
                 <span className="fe-timeline__status">{t(`status.${key}`)}</span>
               ) : null}

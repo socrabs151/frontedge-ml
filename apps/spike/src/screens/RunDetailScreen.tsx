@@ -234,9 +234,9 @@ export function RunDetailScreen({
         <ul className="fe-artifacts">
           {(run.artifacts ?? []).map((artifact) => (
             <li key={artifact.id} className="fe-artifacts__row">
-              <span className="fe-artifacts__name mono">{artifact.name}</span>
+              <span className="fe-artifacts__name fe-mono">{artifact.name}</span>
               <span className="fe-artifacts__kind">{artifact.kind}</span>
-              <span className="fe-artifacts__size num">
+              <span className="fe-artifacts__size fe-num">
                 {(artifact.sizeBytes / 1_000_000).toFixed(1)} MB
               </span>
               <a
@@ -270,7 +270,7 @@ export function RunDetailScreen({
 
       <header className="fe-detail__head">
         <div className="fe-detail__title">
-          <h1 className="mono">{run.name}</h1>
+          <h1 className="fe-mono">{run.name}</h1>
           <StatusBadge status={run.status} />
           {run.freshness === "live" ? (
             <span className="fe-freshness fe-freshness--live">
@@ -306,7 +306,7 @@ export function RunDetailScreen({
           <span className="fe-run-error__label">{t("detail.reason")}</span>
           <span className="fe-run-error__text">{run.error}</span>
           {run.exitCode !== null && run.exitCode !== undefined ? (
-            <span className="fe-run-error__code mono">
+            <span className="fe-run-error__code fe-mono">
               {t("detail.exitCode", { code: run.exitCode })}
             </span>
           ) : null}
@@ -315,19 +315,19 @@ export function RunDetailScreen({
 
       <div className="fe-detail__meta">
         <span className="fe-detail__meta-item">
-          <span className="muted">{t("detail.dataset")}</span>{" "}
-          <span className="mono">{run.dataset}</span>
+          <span className="fe-muted">{t("detail.dataset")}</span>{" "}
+          <span className="fe-mono">{run.dataset}</span>
         </span>
         <span className="fe-detail__meta-item">
-          <span className="muted">{t("detail.git")}</span> <span className="mono">{run.gitSha}</span>
+          <span className="fe-muted">{t("detail.git")}</span> <span className="fe-mono">{run.gitSha}</span>
         </span>
         <span className="fe-detail__meta-item">
-          <span className="muted">{t("tag.baseline")}</span>{" "}
-          <span className="mono">{baseline?.name ?? t("detail.notSelected")}</span>
+          <span className="fe-muted">{t("tag.baseline")}</span>{" "}
+          <span className="fe-mono">{baseline?.name ?? t("detail.notSelected")}</span>
         </span>
         <span className="fe-detail__meta-item">
-          <span className="muted">{t("detail.seed")}</span>{" "}
-          <span className="mono num">{run.seed}</span>
+          <span className="fe-muted">{t("detail.seed")}</span>{" "}
+          <span className="fe-mono fe-num">{run.seed}</span>
         </span>
       </div>
 

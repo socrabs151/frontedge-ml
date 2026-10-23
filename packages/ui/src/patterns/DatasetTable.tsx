@@ -37,14 +37,14 @@ export function DatasetTable({ examples, scoreLabel }: DatasetTableProps) {
           <tbody>
             {examples.map((example) => (
               <tr key={example.id} className="fe-table__row">
-                <td className="fe-table__td fe-table__td--sticky mono">{example.id}</td>
+                <td className="fe-table__td fe-table__td--sticky fe-mono">{example.id}</td>
                 <td className="fe-table__td fe-table__td--clip" title={example.input}>
                   {example.input}
                 </td>
                 <td className="fe-table__td fe-table__td--clip" title={example.output}>
                   {example.output}
                 </td>
-                <td className="fe-table__td fe-table__td--num num">
+                <td className="fe-table__td fe-table__td--num fe-num">
                   {example.referenceScore === null || example.referenceScore === undefined
                     ? "–"
                     : example.referenceScore.toFixed(3)}
