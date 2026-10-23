@@ -176,6 +176,7 @@ pnpm check:lang         # английский репозиторий и инт�
 pnpm build:ui           # сборка интерфейса в Python-пакет
 uv sync --all-packages
 uv run --package frontedge pytest python/frontedge/tests -q
+uv run --package frontedge frontedge check examples/demo-ml/frontedge.toml
 ```
 
 Дизайн-документ: [docs/specs/2026-10-20-frontedge-design.md](docs/specs/2026-10-20-frontedge-design.md).

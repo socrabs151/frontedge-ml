@@ -176,6 +176,7 @@ pnpm check:lang         # English repository and interface, Russian only through
 pnpm build:ui           # build the interface into the Python package
 uv sync --all-packages
 uv run --package frontedge pytest python/frontedge/tests -q
+uv run --package frontedge frontedge check examples/demo-ml/frontedge.toml
 ```
 
 Design document: [docs/specs/2026-10-20-frontedge-design.md](docs/specs/2026-10-20-frontedge-design.md).

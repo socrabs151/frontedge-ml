@@ -179,6 +179,18 @@ app.include_router(frontedge.mount(my_runs_provider, config="frontedge.toml"))
 app.include_router(frontedge.mount(my_runs_provider, config={"density": "compact"}))
 ```
 
+Validate the file before starting the server — an unknown key is a typo, not a silent default:
+
+```bash
+frontedge check                       # ./frontedge.toml or ./frontedge.json
+frontedge check path/to/frontedge.toml --json
+frontedge schema --out frontedge.schema.json
+```
+
+`check` exits with 1 and names the field for every problem (an unknown key, a wrong enum value,
+a duplicate action id or column). `schema` prints the JSON Schema of the file, which an editor or
+an agent can use to validate it before any Python code runs.
+
 All of the keys of `UiConfig`:
 
 | Key | Meaning |

@@ -33,7 +33,7 @@ Placement = Literal["runs", "run", "evals", "datasets"]
 class ActionSpec(BaseModel):
     """Action description: what the interface shows."""
 
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, extra="forbid")
 
     id: str
     label: str
@@ -55,7 +55,7 @@ class ActionResult(BaseModel):
 class UiConfig(BaseModel):
     """Project interface configuration."""
 
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, extra="forbid")
 
     density: Literal["compact", "default", "comfortable"] | None = None
     theme: Literal["light", "dark"] | None = None
@@ -63,11 +63,11 @@ class UiConfig(BaseModel):
     eval_tabs: list[str] = Field(default_factory=list)
     actions: list[ActionSpec] = Field(default_factory=list)
     #: How often to refresh the run list, in seconds. 0 — never refresh.
-    live_refresh_seconds: int = 5
+    live_refresh_seconds: int = Field(default=5, ge=0)
     #: Default run for comparison (baseline).
     baseline_run: str | None = None
     #: How many runs to request at a time (server-side pagination).
-    page_size: int = 50
+    page_size: int = Field(default=50, ge=1)
 
     def actions_for(self, placement: Placement) -> list[ActionSpec]:
         return [action for action in self.actions if action.placement == placement]

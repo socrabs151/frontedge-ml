@@ -8,6 +8,7 @@ after the first keepalive.
 from __future__ import annotations
 
 import asyncio
+import json
 from datetime import UTC, datetime
 from typing import Any
 
@@ -256,6 +257,77 @@ class TestConfigAndActions:
         app.include_router(frontedge.mount(runs_provider, config=file))
         payload = TestClient(app).get("/frontedge/api/config").json()
         assert payload["actions"][0]["placement"] == "runs"
+
+
+class TestCli:
+    """The commands an agent or a person runs before the server starts."""
+
+    def test_schema_is_a_json_schema(self, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        assert main(["schema"]) == 0
+        schema = json.loads(capsys.readouterr().out)
+        assert schema["title"] == "UiConfig"
+        assert {"density", "theme", "run_columns", "actions"} <= set(schema["properties"])
+
+    def test_check_accepts_a_valid_config(self, tmp_path: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        file = tmp_path / "frontedge.toml"
+        file.write_text(
+            'density = "compact"\n'
+            'run_columns = ["name", "status"]\n\n'
+            "[[actions]]\n"
+            'id = "stop"\n'
+            'label = "Stop"\n',
+            encoding="utf-8",
+        )
+        assert main(["check", str(file)]) == 0
+        out = capsys.readouterr().out
+        assert "OK" in out
+        assert "stop (run)" in out
+
+    def test_check_names_a_typo_in_a_key(self, tmp_path: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        file = tmp_path / "frontedge.toml"
+        file.write_text("page_sise = 10\n", encoding="utf-8")
+        assert main(["check", str(file)]) == 1
+        err = capsys.readouterr().err
+        assert "page_sise" in err
+
+    def test_check_reports_duplicate_action_ids(self, tmp_path: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        file = tmp_path / "frontedge.toml"
+        file.write_text(
+            "[[actions]]\n"
+            'id = "stop"\n'
+            'label = "Stop"\n\n'
+            "[[actions]]\n"
+            'id = "stop"\n'
+            'label = "Stop again"\n',
+            encoding="utf-8",
+        )
+        assert main(["check", str(file)]) == 1
+        assert "duplicate action id: stop" in capsys.readouterr().err
+
+    def test_check_json_mode(self, tmp_path: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        file = tmp_path / "frontedge.json"
+        file.write_text('{"pageSize": 2}\n', encoding="utf-8")
+        assert main(["check", str(file), "--json"]) == 0
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["ok"] is True
+        assert payload["config"]["page_size"] == 2
+
+    def test_check_without_a_file(self, tmp_path: Any, capsys: Any, monkeypatch: Any) -> None:
+        from frontedge.cli import main
+
+        monkeypatch.chdir(tmp_path)
+        assert main(["check"]) == 1
+        assert "no configuration file found" in capsys.readouterr().err
 
 
 if __name__ == "__main__":  # pragma: no cover

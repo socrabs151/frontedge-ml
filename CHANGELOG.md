@@ -29,9 +29,20 @@ The following are **public contracts** and change only in a major release:
 - The language audit (`pnpm check:lang`): Cyrillic is allowed only in the dictionaries and the
   Russian README, the two dictionaries must agree, a component may not carry a visible literal,
   and the English interface is checked in a browser for stray Cyrillic.
+- `frontedge schema` prints the JSON Schema of `frontedge.toml`; `frontedge check` validates a
+  file and names every problem — an unknown key, a wrong enum value, a duplicate action id or
+  column — with a `--json` mode for tools.
 
 ### Changed
 
+- Tokens carry the `fe-` prefix (`--fe-surface`), so the npm package never overwrites the host
+  application's variables.
+- Base styles are scoped to `.fe-root` and to the portalled surfaces: importing the package no
+  longer restyles the host document.
+- `@frontedge/ui/styles.css` is one built file; the `@import`s are inlined at build time.
+- Components fall back to English when no `I18nProvider` is mounted, so a single pattern can be
+  dropped into an existing application.
+- `frontedge.toml` rejects unknown keys instead of ignoring them.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.
