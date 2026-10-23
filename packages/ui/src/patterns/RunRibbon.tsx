@@ -4,12 +4,12 @@ import { useI18n } from "../i18n/I18nProvider";
 import type { MetricEvent, RunStatus, Stage } from "../types";
 
 const STATUS_COLOR: Record<RunStatus, string> = {
-  queued: "var(--status-neutral)",
-  running: "var(--status-running)",
-  succeeded: "var(--status-success)",
-  failed: "var(--status-danger)",
-  cancelled: "var(--status-neutral)",
-  lost: "var(--status-warning)",
+  queued: "var(--fe-status-neutral)",
+  running: "var(--fe-status-running)",
+  succeeded: "var(--fe-status-success)",
+  failed: "var(--fe-status-danger)",
+  cancelled: "var(--fe-status-neutral)",
+  lost: "var(--fe-status-warning)",
 };
 
 export interface RunRibbonProps {

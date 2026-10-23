@@ -16,6 +16,16 @@ export interface I18nValue {
 
 const I18nContext = createContext<I18nValue | null>(null);
 
+/**
+ * A component may be used on its own, without the provider: it then speaks English.
+ * The provider is what turns the toggle on.
+ */
+const fallback: I18nValue = {
+  lang: "en",
+  setLang: () => {},
+  t: (key, params) => interpolate(en[key], params),
+};
+
 function interpolate(template: string, params?: Record<string, string | number>): string {
   if (!params) return template;
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>
@@ -58,11 +68,7 @@ export function I18nProvider({
 }
 
 export function useI18n(): I18nValue {
-  const value = useContext(I18nContext);
-  if (!value) {
-    throw new Error("useI18n must be used inside <I18nProvider>");
-  }
-  return value;
+  return useContext(I18nContext) ?? fallback;
 }
 
 /** The package dictionary for the selected language. */

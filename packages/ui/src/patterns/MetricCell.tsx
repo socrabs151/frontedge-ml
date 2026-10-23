@@ -34,7 +34,7 @@ export function MetricCell({
   baseline,
   direction = "none",
   series,
-  color = "var(--data-series-1)",
+  color = "var(--fe-data-series-1)",
   digits = 3,
   withSparkline = true,
   showWord = false,
@@ -81,7 +81,7 @@ export function MetricCard({
   baseline,
   direction = "none",
   series,
-  color = "var(--data-series-1)",
+  color = "var(--fe-data-series-1)",
   digits = 3,
   baselineLabel,
 }: {

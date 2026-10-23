@@ -158,48 +158,50 @@ Not "SaaS blue". The world of a laboratory and of instruments: notebook paper, g
 
 The source of truth is `packages/ui/src/styles/tokens.css`; the values below are the current ones, and the contrast pairs are checked by `packages/ui/scripts/check-contrast.mjs`.
 
+Token names carry the `fe-` prefix so the package can be dropped into an existing application without overwriting its own variables. Base styles (typography, focus, scrollbars) are scoped to `.fe-root`; the only global rules left are the box model, utility classes and the reduced-motion preference. A portalled surface (menu, tooltip) attaches to `<body>`, so it carries the font itself.
+
 **Light theme (default)**
 
 | Token | Value | Role |
 |---|---|---|
-| `--canvas` | `#f7f7f4` | Application background, a warm neutral instead of pure white |
-| `--surface` | `#ffffff` | Cards, panels |
-| `--surface-sunken` | `#f1f1ed` | Nested blocks, input fields (an input is "pressed in", so it is darker) |
-| `--surface-overlay` | `#ffffff` | Popups, dialogs (+ one soft shadow layer) |
-| `--surface-hover` | `#f4f4f0` | Row hover |
-| `--surface-selected` | `#eef2fd` | Selection background |
-| `--border` | `#dadad2` | Hairline separators, 1px (1.41:1 to surface — in a dense table the hairline is structure) |
-| `--border-strong` | `#d3d3cb` | Field borders, emphasised separators |
-| `--border-input` | `#8a8a83` | Input field border, 3.07:1 to surface (WCAG 1.4.11) |
-| `--text-primary` | `#1a1a17` | Primary text |
-| `--text-secondary` | `#56564e` | Secondary text, captions |
-| `--text-tertiary` | `#64645c` | Metadata, column headers |
-| `--text-muted` | `#6f6f66` | Placeholders, disabled |
-| `--text-inverse` | `#ffffff` | Text on a dark surface |
-| `--accent` | `#2f56d9` | The only accent: action, focus, active route |
-| `--accent-hover` | `#2647b8` | Accent hover |
-| `--accent-wash` | `#eef2fd` | Selection background, selected row |
-| `--accent-text` | `#ffffff` | Text on an accent button |
-| `--status-success` | `#2f7a4d` | "Finished successfully" (not "good") |
-| `--status-warning` | `#8a5d0f` | Ochre: "needs attention", "degradation" |
-| `--status-danger` | `#b0402f` | Brick: "failed" |
-| `--status-neutral` | `#6b6b62` | "Pending", "unknown" |
-| `--status-running` | `#2f56d9` | "Running" — same as the accent, distinguished by the icon |
-| `--status-danger-text` | `#ffffff` | Text on a danger surface |
-| `--status-success-wash` | `#e9f4ee` | Background of the "succeeded" status |
-| `--status-warning-wash` | `#f8f1e2` | Background of the "warning" status |
-| `--status-danger-wash` | `#f9ecea` | Background of the "failed" status |
-| `--status-neutral-wash` | `#f0f0ec` | Background of the "pending" status |
-| `--status-running-wash` | `#eef2fd` | Background of the "running" status |
-| `--data-ink` | `#8f8f88` | Grid, axes, separators inside charts (3.25:1) |
-| `--data-ink-soft` | `#d8d8d2` | Secondary grid lines |
+| `--fe-canvas` | `#f7f7f4` | Application background, a warm neutral instead of pure white |
+| `--fe-surface` | `#ffffff` | Cards, panels |
+| `--fe-surface-sunken` | `#f1f1ed` | Nested blocks, input fields (an input is "pressed in", so it is darker) |
+| `--fe-surface-overlay` | `#ffffff` | Popups, dialogs (+ one soft shadow layer) |
+| `--fe-surface-hover` | `#f4f4f0` | Row hover |
+| `--fe-surface-selected` | `#eef2fd` | Selection background |
+| `--fe-border` | `#dadad2` | Hairline separators, 1px (1.41:1 to surface — in a dense table the hairline is structure) |
+| `--fe-border-strong` | `#d3d3cb` | Field borders, emphasised separators |
+| `--fe-border-input` | `#8a8a83` | Input field border, 3.07:1 to surface (WCAG 1.4.11) |
+| `--fe-text-primary` | `#1a1a17` | Primary text |
+| `--fe-text-secondary` | `#56564e` | Secondary text, captions |
+| `--fe-text-tertiary` | `#64645c` | Metadata, column headers |
+| `--fe-text-muted` | `#6f6f66` | Placeholders, disabled |
+| `--fe-text-inverse` | `#ffffff` | Text on a dark surface |
+| `--fe-accent` | `#2f56d9` | The only accent: action, focus, active route |
+| `--fe-accent-hover` | `#2647b8` | Accent hover |
+| `--fe-accent-wash` | `#eef2fd` | Selection background, selected row |
+| `--fe-accent-text` | `#ffffff` | Text on an accent button |
+| `--fe-status-success` | `#2f7a4d` | "Finished successfully" (not "good") |
+| `--fe-status-warning` | `#8a5d0f` | Ochre: "needs attention", "degradation" |
+| `--fe-status-danger` | `#b0402f` | Brick: "failed" |
+| `--fe-status-neutral` | `#6b6b62` | "Pending", "unknown" |
+| `--fe-status-running` | `#2f56d9` | "Running" — same as the accent, distinguished by the icon |
+| `--fe-status-danger-text` | `#ffffff` | Text on a danger surface |
+| `--fe-status-success-wash` | `#e9f4ee` | Background of the "succeeded" status |
+| `--fe-status-warning-wash` | `#f8f1e2` | Background of the "warning" status |
+| `--fe-status-danger-wash` | `#f9ecea` | Background of the "failed" status |
+| `--fe-status-neutral-wash` | `#f0f0ec` | Background of the "pending" status |
+| `--fe-status-running-wash` | `#eef2fd` | Background of the "running" status |
+| `--fe-data-ink` | `#8f8f88` | Grid, axes, separators inside charts (3.25:1) |
+| `--fe-data-ink-soft` | `#d8d8d2` | Secondary grid lines |
 
 **Dark theme (the same system, inverted values)**
 
-`--canvas #121211` (warm near-black, not pure black) · `--surface #1a1a18` · `--surface-sunken #0e0e0d` · `--surface-overlay #232320` · `--surface-hover #212120` · `--surface-selected #1c2437` · `--border rgba(255,255,255,0.12)` · `--border-strong rgba(255,255,255,0.2)` · `--text-primary #f2f2ee` · `--text-secondary #b6b6ad` · `--text-tertiary #8f8f88` · `--text-muted #83837a` · `--accent #7d9cff` · `--accent-hover #93aeff` · statuses muted by ~15% · **`--data-ink` follows the theme (`#6f6f66`), the series colours do not change** — a run's identity must mean the same thing in both themes.
+`--fe-canvas #121211` (warm near-black, not pure black) · `--fe-surface #1a1a18` · `--fe-surface-sunken #0e0e0d` · `--fe-surface-overlay #232320` · `--fe-surface-hover #212120` · `--fe-surface-selected #1c2437` · `--fe-border rgba(255,255,255,0.12)` · `--fe-border-strong rgba(255,255,255,0.2)` · `--fe-text-primary #f2f2ee` · `--fe-text-secondary #b6b6ad` · `--fe-text-tertiary #8f8f88` · `--fe-text-muted #83837a` · `--fe-accent #7d9cff` · `--fe-accent-hover #93aeff` · statuses muted by ~15% · **`--fe-data-ink` follows the theme (`#6f6f66`), the series colours do not change** — a run's identity must mean the same thing in both themes.
 
 **Run identity colours** (ColorBrewer qualitative, 8 of them, discriminable under colour-vision deficiency):
-`--data-series-1 #1b9e77` · `--data-series-2 #d95f02` · `--data-series-3 #7570b3` · `--data-series-4 #e7298a` · `--data-series-5 #66a61e` · `--data-series-6 #e6ab02` · `--data-series-7 #a6761d` · `--data-series-8 #666666`.
+`--fe-data-series-1 #1b9e77` · `--fe-data-series-2 #d95f02` · `--fe-data-series-3 #7570b3` · `--fe-data-series-4 #e7298a` · `--fe-data-series-5 #66a61e` · `--fe-data-series-6 #e6ab02` · `--fe-data-series-7 #a6761d` · `--fe-data-series-8 #666666`.
 They are used only as "who is who" (a dot in a row, a line on a chart, a label in the legend). **Never** for "better/worse".
 
 **Colour rules (strict):**
@@ -284,8 +286,8 @@ Owner decisions: **we keep the warm tone and the accent, we do not touch the sig
 
 | | was | became | why |
 |---|---|---|---|
-| `--border` (light) | `#e5e5e0` (1.26:1 to surface) | `#dadad2` (1.41:1) | in a dense table the hairline is structure; 1.26:1 did not give it |
-| `--border` (dark) | `rgba(255,255,255,0.09)` | `rgba(255,255,255,0.12)` | the same in the dark theme |
+| `--fe-border` (light) | `#e5e5e0` (1.26:1 to surface) | `#dadad2` (1.41:1) | in a dense table the hairline is structure; 1.26:1 did not give it |
+| `--fe-border` (dark) | `rgba(255,255,255,0.09)` | `rgba(255,255,255,0.12)` | the same in the dark theme |
 
 What was not taken and why:
 

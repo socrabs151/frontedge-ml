@@ -33,19 +33,19 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./styles.css": "./src/styles/index.css",
+    "./styles.css": "./dist/styles.css",
     "./package.json": "./package.json"
   },
+  "style": "./dist/styles.css",
   "files": [
     "dist",
-    "src/styles",
     "README.md"
   ],
   "sideEffects": [
     "**/*.css"
   ],
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown && node scripts/build-css.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

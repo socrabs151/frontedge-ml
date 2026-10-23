@@ -149,7 +149,7 @@ export function RunDetailScreen({
               baseline={baseline?.metrics.accuracy}
               direction={run.metricDirection?.accuracy ?? "none"}
               series={accuracySeries.map((point) => point.value)}
-              color="var(--data-series-1)"
+              color="var(--fe-data-series-1)"
             />
             <MetricCard
               label={t("metric.loss")}
@@ -157,7 +157,7 @@ export function RunDetailScreen({
               baseline={baseline?.metrics.loss}
               direction={run.metricDirection?.loss ?? "none"}
               series={lossSeries.map((point) => point.value)}
-              color="var(--data-series-2)"
+              color="var(--fe-data-series-2)"
             />
             <MetricCard
               label={t("metric.f1")}
@@ -165,7 +165,7 @@ export function RunDetailScreen({
               baseline={baseline?.metrics.f1}
               direction={run.metricDirection?.f1 ?? "none"}
               series={(run.series.f1 ?? []).map((point) => point.value)}
-              color="var(--data-series-3)"
+              color="var(--fe-data-series-3)"
             />
             <MetricCard
               label={t("metric.tokens")}
@@ -181,13 +181,13 @@ export function RunDetailScreen({
               label={t("metric.accuracy")}
               series={accuracySeries}
               baselineSeries={baselineAccuracy}
-              color="var(--data-series-1)"
+              color="var(--fe-data-series-1)"
             />
             <MetricChart
               label={t("metric.loss")}
               series={lossSeries}
               baselineSeries={baseline?.series.loss ?? []}
-              color="var(--data-series-2)"
+              color="var(--fe-data-series-2)"
             />
           </div>
 

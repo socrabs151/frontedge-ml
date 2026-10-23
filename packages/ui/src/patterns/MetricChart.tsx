@@ -46,8 +46,8 @@ export function MetricChart({
   baselineSeries,
   extraSeries = NO_EXTRA,
   height = 220,
-  color = "var(--data-series-1)",
-  baselineColor = "var(--text-secondary)",
+  color = "var(--fe-data-series-1)",
+  baselineColor = "var(--fe-text-secondary)",
   label,
   digits = 3,
 }: MetricChartProps) {
@@ -183,7 +183,7 @@ export function MetricChart({
                 x2={M.left + plotWidth}
                 y1={model.y(tick)}
                 y2={model.y(tick)}
-                stroke="var(--data-ink-soft)"
+                stroke="var(--fe-data-ink-soft)"
                 strokeWidth={1}
               />
               <text
@@ -205,7 +205,7 @@ export function MetricChart({
                 x2={model.x(tick)}
                 y1={M.top}
                 y2={M.top + plotHeight}
-                stroke="var(--data-ink-soft)"
+                stroke="var(--fe-data-ink-soft)"
                 strokeWidth={1}
               />
               <text
@@ -224,7 +224,7 @@ export function MetricChart({
               key={`extra-${index}`}
               points={line(extra)}
               fill="none"
-              stroke="var(--data-ink)"
+              stroke="var(--fe-data-ink)"
               strokeWidth={1}
               opacity={0.5}
             />
@@ -257,7 +257,7 @@ export function MetricChart({
                 x2={model.x(hovered.step)}
                 y1={M.top}
                 y2={M.top + plotHeight}
-                stroke="var(--text-muted)"
+                stroke="var(--fe-text-muted)"
                 strokeWidth={1}
               />
               <circle
@@ -265,7 +265,7 @@ export function MetricChart({
                 cy={model.y(hovered.value)}
                 r={3}
                 fill={color}
-                stroke="var(--surface)"
+                stroke="var(--fe-surface)"
                 strokeWidth={1.5}
               />
               {hoveredBaseline ? (
@@ -273,7 +273,7 @@ export function MetricChart({
                   cx={model.x(hoveredBaseline.step)}
                   cy={model.y(hoveredBaseline.value)}
                   r={3}
-                  fill="var(--surface)"
+                  fill="var(--fe-surface)"
                   stroke={baselineColor}
                   strokeWidth={1.5}
                 />

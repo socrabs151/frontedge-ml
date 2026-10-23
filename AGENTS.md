@@ -24,6 +24,8 @@ pnpm gen:types                    # regenerate the TypeScript types from the Pyt
 pnpm demo                         # the demo on FastAPI: http://127.0.0.1:8000/frontedge
 uv sync --all-packages            # the Python workspace
 uv run --package frontedge pytest python/frontedge/tests -q
+uv run --package frontedge frontedge check examples/demo-ml/frontedge.toml
+uv run --package frontedge frontedge schema --out frontedge.schema.json
 node apps/spike/scripts/verify.mjs         # screenshots + axe (a running dev server is required)
 node apps/spike/scripts/keyboard-check.mjs # keyboard pass over the table
 pnpm check:lang                            # language audit: English repo and interface, switched by the toggle
@@ -43,9 +45,14 @@ Against the running demo: `FE_BASE_URL=http://127.0.0.1:8000/frontedge node apps
 
 ## Contracts
 
-**Tokens** come from `packages/ui/src/styles/tokens.css` only. Do not write hex values, pixel
-radii or font sizes in components: a new colour is a line in `tokens.css` plus a line in
-`packages/ui/scripts/check-contrast.mjs`.
+**Tokens** come from `packages/ui/src/styles/tokens.css` only and carry the `fe-` prefix
+(`--fe-surface`, not `--surface`), so the npm package never overwrites the host application's
+variables. Do not write hex values, pixel radii or font sizes in components: a new colour is a
+line in `tokens.css` plus a line in `packages/ui/scripts/check-contrast.mjs`.
+
+**Base styles are scoped** to `.fe-root` and to the portalled surfaces (`.fe-menu`,
+`.fe-tooltip`). A screen mounted into someone else's page must sit inside `.fe-root`; the
+document itself (margin, fonts) stays the host's business.
 
 **Class names** carry the `fe-` prefix. A component in `packages/ui/src/components` is a
 primitive; one in `packages/ui/src/patterns` is an ML pattern (it knows about run, dataset, eval,
@@ -62,6 +69,9 @@ app); components never carry a literal. Domain terms stay English in both langua
 (`queued · running · succeeded · failed · cancelled · lost`), the freshness set
 (`live · fresh · stale · partial`) and the paths under `/frontedge/api`. Extend them, never
 rename them in a minor release.
+
+**Configuration is data** (`frontedge.toml`, the `UiConfig` model). Unknown keys are rejected:
+validate with `frontedge check`, and use `frontedge schema` for the JSON Schema of the file.
 
 **Providers** (Python package) are three independent sources: runs (`list_runs` / `get_run` /
 `stream_logs`), evaluations (`list_evals` / `compare_evals`) and datasets (`list_datasets` /

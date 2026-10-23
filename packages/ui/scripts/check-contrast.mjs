@@ -31,7 +31,7 @@ function block(selector) {
 
 function parseTokens(source) {
   const tokens = new Map();
-  for (const match of source.matchAll(/--([a-z0-9-]+):\s*([^;]+);/g)) {
+  for (const match of source.matchAll(/--fe-([a-z0-9-]+):\s*([^;]+);/g)) {
     tokens.set(match[1], match[2].trim());
   }
   return tokens;

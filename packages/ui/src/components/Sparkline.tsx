@@ -64,7 +64,7 @@ export function Sparkline({
           x2={width}
           y1={referenceY}
           y2={referenceY}
-          stroke="var(--data-ink)"
+          stroke="var(--fe-data-ink)"
           strokeWidth={1}
           strokeDasharray="2 2"
         />

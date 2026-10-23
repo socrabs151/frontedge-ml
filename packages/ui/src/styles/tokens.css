@@ -1,177 +1,174 @@
 /*
  * Frontedge — design tokens.
  * Values come from docs/specs/2026-10-20-frontedge-design.md §4.
+ * The fe- prefix keeps them clear of the consuming application's own variables.
  * Contrast values are checked by packages/ui/scripts/check-contrast.mjs.
  */
 
 :root {
-  color-scheme: light;
-
   /* --- Surfaces --------------------------------------------------- */
-  --canvas: #f7f7f4;
-  --surface: #ffffff;
-  --surface-sunken: #f1f1ed;
-  --surface-overlay: #ffffff;
-  --surface-hover: #f4f4f0;
-  --surface-selected: #eef2fd;
+  --fe-canvas: #f7f7f4;
+  --fe-surface: #ffffff;
+  --fe-surface-sunken: #f1f1ed;
+  --fe-surface-overlay: #ffffff;
+  --fe-surface-hover: #f4f4f0;
+  --fe-surface-selected: #eef2fd;
 
   /* --- Borders ------------------------------------------------------- */
-  --border: #dadad2; /* separators: 1.41:1 against surface, 1.31:1 against canvas — they must stay visible */
-  --border-strong: #d3d3cb;
-  --border-input: #8a8a83; /* 3.07:1 against surface — WCAG 1.4.11 for input fields */
+  --fe-border: #dadad2; /* separators: 1.41:1 against surface, 1.31:1 against canvas — they must stay visible */
+  --fe-border-strong: #d3d3cb;
+  --fe-border-input: #8a8a83; /* 3.07:1 against surface — WCAG 1.4.11 for input fields */
 
   /* --- Text --------------------------------------------------------- */
-  --text-primary: #1a1a17;
-  --text-secondary: #56564e;
-  --text-tertiary: #64645c;
-  --text-muted: #6f6f66;
-  --text-inverse: #ffffff;
+  --fe-text-primary: #1a1a17;
+  --fe-text-secondary: #56564e;
+  --fe-text-tertiary: #64645c;
+  --fe-text-muted: #6f6f66;
+  --fe-text-inverse: #ffffff;
 
   /* --- Accent (the only one) ---------------------------------------- */
-  --accent: #2f56d9;
-  --accent-hover: #2647b8;
-  --accent-wash: #eef2fd;
-  --accent-text: #ffffff;
+  --fe-accent: #2f56d9;
+  --fe-accent-hover: #2647b8;
+  --fe-accent-wash: #eef2fd;
+  --fe-accent-text: #ffffff;
 
   /* --- Process statuses --------------------------------------------- */
-  --status-success: #2f7a4d;
-  --status-warning: #8a5d0f;
-  --status-danger: #b0402f;
-  --status-neutral: #6b6b62;
-  --status-running: #2f56d9;
-  --status-danger-text: #ffffff;
-  --status-success-wash: #e9f4ee;
-  --status-warning-wash: #f8f1e2;
-  --status-danger-wash: #f9ecea;
-  --status-neutral-wash: #f0f0ec;
-  --status-running-wash: #eef2fd;
+  --fe-status-success: #2f7a4d;
+  --fe-status-warning: #8a5d0f;
+  --fe-status-danger: #b0402f;
+  --fe-status-neutral: #6b6b62;
+  --fe-status-running: #2f56d9;
+  --fe-status-danger-text: #ffffff;
+  --fe-status-success-wash: #e9f4ee;
+  --fe-status-warning-wash: #f8f1e2;
+  --fe-status-danger-wash: #f9ecea;
+  --fe-status-neutral-wash: #f0f0ec;
+  --fe-status-running-wash: #eef2fd;
 
   /* --- Data and charts --------------------------------------------- */
-  --data-ink: #8f8f88; /* axes, grid, 3.25:1 */
-  --data-ink-soft: #d8d8d2;
-  --data-series-1: #1b9e77;
-  --data-series-2: #d95f02;
-  --data-series-3: #7570b3;
-  --data-series-4: #e7298a;
-  --data-series-5: #66a61e;
-  --data-series-6: #e6ab02;
-  --data-series-7: #a6761d;
-  --data-series-8: #666666;
+  --fe-data-ink: #8f8f88; /* axes, grid, 3.25:1 */
+  --fe-data-ink-soft: #d8d8d2;
+  --fe-data-series-1: #1b9e77;
+  --fe-data-series-2: #d95f02;
+  --fe-data-series-3: #7570b3;
+  --fe-data-series-4: #e7298a;
+  --fe-data-series-5: #66a61e;
+  --fe-data-series-6: #e6ab02;
+  --fe-data-series-7: #a6761d;
+  --fe-data-series-8: #666666;
 
   /* --- Shadows (overlays only, light theme only) ------------------ */
-  --overlay-shadow: 0 0 0 1px rgba(26, 26, 23, 0.06), 0 1px 2px -1px rgba(26, 26, 23, 0.08),
+  --fe-overlay-shadow: 0 0 0 1px rgba(26, 26, 23, 0.06), 0 1px 2px -1px rgba(26, 26, 23, 0.08),
     0 4px 12px -2px rgba(26, 26, 23, 0.1);
-  --overlay-shadow-sm: 0 0 0 1px rgba(26, 26, 23, 0.06), 0 1px 3px -1px rgba(26, 26, 23, 0.1);
+  --fe-overlay-shadow-sm: 0 0 0 1px rgba(26, 26, 23, 0.06), 0 1px 3px -1px rgba(26, 26, 23, 0.1);
 
   /* --- Typography --------------------------------------------------- */
-  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  --fe-font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fe-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
 
-  --text-11: 11px;
-  --text-12: 12px;
-  --text-13: 13px;
-  --text-14: 14px;
-  --text-16: 16px;
-  --text-20: 20px;
-  --text-28: 28px;
-  --text-36: 36px;
+  --fe-text-11: 11px;
+  --fe-text-12: 12px;
+  --fe-text-13: 13px;
+  --fe-text-14: 14px;
+  --fe-text-16: 16px;
+  --fe-text-20: 20px;
+  --fe-text-28: 28px;
+  --fe-text-36: 36px;
 
-  --leading-tight: 1.2;
-  --leading-snug: 1.35;
-  --leading-normal: 1.5;
+  --fe-leading-tight: 1.2;
+  --fe-leading-snug: 1.35;
+  --fe-leading-normal: 1.5;
 
-  --tracking-tight: -0.011em;
-  --tracking-tighter: -0.02em;
-  --tracking-wide: 0.02em;
-  --tracking-caps: 0.071em;
+  --fe-tracking-tight: -0.011em;
+  --fe-tracking-tighter: -0.02em;
+  --fe-tracking-wide: 0.02em;
+  --fe-tracking-caps: 0.071em;
 
-  --weight-regular: 400;
-  --weight-medium: 500;
-  --weight-semibold: 600;
+  --fe-weight-regular: 400;
+  --fe-weight-medium: 500;
+  --fe-weight-semibold: 600;
 
   /* --- Density ----------------------------------------------------- */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 40px;
-  --row-h: 32px;
-  --control-h: 28px;
-  --control-h-sm: 24px;
+  --fe-space-1: 4px;
+  --fe-space-2: 8px;
+  --fe-space-3: 12px;
+  --fe-space-4: 16px;
+  --fe-space-5: 24px;
+  --fe-space-6: 32px;
+  --fe-space-7: 40px;
+  --fe-row-h: 32px;
+  --fe-control-h: 28px;
+  --fe-control-h-sm: 24px;
 
   /* --- Radii ------------------------------------------------------- */
-  --radius-control: 6px;
-  --radius-panel: 10px;
-  --radius-pill: 9999px;
+  --fe-radius-control: 6px;
+  --fe-radius-panel: 10px;
+  --fe-radius-pill: 9999px;
 
   /* --- Motion ------------------------------------------------------ */
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-inout: cubic-bezier(0.77, 0, 0.175, 1);
-  --duration-press: 120ms;
-  --duration-popover: 160ms;
-  --duration-dialog: 220ms;
+  --fe-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --fe-ease-inout: cubic-bezier(0.77, 0, 0.175, 1);
+  --fe-duration-press: 120ms;
+  --fe-duration-popover: 160ms;
+  --fe-duration-dialog: 220ms;
 
   /* --- Other -------------------------------------------------------- */
-  --focus-ring-width: 2px;
-  --focus-ring-color: var(--accent);
-  --focus-ring-offset: 2px;
-  --z-popover: 30;
-  --z-tooltip: 40;
-  --z-dialog: 50;
+  --fe-focus-ring-width: 2px;
+  --fe-focus-ring-color: var(--fe-accent);
+  --fe-focus-ring-offset: 2px;
+  --fe-z-popover: 30;
+  --fe-z-tooltip: 40;
+  --fe-z-dialog: 50;
 }
 
 [data-theme="dark"] {
-  color-scheme: dark;
+  --fe-canvas: #121211;
+  --fe-surface: #1a1a18;
+  --fe-surface-sunken: #0e0e0d;
+  --fe-surface-overlay: #232320;
+  --fe-surface-hover: #212120;
+  --fe-surface-selected: #1c2437;
 
-  --canvas: #121211;
-  --surface: #1a1a18;
-  --surface-sunken: #0e0e0d;
-  --surface-overlay: #232320;
-  --surface-hover: #212120;
-  --surface-selected: #1c2437;
+  --fe-border: rgba(255, 255, 255, 0.12);
+  --fe-border-strong: rgba(255, 255, 255, 0.2);
+  --fe-border-input: #6f6f66; /* 3.44:1 against surface — WCAG 1.4.11 */
 
-  --border: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.2);
-  --border-input: #6f6f66; /* 3.44:1 against surface — WCAG 1.4.11 */
+  --fe-text-primary: #f2f2ee;
+  --fe-text-secondary: #b6b6ad;
+  --fe-text-tertiary: #8f8f88;
+  --fe-text-muted: #83837a;
+  --fe-text-inverse: #1a1a18;
 
-  --text-primary: #f2f2ee;
-  --text-secondary: #b6b6ad;
-  --text-tertiary: #8f8f88;
-  --text-muted: #83837a;
-  --text-inverse: #1a1a18;
+  --fe-accent: #7d9cff;
+  --fe-accent-hover: #93aeff;
+  --fe-accent-wash: #1c2437;
+  --fe-accent-text: #12121a;
 
-  --accent: #7d9cff;
-  --accent-hover: #93aeff;
-  --accent-wash: #1c2437;
-  --accent-text: #12121a;
+  --fe-status-success: #58a878;
+  --fe-status-warning: #c08b2e;
+  --fe-status-danger: #d4695a;
+  --fe-status-neutral: #9a9a92;
+  --fe-status-running: #7d9cff;
+  --fe-status-danger-text: #12121a;
+  --fe-status-success-wash: #17251d;
+  --fe-status-warning-wash: #2a2214;
+  --fe-status-danger-wash: #2b1a17;
+  --fe-status-neutral-wash: #232320;
+  --fe-status-running-wash: #1c2437;
 
-  --status-success: #58a878;
-  --status-warning: #c08b2e;
-  --status-danger: #d4695a;
-  --status-neutral: #9a9a92;
-  --status-running: #7d9cff;
-  --status-danger-text: #12121a;
-  --status-success-wash: #17251d;
-  --status-warning-wash: #2a2214;
-  --status-danger-wash: #2b1a17;
-  --status-neutral-wash: #232320;
-  --status-running-wash: #1c2437;
+  --fe-data-ink: #6f6f66;
+  --fe-data-ink-soft: #2e2e2b;
 
-  --data-ink: #6f6f66;
-  --data-ink-soft: #2e2e2b;
-
-  --overlay-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 16px -2px rgba(0, 0, 0, 0.6);
-  --overlay-shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 4px -1px rgba(0, 0, 0, 0.5);
+  --fe-overlay-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 16px -2px rgba(0, 0, 0, 0.6);
+  --fe-overlay-shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 4px -1px rgba(0, 0, 0, 0.5);
 }
 
 [data-density="compact"] {
-  --row-h: 28px;
-  --control-h: 24px;
+  --fe-row-h: 28px;
+  --fe-control-h: 24px;
 }
 
 [data-density="comfortable"] {
-  --row-h: 40px;
-  --control-h: 32px;
+  --fe-row-h: 40px;
+  --fe-control-h: 32px;
 }
