@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatMetric } from "../format";
+import { useI18n } from "../i18n/I18nProvider";
 import type { MetricPoint } from "../types";
 
 export interface MetricChartProps {
@@ -50,6 +51,7 @@ export function MetricChart({
   label,
   digits = 3,
 }: MetricChartProps) {
+  const { t, lang } = useI18n();
   const hostRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -170,7 +172,7 @@ export function MetricChart({
           width={width}
           height={height}
           role="img"
-          aria-label={`${label}: over steps`}
+          aria-label={t("metric.overSteps", { label })}
           onMouseMove={onMove}
           onMouseLeave={() => setHoverIndex(null)}
         >
@@ -191,7 +193,7 @@ export function MetricChart({
                 dominantBaseline="middle"
                 className="fe-chart__label"
               >
-                {formatMetric(tick, 2)}
+                {formatMetric(tick, 2, lang)}
               </text>
             </g>
           ))}
@@ -293,12 +295,12 @@ export function MetricChart({
             <div className="fe-chart__tip-step">step {Math.round(hovered.step)}</div>
             <div className="fe-chart__tip-row">
               <span className="fe-chart__swatch" style={{ background: color }} aria-hidden />
-              {formatMetric(hovered.value, digits)}
+              {formatMetric(hovered.value, digits, lang)}
             </div>
             {hoveredBaseline ? (
               <div className="fe-chart__tip-row">
                 <span className="fe-chart__swatch fe-chart__swatch--dashed" aria-hidden />
-                {formatMetric(hoveredBaseline.value, digits)}
+                {formatMetric(hoveredBaseline.value, digits, lang)}
               </div>
             ) : null}
           </div>

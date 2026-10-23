@@ -1,6 +1,6 @@
 import { Sparkline } from "../components/Sparkline";
 import { formatDelta, formatMetric } from "../format";
-import { useT } from "../i18n/I18nProvider";
+import { useI18n } from "../i18n/I18nProvider";
 import type { MetricDirection } from "../types";
 
 export interface MetricCellProps {
@@ -41,21 +41,21 @@ export function MetricCell({
   label,
   baselineLabel = "Baseline",
 }: MetricCellProps) {
-  const t = useT();
+  const { t, lang } = useI18n();
   const hasBaseline = baseline !== undefined && Number.isFinite(baseline);
   const delta = hasBaseline && value !== undefined ? value - baseline : undefined;
   const deltaMeta = delta !== undefined ? describeDelta(delta, direction) : undefined;
 
   return (
     <span className="fe-metric">
-      <span className="fe-metric__value num">{formatMetric(value, digits)}</span>
+      <span className="fe-metric__value num">{formatMetric(value, digits, lang)}</span>
       {delta !== undefined && deltaMeta ? (
         <span
           className="fe-metric__delta num"
-          title={`${delta > 0 ? "+" : "−"}${formatMetric(Math.abs(delta), digits)} ${t("delta.toBaseline", { baseline: baselineLabel })}`}
+          title={`${delta > 0 ? "+" : "−"}${formatMetric(Math.abs(delta), digits, lang)} ${t("delta.toBaseline", { baseline: baselineLabel })}`}
         >
           <span aria-hidden>{deltaMeta.sign}</span>
-          {formatDelta(delta, digits)}
+          {formatDelta(delta, digits, lang)}
           {deltaMeta.word && showWord ? (
             <span className="fe-metric__word">{t(`delta.${deltaMeta.word}`)}</span>
           ) : null}
@@ -93,7 +93,7 @@ export function MetricCard({
   digits?: number;
   baselineLabel?: string;
 }) {
-  const t = useT();
+  const { t, lang } = useI18n();
   const hasBaseline = baseline !== undefined && Number.isFinite(baseline);
   const delta = hasBaseline && value !== undefined ? value - baseline : undefined;
   const deltaMeta = delta !== undefined ? describeDelta(delta, direction) : undefined;
@@ -102,7 +102,7 @@ export function MetricCard({
     <div className="fe-metric-card">
       <div className="fe-metric-card__label">{label}</div>
       <div className="fe-metric-card__row">
-        <span className="fe-metric-card__value num">{formatMetric(value, digits)}</span>
+        <span className="fe-metric-card__value num">{formatMetric(value, digits, lang)}</span>
         {series && series.length > 1 ? (
           <Sparkline
             values={series}
@@ -116,7 +116,7 @@ export function MetricCard({
       {delta !== undefined && deltaMeta ? (
         <div className="fe-metric-card__delta num">
           <span aria-hidden>{deltaMeta.sign}</span>
-          {formatDelta(delta, digits)}
+          {formatDelta(delta, digits, lang)}
           {deltaMeta.word ? (
             <span className="fe-metric-card__word">{t(`delta.${deltaMeta.word}`)}</span>
           ) : null}

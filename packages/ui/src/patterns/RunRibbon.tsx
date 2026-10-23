@@ -1,5 +1,6 @@
 import clsx from "clsx";
 import { formatDuration, toTime } from "../format";
+import { useI18n } from "../i18n/I18nProvider";
 import type { MetricEvent, RunStatus, Stage } from "../types";
 
 const STATUS_COLOR: Record<RunStatus, string> = {
@@ -31,6 +32,7 @@ export function RunRibbon({
   showLabels = false,
   className,
 }: RunRibbonProps) {
+  const { lang } = useI18n();
   const measured = stages.filter((stage) => stage.endedAt !== null);
   const total = measured.reduce((sum, stage) => sum + (toTime(stage.endedAt!) - toTime(stage.startedAt)), 0);
 
@@ -65,7 +67,7 @@ export function RunRibbon({
                 background: failed || cancelled ? "transparent" : STATUS_COLOR[stage.status],
                 color: STATUS_COLOR[stage.status],
               }}
-              title={`${stage.name} · ${formatDuration(duration)}`}
+              title={`${stage.name} · ${formatDuration(duration, lang)}`}
             >
               {stageEvents.map((event) => (
                 <span
@@ -88,7 +90,7 @@ export function RunRibbon({
             <span key={stage.name} className="fe-ribbon__label">
               {stage.name}
               <span className="fe-ribbon__label-time num">
-                {formatDuration(toTime(stage.endedAt ?? stage.startedAt) - toTime(stage.startedAt))}
+                {formatDuration(toTime(stage.endedAt ?? stage.startedAt) - toTime(stage.startedAt), lang)}
               </span>
             </span>
           ))}

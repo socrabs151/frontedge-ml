@@ -122,8 +122,8 @@ export function EvalCompareTable({
                     {example.changed ? (
                       <span
                         className="fe-eval__changed"
-                        title="Scored differently from the reference"
-                        aria-label="Scored differently from the reference"
+                        title={t("eval.scoredDifferently")}
+                        aria-label={t("eval.scoredDifferently")}
                       >
                         {delta !== null && delta > 0 ? "↑" : "↓"}
                       </span>

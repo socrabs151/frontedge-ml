@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { formatDuration, toTime } from "../format";
 import { statusMeta } from "../components/StatusBadge";
-import { useT } from "../i18n/I18nProvider";
+import { useI18n } from "../i18n/I18nProvider";
 import type { RunStatus, Stage } from "../types";
 
 const STATUS_COLOR: Record<RunStatus, string> = {
@@ -25,7 +25,7 @@ export interface RunTimelineProps {
  * segment. A failed stage is visible through hatching and a status label.
  */
 export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelineProps) {
-  const t = useT();
+  const { t, lang } = useI18n();
   const measured = stages.filter((stage) => stage.endedAt !== null);
   const total = measured.reduce((sum, stage) => sum + (toTime(stage.endedAt!) - toTime(stage.startedAt)), 0);
 
@@ -54,7 +54,7 @@ export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelinePr
                 background: failed || cancelled ? "transparent" : STATUS_COLOR[stage.status],
                 color: STATUS_COLOR[stage.status],
               }}
-              title={`${stage.name} · ${formatDuration(duration)}`}
+              title={`${stage.name} · ${formatDuration(duration, lang)}`}
             />
           );
         })}
@@ -67,7 +67,7 @@ export function RunTimeline({ stages, maxWidth = 960, className }: RunTimelinePr
           return (
             <div key={stage.name} className="fe-timeline__label" style={{ width: `${share}%` }}>
               <span className="fe-timeline__name">{stage.name}</span>
-              <span className="fe-timeline__time num">{formatDuration(duration)}</span>
+              <span className="fe-timeline__time num">{formatDuration(duration, lang)}</span>
               {stage.status !== "succeeded" ? (
                 <span className="fe-timeline__status">{t(`status.${key}`)}</span>
               ) : null}

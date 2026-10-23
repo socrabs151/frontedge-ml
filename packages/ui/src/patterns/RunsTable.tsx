@@ -13,7 +13,7 @@ import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { StatusBadge } from "../components/StatusBadge";
-import { useT } from "../i18n/I18nProvider";
+import { useI18n } from "../i18n/I18nProvider";
 import { formatAbsoluteTime, formatDuration, formatMetric, formatRelativeTime, toTime } from "../format";
 import { MetricCell } from "./MetricCell";
 import { RunRibbon } from "./RunRibbon";
@@ -65,7 +65,7 @@ export function RunsTable({
   rowActions = [],
   columnIds,
 }: RunsTableProps) {
-  const t = useT();
+  const { t, lang } = useI18n();
   const [sorting, setSorting] = useState<SortingState>([{ id: "startedAt", desc: true }]);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -128,8 +128,8 @@ export function RunsTable({
         header: () => t("column.started"),
         size: 110,
         cell: (info) => (
-          <span title={formatAbsoluteTime(toTime(info.getValue()))}>
-            {formatRelativeTime(toTime(info.getValue()), now)}
+          <span title={formatAbsoluteTime(toTime(info.getValue()), lang)}>
+            {formatRelativeTime(toTime(info.getValue()), now, lang)}
           </span>
         ),
       }) as ColumnDef<Run, unknown>,
@@ -138,7 +138,7 @@ export function RunsTable({
         id: "durationMs",
         header: () => t("column.duration"),
         size: 85,
-        cell: (info) => <span className="num">{formatDuration(info.getValue())}</span>,
+        cell: (info) => <span className="num">{formatDuration(info.getValue(), lang)}</span>,
       }) as ColumnDef<Run, unknown>,
     };
 
@@ -147,7 +147,7 @@ export function RunsTable({
       columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
         id,
         header: () => (
-          <span title={id === "accuracy" ? "Higher is better" : "Lower is better"}>
+          <span title={t(id === "accuracy" ? "metric.higherBetter" : "metric.lowerBetter")}>
             {label} <span aria-hidden>{id === "accuracy" ? "↑" : "↓"}</span>
           </span>
         ),
@@ -175,7 +175,7 @@ export function RunsTable({
       columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
         id,
         header: () => (
-          <span title="The metric owner sets the direction">
+          <span title={t("column.directionOwned")}>
             {id} <span aria-hidden>·</span>
           </span>
         ),
@@ -228,7 +228,7 @@ export function RunsTable({
     }
 
     return built;
-  }, [baseline, baselineId, columnIds, now, rowActions]);
+  }, [baseline, baselineId, columnIds, lang, now, rowActions]);
 
   const table = useReactTable({
     data: runs,
@@ -403,7 +403,7 @@ export function RunsTable({
         {baselineId ? (
           <span className="fe-table__footer-note">
             {t("footer.deltasToBaseline")}
-            {baseline ? ` · ${formatMetric(baseline.metrics.accuracy)}` : ""}
+            {baseline ? ` · ${formatMetric(baseline.metrics.accuracy, 3, lang)}` : ""}
           </span>
         ) : null}
       </div>

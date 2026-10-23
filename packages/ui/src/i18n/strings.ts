@@ -1,10 +1,10 @@
 /**
- * Интерфейсные строки пакета.
+ * The interface strings of the package.
  *
- * Язык по умолчанию — английский; русский вариант живёт здесь же, чтобы словарь
- * не расползался по компонентам. Доменные термины (Run, Dataset, Baseline)
- * одинаковы в обоих языках: это термины, по которым ML-инженеры ищут в W&B,
- * MLflow и документации.
+ * The default language is English; the Russian variant lives here too, so the
+ * dictionary does not creep into components. Domain terms (Run, Dataset,
+ * Baseline) are the same in both languages: these are the words ML engineers
+ * search for in W&B, MLflow and the docs.
  */
 
 export const en = {
@@ -57,6 +57,10 @@ export const en = {
   "search.clear": "Clear the search",
   "sparkline.default": "Metric over time",
   "metric.dynamics": "{label}: over time",
+  "metric.overSteps": "{label}: over steps",
+  "metric.higherBetter": "Higher is better",
+  "metric.lowerBetter": "Lower is better",
+  "eval.scoredDifferently": "Scored differently from the reference",
 } as const;
 
 export type StringKey = keyof typeof en;
@@ -112,4 +116,8 @@ export const ru: Dictionary = {
   "search.clear": "Очистить поиск",
   "sparkline.default": "Метрика по шагам",
   "metric.dynamics": "{label}: по шагам",
+  "metric.overSteps": "{label}: по шагам",
+  "metric.higherBetter": "Больше — лучше",
+  "metric.lowerBetter": "Меньше — лучше",
+  "eval.scoredDifferently": "Оценён иначе, чем эталон",
 };
