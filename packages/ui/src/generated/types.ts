@@ -146,7 +146,7 @@ export interface UiConfig {
   theme?: "light" | "dark" | null;
   runColumns?: string[];
   metrics?: MetricSpec[];
-  evalTabs?: string[];
+  evalTabs?: ("examples" | "summary")[];
   actions?: ActionSpec[];
   liveRefreshSeconds?: number;
   baselineRun?: string | null;

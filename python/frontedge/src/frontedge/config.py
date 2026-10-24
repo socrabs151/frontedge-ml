@@ -83,7 +83,8 @@ class UiConfig(BaseModel):
     run_columns: list[str] = Field(default_factory=list)
     #: The metrics of the project. An empty list means "every metric a run returns".
     metrics: list[MetricSpec] = Field(default_factory=list)
-    eval_tabs: list[str] = Field(default_factory=list)
+    #: Which tabs the evaluation screen shows. An empty list means "all of them".
+    eval_tabs: list[Literal["examples", "summary"]] = Field(default_factory=list)
     actions: list[ActionSpec] = Field(default_factory=list)
     #: How often to refresh the run list, in seconds. 0 — never refresh.
     live_refresh_seconds: int = Field(default=5, ge=0)

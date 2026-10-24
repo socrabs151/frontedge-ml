@@ -2,21 +2,27 @@ import {
   EmptyState,
   EvalCompareTable,
   LoadingRows,
+  MetricCard,
   Segmented,
+  Tabs,
   type DeltaFormat,
 } from "@frontedge/ui";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { EvalComparison, EvalSummary, Run } from "@frontedge/ui";
+import type { EvalComparison, EvalSummary, Run, UiConfig } from "@frontedge/ui";
 import { useAppT } from "../i18n";
 import { errorMessage, source } from "../data/source";
+
+type EvalTab = "examples" | "summary";
 
 export function EvalDiffScreen({
   runs,
   baselineId,
+  config,
 }: {
   runs: Run[] | null;
   baselineId?: string;
+  config: UiConfig | null;
 }) {
   const t = useAppT();
   const [evals, setEvals] = useState<EvalSummary[] | null>(null);
@@ -27,6 +33,7 @@ export function EvalDiffScreen({
   const [error, setError] = useState<string | null>(null);
   const [onlyDiff, setOnlyDiff] = useState(false);
   const [format, setFormat] = useState<DeltaFormat>("value");
+  const [tab, setTab] = useState<EvalTab>("examples");
   const formatOptions: Array<{ value: DeltaFormat; label: string; title: string }> = [
     { value: "value", label: "0.73", title: t("evals.formatValue") },
     { value: "percent", label: "73%", title: t("evals.formatPercent") },
@@ -88,6 +95,112 @@ export function EvalDiffScreen({
     [runs],
   );
 
+  const configuredTabs: EvalTab[] =
+    config?.evalTabs && config.evalTabs.length > 0
+      ? config.evalTabs
+      : ["examples", "summary"];
+  const activeTab: EvalTab = configuredTabs.includes(tab) ? tab : configuredTabs[0]!;
+
+  const examplesContent = (current: EvalComparison) => (
+    <>
+      <div className="fe-toolbar">
+        <label className="fe-checkline">
+          <input
+            type="checkbox"
+            checked={onlyDiff}
+            onChange={(event) => setOnlyDiff(event.target.checked)}
+          />
+          {t("evals.onlyDiff")}
+        </label>
+        <div className="fe-toolbar__spacer" />
+        <Segmented
+          ariaLabel={t("evals.numberFormat")}
+          value={format}
+          onChange={setFormat}
+          options={formatOptions}
+        />
+      </div>
+
+      <EvalCompareTable comparison={current} onlyDiff={onlyDiff} format={format} />
+      <p className="fe-note">
+        {t("evals.aggregateNote", {
+          aggregate:
+            current.aggregate === "fraction" ? t("aggregate.accuracy") : t("aggregate.mean"),
+        })}{" "}
+        {current.direction === "maximize"
+          ? t("evals.directionMax")
+          : current.direction === "minimize"
+            ? t("evals.directionMin")
+            : ""}
+      </p>
+    </>
+  );
+
+  const summaryContent = (current: EvalComparison) => {
+    const direction = current.direction;
+    let improved = 0;
+    let worsened = 0;
+    let unchanged = 0;
+    for (const example of current.examples) {
+      const before = example.referenceScore;
+      const after = example.comparisonScore;
+      if (before == null || after == null || before === after) {
+        unchanged += 1;
+        continue;
+      }
+      const better = direction === "minimize" ? after < before : after > before;
+      if (better) improved += 1;
+      else worsened += 1;
+    }
+
+    return (
+      <div className="fe-detail__stack">
+        <div className="fe-metric-cards">
+          <MetricCard
+            label={current.referenceName}
+            value={current.referenceAggregate}
+            digits={3}
+          />
+          <MetricCard
+            label={current.comparisonName}
+            value={current.comparisonAggregate}
+            baseline={current.referenceAggregate}
+            baselineLabel={t("evals.reference")}
+            direction={direction}
+            digits={3}
+          />
+          <MetricCard
+            label={t("evals.summary.changed")}
+            value={current.changed}
+            digits={0}
+          />
+        </div>
+        <p className="fe-note">
+          {direction === "none"
+            ? t("evals.summary.noDirection", { unchanged })
+            : t("evals.summary.breakdown", { improved, worsened, unchanged })}
+        </p>
+      </div>
+    );
+  };
+
+  const items = comparison
+    ? configuredTabs.map((value) =>
+        value === "examples"
+          ? {
+              value,
+              label: t("evals.tab.examples"),
+              count: comparison.examples.length,
+              content: examplesContent(comparison),
+            }
+          : {
+              value,
+              label: t("evals.tab.summary"),
+              content: summaryContent(comparison),
+            },
+      )
+    : [];
+
   return (
     <div className="fe-runs">
       <header className="fe-runs__head">
@@ -132,21 +245,6 @@ export function EvalDiffScreen({
             {runOptions}
           </select>
         </label>
-        <label className="fe-checkline">
-          <input
-            type="checkbox"
-            checked={onlyDiff}
-            onChange={(event) => setOnlyDiff(event.target.checked)}
-          />
-          {t("evals.onlyDiff")}
-        </label>
-        <div className="fe-toolbar__spacer" />
-        <Segmented
-          ariaLabel={t("evals.numberFormat")}
-          value={format}
-          onChange={setFormat}
-          options={formatOptions}
-        />
       </div>
 
       {error ? (
@@ -160,22 +258,12 @@ export function EvalDiffScreen({
       ) : !comparison ? (
         <LoadingRows rows={10} height={32} label={t("loading.default")} />
       ) : (
-        <>
-          <EvalCompareTable comparison={comparison} onlyDiff={onlyDiff} format={format} />
-          <p className="fe-note">
-            {t("evals.aggregateNote", {
-              aggregate:
-                comparison.aggregate === "fraction"
-                  ? t("aggregate.accuracy")
-                  : t("aggregate.mean"),
-            })}{" "}
-            {comparison.direction === "maximize"
-              ? t("evals.directionMax")
-              : comparison.direction === "minimize"
-                ? t("evals.directionMin")
-                : ""}
-          </p>
-        </>
+        <Tabs
+          items={items}
+          value={activeTab}
+          onValueChange={(next) => setTab(next as EvalTab)}
+          ariaLabel={t("evals.title")}
+        />
       )}
     </div>
   );

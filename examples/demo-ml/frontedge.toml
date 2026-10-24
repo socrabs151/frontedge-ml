@@ -4,6 +4,9 @@
 density = "default"
 theme = "light"
 
+# Which tabs the evaluation screen shows. An empty list — all of them.
+eval_tabs = ["examples", "summary"]
+
 # Which columns to show in the run list. An empty list — show all.
 run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss", "bleu"]
 

@@ -94,6 +94,12 @@ class DemoProvider:
 class DemoEvalProvider:
     """Evals: dataset × scorer × metric, comparison of two runs."""
 
+    def __init__(self, repository: DemoRepository) -> None:
+        self.repository = repository
+
+    def name_of(self, run_id: str) -> str:
+        return next((run.name for run in self.repository.runs if run.id == run_id), run_id)
+
     async def list_evals(self, request: Request) -> Sequence[EvalSummary]:
         return make_evals()
 
@@ -109,8 +115,8 @@ class DemoEvalProvider:
                 eval_id,
                 reference_run,
                 comparison_run,
-                reference_name=reference_run,
-                comparison_name=comparison_run,
+                reference_name=self.name_of(reference_run),
+                comparison_name=self.name_of(comparison_run),
             )
         except StopIteration:
             return None
@@ -161,7 +167,7 @@ def create_app() -> FastAPI:
     app.include_router(
         frontedge.mount(
             provider,
-            evals=DemoEvalProvider(),
+            evals=DemoEvalProvider(repository),
             datasets=DemoDatasetProvider(),
             actions={
                 "stop": stop_run,

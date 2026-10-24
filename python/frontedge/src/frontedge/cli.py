@@ -143,6 +143,14 @@ def _config_problems(path: Path) -> list[dict[str, str]]:
             )
         seen_columns.add(column)
 
+    seen_eval_tabs: set[str] = set()
+    for index, tab in enumerate(config.eval_tabs):
+        if tab in seen_eval_tabs:
+            problems.append(
+                {"field": f"eval_tabs.{index}", "message": f"duplicate tab: {tab}"}
+            )
+        seen_eval_tabs.add(tab)
+
     seen_metrics: set[str] = set()
     for index, metric in enumerate(config.metrics):
         if not metric.id.strip():

@@ -48,6 +48,9 @@ The following are **public contracts** and change only in a major release:
   direction and whether to chart it. The run screen draws a card for every metric and a chart
   from its series; without a list it shows everything the run returns. The runs table uses the
   same labels and digits.
+- `eval_tabs` works: the evaluation screen has an **Examples** tab (the comparison table) and a
+  **Summary** tab (the two aggregates, the delta, the changed count and the improved/worsened
+  breakdown). The key was accepted and documented before, but the screen ignored it.
 
 ### Changed
 

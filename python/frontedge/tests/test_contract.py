@@ -114,6 +114,31 @@ class TestCustomMetrics:
         assert "MetricSpec" in schema["$defs"]
 
 
+class TestEvalTabs:
+    """The evaluation screen's tabs are configuration, not screen code."""
+
+    def test_eval_tabs_reach_the_client(self, tmp_path: Any) -> None:
+        file = tmp_path / "frontedge.toml"
+        file.write_text('eval_tabs = ["summary"]\n', encoding="utf-8")
+        app = FastAPI()
+        app.include_router(frontedge.mount(runs_provider, config=file))
+        config = TestClient(app).get("/frontedge/api/config").json()
+        assert config["evalTabs"] == ["summary"]
+
+    def test_an_unknown_tab_is_rejected(self) -> None:
+        from frontedge.config import UiConfig
+
+        with pytest.raises(Exception):
+            UiConfig.model_validate({"eval_tabs": ["charts"]})
+
+    def test_the_schema_limits_the_tabs(self) -> None:
+        from frontedge.config import UiConfig
+
+        schema = UiConfig.model_json_schema(by_alias=False)
+        definition = schema["properties"]["eval_tabs"]["items"]
+        assert sorted(definition["enum"]) == ["examples", "summary"]
+
+
 class TestHttp:
     def test_runs_list(self) -> None:
         response = client_for().get("/frontedge/api/runs")
@@ -568,6 +593,14 @@ class TestCli:
         assert main(["check", str(file)]) == 1
         err = capsys.readouterr().err
         assert "page_sise" in err
+
+    def test_check_reports_duplicate_eval_tabs(self, tmp_path: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        file = tmp_path / "frontedge.toml"
+        file.write_text('eval_tabs = ["examples", "examples"]\n', encoding="utf-8")
+        assert main(["check", str(file)]) == 1
+        assert "duplicate tab: examples" in capsys.readouterr().err
 
     def test_check_reports_duplicate_metric_ids(self, tmp_path: Any, capsys: Any) -> None:
         from frontedge.cli import main

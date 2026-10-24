@@ -194,7 +194,7 @@ function Shell() {
               onOpenRun={(run) => setRoute({ name: "run", id: run.id })}
             />
           ) : route.name === "evals" ? (
-            <EvalDiffScreen runs={runs} baselineId={baseline?.id} />
+            <EvalDiffScreen runs={runs} baselineId={baseline?.id} config={config} />
           ) : route.name === "datasets" ? (
             <DatasetScreen />
           ) : (

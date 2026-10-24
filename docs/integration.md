@@ -234,6 +234,10 @@ theme = "light"              # light | dark
 
 run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss", "bleu"]
 
+# The tabs of the evaluation screen: "examples" (the comparison table) and "summary"
+# (aggregates, changed and improved/worsened counts). An empty list shows both.
+eval_tabs = ["examples", "summary"]
+
 # The metrics of the project. The run screen draws a card for each one and a chart when the run
 # has a series for it. An empty list shows every metric a run returns.
 [[metrics]]
@@ -270,7 +274,7 @@ All of the keys of `UiConfig`:
 | `theme` | `light` or `dark` |
 | `run_columns` | which columns to show in the list of runs; an empty list shows all of them |
 | `metrics` | the project's metrics: label, digits, direction and whether to chart (see below) |
-| `eval_tabs` | which tabs to show on the evaluation screen |
+| `eval_tabs` | which tabs to show on the evaluation screen: `examples`, `summary`; empty — both, in this order |
 | `actions` | the declared actions (see §6) |
 | `live_refresh_seconds` | how often the list of runs refreshes, in seconds; `0` disables it |
 | `baseline_run` | the run pinned as the baseline for the deltas |
