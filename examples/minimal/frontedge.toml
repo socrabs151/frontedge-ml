@@ -1,0 +1,14 @@
+# Frontedge configuration. `frontedge check` validates it; `frontedge schema` prints its schema.
+
+density = "default"
+theme = "light"
+
+# The columns of the run list: known ids plus your own metric ids.
+run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "answer_score"]
+
+# The run screen draws a card for every metric here, and a chart when the run has a series.
+[[metrics]]
+id = "answer_score"
+label = "Answer score"
+direction = "maximize"
+digits = 3

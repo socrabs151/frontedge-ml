@@ -711,6 +711,32 @@ provider = Provider()
         assert report["runs"] == 1
 
 
+class TestInit:
+    """`frontedge init` is the first command a newcomer runs."""
+
+    def test_creates_a_runnable_project(self, tmp_path: Any) -> None:
+        from frontedge.cli import main
+
+        target = tmp_path / "dashboard"
+        assert main(["init", str(target)]) == 0
+        for name in ("app.py", "provider.py", "frontedge.toml", "README.md"):
+            assert (target / name).is_file(), name
+        config = frontedge.load_config(target / "frontedge.toml")
+        assert config.metrics[0].id == "answer_score"
+        assert "frontedge.mount" in (target / "app.py").read_text(encoding="utf-8")
+        for name in ("app.py", "provider.py"):
+            compile((target / name).read_text(encoding="utf-8"), name, "exec")
+
+    def test_refuses_to_overwrite_without_force(self, tmp_path: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        target = tmp_path / "dashboard"
+        assert main(["init", str(target)]) == 0
+        assert main(["init", str(target)]) == 1
+        assert "refusing to overwrite" in capsys.readouterr().err
+        assert main(["init", str(target), "--force"]) == 0
+
+
 class TestCli:
     """The commands an agent or a person runs before the server starts."""
 

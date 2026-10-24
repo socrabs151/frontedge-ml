@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 members = [
     "frontedge",
     "frontedge-demo-ml",
+    "frontedge-example-minimal",
     "frontedge-workspace",
 ]
 
@@ -115,6 +116,23 @@ dev = [
 name = "frontedge-demo-ml"
 version = "0.1.0"
 source = { editable = "examples/demo-ml" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "frontedge" },
+    { name = "uvicorn" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "frontedge", editable = "python/frontedge" },
+    { name = "uvicorn", specifier = ">=0.32" },
+]
+
+[[package]]
+name = "frontedge-example-minimal"
+version = "0.1.0"
+source = { virtual = "examples/minimal" }
 dependencies = [
     { name = "fastapi" },
     { name = "frontedge" },

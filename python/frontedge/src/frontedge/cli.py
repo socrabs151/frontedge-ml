@@ -68,6 +68,169 @@ MODELS = [
 
 DEFAULT_CONFIG_NAMES = ("frontedge.toml", "frontedge.json")
 
+INIT_TOML = """\
+# Frontedge configuration. `frontedge check` validates it; `frontedge schema` prints its schema.
+
+density = "default"
+theme = "light"
+
+# The columns of the run list: known ids plus your own metric ids.
+run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "answer_score"]
+
+# The run screen draws a card for every metric here, and a chart when the run has a series.
+[[metrics]]
+id = "answer_score"
+label = "Answer score"
+direction = "maximize"
+digits = 3
+"""
+
+INIT_PROVIDER = '''\
+"""The bridge between your data and Frontedge.
+
+Replace the bodies of ``list_runs`` and ``get_run`` with a query to your database. The interface
+only needs the models: metrics, a series for the sparklines, stages for the ribbon.
+"""
+
+from __future__ import annotations
+
+from collections.abc import AsyncIterator, Sequence
+from datetime import UTC, datetime, timedelta
+
+from fastapi import Request
+
+from frontedge import (
+    LogLine,
+    MetricDirection,
+    MetricPoint,
+    Run,
+    RunStatus,
+    Stage,
+    StageName,
+)
+
+
+def _sample_runs() -> list[Run]:
+    """Two runs to look at. Delete this function together with the sample in ``list_runs``."""
+    started = datetime.now(UTC) - timedelta(minutes=42)
+    stages = [
+        Stage(
+            name=StageName.prepare,
+            status=RunStatus.succeeded,
+            started_at=started,
+            ended_at=started + timedelta(seconds=40),
+        ),
+        Stage(
+            name=StageName.train,
+            status=RunStatus.succeeded,
+            started_at=started + timedelta(seconds=40),
+            ended_at=started + timedelta(seconds=100),
+        ),
+        Stage(
+            name=StageName.eval,
+            status=RunStatus.succeeded,
+            started_at=started + timedelta(seconds=100),
+            ended_at=started + timedelta(seconds=130),
+        ),
+    ]
+    series = [
+        MetricPoint(step=step, value=round(0.66 + step * 0.0025, 4))
+        for step in range(40)
+    ]
+    return [
+        Run(
+            id="run-001",
+            name="baseline",
+            status=RunStatus.succeeded,
+            dataset="demo",
+            git_sha="",
+            started_at=started,
+            duration_ms=130_000,
+            owner="",
+            metrics={"answer_score": 0.66},
+            series={"answer_score": series},
+            metric_direction={"answer_score": MetricDirection.maximize},
+            stages=stages,
+        ),
+        Run(
+            id="run-002",
+            name="candidate",
+            status=RunStatus.succeeded,
+            dataset="demo",
+            git_sha="",
+            started_at=started + timedelta(minutes=5),
+            duration_ms=155_000,
+            owner="",
+            metrics={"answer_score": 0.76},
+            series={"answer_score": [MetricPoint(step=p.step, value=round(p.value + 0.08, 4)) for p in series]},
+            metric_direction={"answer_score": MetricDirection.maximize},
+            stages=stages,
+        ),
+    ]
+
+
+class Provider:
+    async def list_runs(self, request: Request) -> Sequence[Run]:
+        # TODO: return the runs of your project. `request` is here for authorisation.
+        return _sample_runs()
+
+    async def get_run(self, request: Request, run_id: str) -> Run | None:
+        return next((run for run in _sample_runs() if run.id == run_id), None)
+
+    async def stream_logs(self, request: Request, run_id: str) -> AsyncIterator[LogLine]:
+        for index, text in enumerate(["loading", "running", "done"]):
+            yield LogLine(id=index + 1, at=datetime.now(UTC), level="info", text=text)
+'''
+
+INIT_APP = '''\
+"""A Frontedge dashboard in one file.
+
+    uvicorn app:app --reload
+    open http://127.0.0.1:8000/frontedge
+"""
+
+from pathlib import Path
+
+import frontedge
+from fastapi import FastAPI
+
+from provider import Provider
+
+CONFIG = Path(__file__).with_name("frontedge.toml")
+
+app = FastAPI(title="My ML dashboard")
+app.include_router(
+    frontedge.mount(
+        Provider(),
+        config=CONFIG,
+        path="/frontedge",
+        title="My ML dashboard",
+    )
+)
+'''
+
+INIT_README = """\
+# My Frontedge dashboard
+
+1. Install Frontedge (not on PyPI yet): `pip install ./python/frontedge` from a repository
+   checkout, after `pnpm build:ui`.
+2. Run the app: `uvicorn app:app --reload`.
+3. Open http://127.0.0.1:8000/frontedge.
+
+`provider.py` is the only file that talks to your data: replace the sample runs in `list_runs`
+and `get_run`. `frontedge.toml` decides the columns, the metrics and the actions; check it with
+`frontedge check`.
+
+The full contract is in `docs/integration.md` of the Frontedge repository.
+"""
+
+INIT_FILES = {
+    "frontedge.toml": INIT_TOML,
+    "provider.py": INIT_PROVIDER,
+    "app.py": INIT_APP,
+    "README.md": INIT_README,
+}
+
 
 def _gen(args: argparse.Namespace) -> int:
     models = MODELS
@@ -83,6 +246,27 @@ def _gen(args: argparse.Namespace) -> int:
     (out / "types.ts").write_text(generate_types(models), encoding="utf-8")
     (out / "client.ts").write_text(generate_client(base_path=args.base_path), encoding="utf-8")
     print(f"frontedge: types and client written to {out}")
+    return 0
+
+
+def _init(args: argparse.Namespace) -> int:
+    """Write a minimal FastAPI project that already shows the interface."""
+    target = Path(args.path)
+    existing = [name for name in INIT_FILES if (target / name).exists()]
+    if existing and not args.force:
+        print(
+            f"frontedge: refusing to overwrite in {target}: {', '.join(existing)} "
+            "(pass --force to replace them)",
+            file=sys.stderr,
+        )
+        return 1
+    target.mkdir(parents=True, exist_ok=True)
+    for name, content in INIT_FILES.items():
+        (target / name).write_text(content, encoding="utf-8")
+    print(f"frontedge: created {len(INIT_FILES)} files in {target}")
+    print("  run: uvicorn app:app --reload")
+    print("  open: http://127.0.0.1:8000/frontedge")
+    print("  then replace the sample runs in provider.py with your data")
     return 0
 
 
@@ -398,6 +582,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="custom models: module:ClassName (default — built-in)",
     )
 
+    init = sub.add_parser("init", help="create a minimal FastAPI project with the interface")
+    init.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        help="directory to create (default: the current one)",
+    )
+    init.add_argument("--force", action="store_true", help="overwrite existing files")
+
     schema = sub.add_parser("schema", help="print the JSON Schema of frontedge.toml")
     schema.add_argument("--out", default=None, help="write to a file instead of stdout")
 
@@ -431,6 +624,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "gen":
         return _gen(args)
+    if args.command == "init":
+        return _init(args)
     if args.command == "schema":
         return _schema(args)
     if args.command == "check":

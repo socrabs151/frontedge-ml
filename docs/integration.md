@@ -38,6 +38,27 @@ pip install ./python/frontedge        # or: uv pip install -e ./python/frontedge
 A plain `git+` install has no built interface and answers 503: the built assets are generated, not
 stored. `pnpm build:ui` needs Node 22 and pnpm.
 
+### 2.1 Start a project
+
+```bash
+frontedge init my-dashboard
+cd my-dashboard
+uvicorn app:app --reload        # http://127.0.0.1:8000/frontedge
+```
+
+Four files, and the dashboard already runs on two sample runs:
+
+| File | What it is |
+|---|---|
+| `provider.py` | the only file that touches your data — replace the sample `list_runs` / `get_run` |
+| `frontedge.toml` | columns, metrics, actions; `frontedge check` validates it |
+| `app.py` | FastAPI plus `frontedge.mount` |
+| `README.md` | the three steps above |
+
+`frontedge init` refuses to overwrite existing files unless you pass `--force`.
+
+`examples/minimal` in the repository is the same project, committed and runnable.
+
 For your own frontend on the components:
 
 ```bash

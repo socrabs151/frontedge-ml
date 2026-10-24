@@ -100,6 +100,11 @@ The following are **public contracts** and change only in a major release:
 - The generated client keeps the server's `detail` on `/runs` errors, like on the other paths.
 - The release workflow builds the interface before the wheel (the wheel used to ship without it)
   and publishes with `uv publish dist/*` (there is no `--package` flag).
+- `frontedge init my-dashboard` writes a runnable project in four files (`provider.py`,
+  `frontedge.toml`, `app.py`, `README.md`); it refuses to overwrite without `--force`.
+- `examples/minimal`: the same project, committed and runnable against two sample runs.
+- CI builds the wheel, installs it into a clean venv, runs `frontedge init` and curls the served
+  interface; it also checks that the npm tarball carries `dist/styles.css` and the license.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

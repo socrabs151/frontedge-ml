@@ -56,6 +56,15 @@ pnpm install && pnpm build:ui
 pip install ./python/frontedge        # или: uv pip install -e ./python/frontedge
 ```
 
+Дальше — скаффолд: он работает на демо-данных, ещё до вашего кода.
+
+```bash
+frontedge init my-dashboard
+cd my-dashboard && uvicorn app:app --reload
+```
+
+Или напишите провайдер сами — это одна функция:
+
 ```python
 from datetime import UTC, datetime
 from fastapi import FastAPI, Request

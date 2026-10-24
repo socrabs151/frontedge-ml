@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 dependencies = []
 
 [tool.uv.workspace]
-members = ["python/frontedge", "examples/demo-ml"]
+members = ["python/frontedge", "examples/demo-ml", "examples/minimal"]
 
 [tool.uv.sources]
 frontedge = { workspace = true }

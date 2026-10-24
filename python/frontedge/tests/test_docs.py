@@ -69,7 +69,7 @@ def documented_commands() -> list[tuple[str, list[str]]]:
         for name, source in blocks(language):
             for line in source.splitlines():
                 code = line.split("#", 1)[0].strip()
-                match = re.search(r"\bfrontedge\s+(gen|schema|check)\b(.*)", code)
+                match = re.search(r"\bfrontedge\s+(gen|schema|check|init)\b(.*)", code)
                 if not match:
                     continue
                 rest = match.group(2).strip().strip("`").strip()

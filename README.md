@@ -56,6 +56,15 @@ pnpm install && pnpm build:ui
 pip install ./python/frontedge        # or: uv pip install -e ./python/frontedge
 ```
 
+Then scaffold a dashboard — it runs with the sample data before you write a line:
+
+```bash
+frontedge init my-dashboard
+cd my-dashboard && uvicorn app:app --reload
+```
+
+Or write the provider yourself; it is one function:
+
 ```python
 from datetime import UTC, datetime
 from fastapi import FastAPI, Request
