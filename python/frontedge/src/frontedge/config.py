@@ -125,10 +125,12 @@ def load_config_file(path: str | Path) -> UiConfig:
     return UiConfig.model_validate(data)
 
 
-def load_config(source: str | Path | dict[str, Any] | None) -> UiConfig:
-    """Configuration from a file path or a dict. ``None`` — an empty configuration."""
+def load_config(source: str | Path | dict[str, Any] | UiConfig | None) -> UiConfig:
+    """Configuration from a ready object, a file path or a dict. ``None`` — empty."""
     if source is None:
         return UiConfig()
+    if isinstance(source, UiConfig):
+        return source
     if isinstance(source, dict):
         return UiConfig.model_validate(source)
     return load_config_file(source)

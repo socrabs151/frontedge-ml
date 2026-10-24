@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 
 from ..config import ActionResult, UiConfig, load_config
+from ..meta import Meta, build_meta
 from ..models import (
     DatasetDetail,
     DatasetInfo,
@@ -24,7 +25,6 @@ from ..models import (
     RunsPage,
     RunsQuery,
 )
-from ..meta import Meta, build_meta
 from ..providers import (
     DatasetProvider,
     EvalProvider,
@@ -264,7 +264,11 @@ def _build_router(
         responses={
             200: {
                 "description": "Raw artifact content",
-                "content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}},
+                "content": {
+                    "application/octet-stream": {
+                        "schema": {"type": "string", "format": "binary"}
+                    }
+                },
             }
         },
     )
@@ -349,7 +353,7 @@ def _build_router(
 
     @router.get("/api/meta", tags=["frontedge"], response_model=Meta)
     async def get_meta() -> Meta:
-        return build_meta(runs=source, evals=evals, datasets=datasets, actions=handlers.keys())
+        return build_meta(runs=source, evals=evals, datasets=datasets, actions=list(handlers))
 
     @router.get("/api/config", tags=["frontedge"], response_model=UiConfig)
     async def get_config() -> UiConfig:
@@ -383,7 +387,6 @@ def _build_router(
         raise HTTPException(status_code=404, detail=f"Unknown API endpoint: /{rest}")
 
     router.include_router(static_router(path, title))
-    router.title = title
     return router
 
 

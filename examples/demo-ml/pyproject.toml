@@ -2,7 +2,7 @@
 name = "frontedge-demo-ml"
 version = "0.1.0"
 description = "Demo ML backend with the frontedge interface mounted into FastAPI"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "frontedge",
     "fastapi>=0.115",
@@ -21,3 +21,4 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["demo_ml"]
+

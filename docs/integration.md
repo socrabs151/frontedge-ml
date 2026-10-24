@@ -214,19 +214,6 @@ The built interface is served under the mount path, with an SPA fallback for the
 
 An unknown path under `/frontedge/api/` answers 404 in JSON, not HTML.
 
-### 4.3 Security
-
-- **Authorisation is yours.** The router has no auth: the `request` reaches every provider method,
-  so a dependency on your router or a check inside the provider works as usual. Protect the API
-  and the static paths the same way you protect the rest of the app.
-- **Actions are POST handlers.** Anyone who can reach `POST /api/actions/{id}` can run one; guard
-  it with the same auth dependency, and treat `danger: true` as a UI hint, not as protection.
-- **No inline script.** The mount path lives in `<meta name="frontedge-mount">`, so a strict CSP
-  works without `'unsafe-inline'`. The built interface loads one module script and its CSS from the
-  mount path; allow `script-src 'self'` and `style-src 'self'`.
-- **Artifact names** come from the provider and are used in `Content-Disposition`; the URL segment
-  is what the provider gets, so return only ids you are willing to see in a header.
-
 ### 4.1 Capabilities
 
 `/api/meta` says what the mounted installation can do, so a tool (or your own code) does not
@@ -250,9 +237,10 @@ have to guess from the configuration:
 ```
 
 `runs.query` tells whether the provider filters and paginates itself (`list_runs(request, query)`),
-`logs` — whether `stream_logs` exists, `artifacts` — whether `read_artifact` exists. `screens` and
-`actions` come from what you passed to `mount`. The interface reads this: a screen the installation
-does not mount is not shown in the sidebar.
+`logs` — whether `stream_logs` exists, `artifacts` — whether `read_artifact` exists, `examples` —
+whether `list_examples` exists. `screens` and `actions` come from what you passed to `mount`. The
+interface reads this: a screen the installation does not mount is not shown in the sidebar, and the
+Download link is left out when artifact content is not served.
 
 ### 4.2 A broken provider
 
@@ -267,6 +255,30 @@ Mapping values are validated into the model first, so a provider that returns pl
 working; only an impossible value fails. A bad log line arrives in the stream as an error line
 (`level: "error"`) instead of killing the connection. The generated client shows `detail` as-is,
 so the message reaches the person who wired the provider.
+
+### 4.3 Security
+
+- **Authorisation is yours.** The router has no auth: the `request` reaches every provider method,
+  so a dependency on your router or a check inside the provider works as usual. Protect the API
+  and the static paths the same way you protect the rest of the app.
+- **Actions are POST handlers.** Anyone who can reach `POST /api/actions/{id}` can run one; guard
+  it with the same auth dependency, and treat `danger: true` as a UI hint, not as protection.
+- **No inline script.** The mount path lives in `<meta name="frontedge-mount">`, so a strict CSP
+  works without `'unsafe-inline'`. The built interface loads one module script and its CSS from the
+  mount path; allow `script-src 'self'` and `style-src 'self'`.
+- **Artifact names** come from the provider and are used in `Content-Disposition`; the URL segment
+  is what the provider gets, so return only ids you are willing to see in a header.
+
+### 4.4 Deployment
+
+- Serve the mount path as is; do not rewrite `/frontedge/api/...` into the SPA fallback.
+- Hashed files under `/frontedge/assets/` are sent with
+  `Cache-Control: public, max-age=31536000, immutable`; `index.html` is `no-cache`. A reverse proxy
+  may keep these headers as they are.
+- The log stream is server-sent events: disable proxy buffering for
+  `/frontedge/api/runs/*/logs/stream` (nginx: `proxy_buffering off`).
+- Python 3.11+ is required; the wheel ships the built interface, so the host needs no Node at
+  runtime.
 
 ## 5. Configuration: what to show
 

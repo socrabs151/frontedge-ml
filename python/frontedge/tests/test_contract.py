@@ -15,6 +15,7 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 import frontedge
 from frontedge import Run, RunStatus
@@ -115,7 +116,7 @@ class TestCustomMetrics:
     def test_an_unknown_metric_key_is_rejected(self, tmp_path: Any) -> None:
         from frontedge.config import UiConfig
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             UiConfig.model_validate({"metrics": [{"id": "bleu", "precision": 2}]})
 
     def test_metric_spec_is_in_the_schema(self) -> None:
@@ -124,6 +125,22 @@ class TestCustomMetrics:
         schema = UiConfig.model_json_schema(by_alias=False)
         assert "metrics" in schema["properties"]
         assert "MetricSpec" in schema["$defs"]
+
+
+class TestStaticCache:
+    def test_hashed_assets_are_immutable(self) -> None:
+        from frontedge.runtime.static import STATIC_DIR
+
+        assets = sorted((STATIC_DIR / "assets").glob("*.js"))
+        if not assets:
+            pytest.skip("the interface is not built")
+        response = client_for().get(f"/frontedge/assets/{assets[0].name}")
+        assert response.status_code == 200
+        assert response.headers["cache-control"] == "public, max-age=31536000, immutable"
+
+    def test_the_document_is_not_cached(self) -> None:
+        response = client_for().get("/frontedge/")
+        assert response.headers["cache-control"] == "no-cache"
 
 
 class TestRunExtras:
@@ -205,7 +222,8 @@ class TestColumnSpecs:
     def test_columns_reach_the_client(self, tmp_path: Any) -> None:
         file = tmp_path / "frontedge.toml"
         file.write_text(
-            '[[columns]]\nid = "name"\nwidth = 150\n\n[[columns]]\nid = "status"\nresizable = false\n',
+            '[[columns]]\nid = "name"\nwidth = 150\n\n'
+            '[[columns]]\nid = "status"\nresizable = false\n',
             encoding="utf-8",
         )
         app = FastAPI()
@@ -220,7 +238,7 @@ class TestColumnSpecs:
     def test_a_width_outside_the_bounds_is_rejected(self) -> None:
         from frontedge.config import UiConfig
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             UiConfig.model_validate({"columns": [{"id": "name", "width": 10}]})
 
     def test_column_resize_can_be_switched_off(self) -> None:
@@ -251,7 +269,7 @@ class TestEvalTabs:
     def test_an_unknown_tab_is_rejected(self) -> None:
         from frontedge.config import UiConfig
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             UiConfig.model_validate({"eval_tabs": ["charts"]})
 
     def test_the_schema_limits_the_tabs(self) -> None:
@@ -281,7 +299,7 @@ class TestHttp:
         assert "application/json" in response.headers["content-type"]
 
     def test_mount_path_is_substituted_into_html(self) -> None:
-        """The interface must know its prefix, otherwise assets and the API are looked up under /frontedge."""
+        """The prefix must reach the HTML, or assets and the API resolve under /frontedge."""
         response = client_for(path="/ml").get("/ml/")
         assert response.status_code == 200
         assert '<meta name="frontedge-mount" content="/ml"' in response.text
@@ -378,7 +396,9 @@ class TestSse:
 
         chunks = asyncio.run(scenario())
         assert any(": keepalive" in chunk for chunk in chunks)
-        assert any('"i": 1' in chunk for chunk in chunks), "events after the keepalive never arrived"
+        assert any('"i": 1' in chunk for chunk in chunks), (
+            "events after the keepalive never arrived"
+        )
 
 
 class TestConfigAndActions:
@@ -485,7 +505,7 @@ class TestMetaCapabilities:
         assert capabilities["actions"] == []
 
     def test_an_object_provider_does_not_claim_what_it_lacks(self) -> None:
-        """The adapter defines every optional method, so the flags must come from the wrapped one."""
+        """The adapter defines every optional method: the flags must come from the wrapped one."""
 
         class Minimal:
             async def list_runs(self, request: Any) -> list[Run]:
@@ -523,7 +543,9 @@ class TestMetaCapabilities:
             async def list_evals(self, request: Any) -> list[Any]:
                 return []
 
-            async def compare_evals(self, request: Any, eval_id: str, reference: str, comparison: str) -> Any:
+            async def compare_evals(
+                self, request: Any, eval_id: str, reference: str, comparison: str
+            ) -> Any:
                 return None
 
         class DatasetStub:

@@ -41,7 +41,19 @@ def static_router(mount: str = "/frontedge", title: str = "Frontedge") -> APIRou
             except ValueError:
                 raise HTTPException(status_code=404, detail="not found") from None
             if candidate.is_file():
-                return FileResponse(candidate)
+                # Built assets carry a content hash: cache them forever. Everything else may
+                # change between deployments.
+                immutable = path.startswith("assets/")
+                return FileResponse(
+                    candidate,
+                    headers={
+                        "Cache-Control": (
+                            "public, max-age=31536000, immutable"
+                            if immutable
+                            else "no-cache"
+                        )
+                    },
+                )
 
         index = root / _INDEX
         if not index.is_file():

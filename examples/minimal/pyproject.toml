@@ -2,7 +2,7 @@
 name = "frontedge-example-minimal"
 version = "0.1.0"
 description = "A minimal Frontedge dashboard: one provider, one config, two sample runs"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "frontedge",
     "fastapi>=0.115",
@@ -14,3 +14,4 @@ package = false
 
 [tool.uv.sources]
 frontedge = { workspace = true }
+

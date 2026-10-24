@@ -16,21 +16,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from . import __version__
 from .config import ActionResult, ActionSpec, ColumnSpec, MetricSpec, UiConfig, load_config_file
 from .gen import generate_client, generate_types
-from .models import DatasetDetail, DatasetInfo, EvalSummary, Run, RunsPage, RunsQuery
-from .providers import (
-    ProviderError,
-    adapt_provider,
-    as_model_or_none,
-    as_models,
-    provider_accepts_query,
-    provider_has_logs,
-    provider_reads_artifacts,
-)
 from .models import (
     Artifact,
     DatasetDetail,
@@ -43,10 +33,21 @@ from .models import (
     MetricPoint,
     Run,
     RunOption,
+    RunsPage,
+    RunsQuery,
     Stage,
 )
+from .providers import (
+    ProviderError,
+    adapt_provider,
+    as_model_or_none,
+    as_models,
+    provider_accepts_query,
+    provider_has_logs,
+    provider_reads_artifacts,
+)
 
-MODELS = [
+MODELS: list[type[BaseModel]] = [
     Run,
     RunOption,
     Stage,
@@ -162,7 +163,11 @@ def _sample_runs() -> list[Run]:
             duration_ms=155_000,
             owner="",
             metrics={"answer_score": 0.76},
-            series={"answer_score": [MetricPoint(step=p.step, value=round(p.value + 0.08, 4)) for p in series]},
+            series={
+                "answer_score": [
+                    MetricPoint(step=p.step, value=round(p.value + 0.08, 4)) for p in series
+                ]
+            },
             metric_direction={"answer_score": MetricDirection.maximize},
             stages=stages,
         ),
@@ -331,14 +336,14 @@ def _config_problems(path: Path) -> list[dict[str, str]]:
         seen_columns.add(column)
 
     seen_column_specs: set[str] = set()
-    for index, column in enumerate(config.columns):
-        if not column.id.strip():
+    for index, spec in enumerate(config.columns):
+        if not spec.id.strip():
             problems.append({"field": f"columns.{index}.id", "message": "the id is empty"})
-        elif column.id in seen_column_specs:
+        elif spec.id in seen_column_specs:
             problems.append(
-                {"field": f"columns.{index}.id", "message": f"duplicate column: {column.id}"}
+                {"field": f"columns.{index}.id", "message": f"duplicate column: {spec.id}"}
             )
-        seen_column_specs.add(column.id)
+        seen_column_specs.add(spec.id)
 
     seen_eval_tabs: set[str] = set()
     for index, tab in enumerate(config.eval_tabs):

@@ -61,7 +61,9 @@ def as_model(value: Any, model: type[ModelT], where: str) -> ModelT:
         try:
             return model.model_validate(value)
         except ValidationError as error:
-            fields = ", ".join(".".join(str(part) for part in item["loc"]) for item in error.errors())
+            fields = ", ".join(
+                ".".join(str(part) for part in item["loc"]) for item in error.errors()
+            )
             raise ProviderError(
                 f"{where} returned a mapping that is not a valid {model.__name__} "
                 f"(check {fields})"
@@ -135,6 +137,10 @@ class FrontedgeProvider(Protocol):
         """The examples of a run, for the Examples tab."""
         ...
 
+    async def read_artifact(self, request: Request, artifact_id: str) -> bytes | None:
+        """Artifact content, for the Download link."""
+        ...
+
 class CallableProvider:
     """Adapter for an async function ``(request) -> Sequence[Run]``."""
     """Adapter for an async function ``(request) -> Sequence[Run]``.
@@ -155,9 +161,19 @@ class CallableProvider:
                 return run
         return None
 
-    async def stream_logs(self, request: Request, run_id: str) -> AsyncIterator[LogLine]:  # pragma: no cover
+    async def stream_logs(  # pragma: no cover
+        self, request: Request, run_id: str
+    ) -> AsyncIterator[LogLine]:
         if False:
             yield LogLine(at=None)  # type: ignore[arg-type]
+
+    async def list_examples(self, request: Request, run_id: str) -> Sequence[Example]:
+        """A function provider has no examples of its own."""
+        return []
+
+    async def read_artifact(self, request: Request, artifact_id: str) -> bytes | None:
+        """A function provider has no artifacts of its own."""
+        return None
 
 
 ProviderInput = FrontedgeProvider | Callable[[Request], Awaitable[Sequence[Run]]]
@@ -199,10 +215,10 @@ class _ProviderAdapter:
             return None
         return await reader(request, artifact_id)
 
-    async def list_examples(self, request: Request, run_id: str) -> Sequence[Example] | None:
+    async def list_examples(self, request: Request, run_id: str) -> Sequence[Example]:
         lister = getattr(self._provider, "list_examples", None)
         if lister is None:
-            return None
+            return []
         return await lister(request, run_id)
 
 
@@ -228,6 +244,8 @@ def provider_accepts_query(provider: Any) -> bool:
 
 def provider_reads_artifacts(provider: Any) -> bool:
     """Whether the provider can serve artifact content."""
+    if isinstance(provider, CallableProvider):
+        return False
     if isinstance(provider, _ProviderAdapter):
         return provider.has_artifacts
     return callable(getattr(provider, "read_artifact", None))
@@ -235,6 +253,8 @@ def provider_reads_artifacts(provider: Any) -> bool:
 
 def provider_has_examples(provider: Any) -> bool:
     """Whether the provider can list the examples of a run."""
+    if isinstance(provider, CallableProvider):
+        return False
     if isinstance(provider, _ProviderAdapter):
         return provider.has_examples
     return callable(getattr(provider, "list_examples", None))
