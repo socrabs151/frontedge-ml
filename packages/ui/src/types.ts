@@ -25,8 +25,13 @@ export type {
   RunOption,
   RunStatus,
   Stage,
-  StageName,
   UiConfig,
 } from "./generated/types";
 
 export { frontedgeRoles } from "./generated/types";
+
+/**
+ * Canonical stage names. `Stage.name` accepts any string — a project may add `tokenize` or
+ * `deploy`; these four keep autocomplete for the common case.
+ */
+export type StageName = "prepare" | "train" | "eval" | "publish" | (string & {});

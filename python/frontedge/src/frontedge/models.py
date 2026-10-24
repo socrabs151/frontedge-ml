@@ -65,6 +65,12 @@ class Freshness(StrEnum):
 
 
 class StageName(StrEnum):
+    """Canonical stage names: a starting point, not a closed vocabulary.
+
+    ``Stage.name`` is a plain string, so a project keeps ``tokenize``, ``embed`` or ``deploy``.
+    The interface draws the name as a caption and never switches on it.
+    """
+
     prepare = "prepare"
     train = "train"
     eval = "eval"
@@ -97,14 +103,15 @@ class MetricPoint(FrontedgeModel):
 
 
 class MetricEvent(FrontedgeModel):
-    stage: StageName
+    stage: str
     step: int
     label: str
     kind: Literal["regression", "checkpoint", "notice"] = "notice"
 
 
 class Stage(FrontedgeModel):
-    name: StageName
+    #: ``StageName`` values are the canonical ones; any other step name is allowed.
+    name: str
     status: RunStatus
     started_at: datetime
     ended_at: datetime | None = None
@@ -136,8 +143,9 @@ class Run(FrontedgeModel):
     # an en dash instead of forcing an adapter to invent a value.
     dataset: str = Field(default="", json_schema_extra=role("dataset"))
     git_sha: str = Field(default="", json_schema_extra=role("code"))
-    started_at: datetime = Field(json_schema_extra=role("timestamp"))
-    duration_ms: int = Field(json_schema_extra=role("duration"))
+    #: A queued run may have neither: the interface shows an en dash instead of inventing time.
+    started_at: datetime | None = Field(default=None, json_schema_extra=role("timestamp"))
+    duration_ms: int | None = Field(default=None, json_schema_extra=role("duration"))
     owner: str = ""
     seed: int | None = None
     error: str | None = Field(default=None, json_schema_extra=role("text"))

@@ -113,8 +113,11 @@ app.include_router(frontedge.mount(my_runs_provider))
 A failed run carries its reason in `error` and the exit code of the process in `exit_code`; both
 reach the client as `error` and `exitCode`.
 
-`dataset`, `git_sha` and `owner` may be omitted: they default to an empty string and the interface
-shows an en dash. `kind` of an artifact and `level` of a log line are plain strings, so a project
+`dataset`, `git_sha`, `owner`, `started_at` and `duration_ms` may be omitted: they default to an
+empty value and the interface shows an en dash — a queued run has no time yet.
+
+`Stage.name` is a plain string: `prepare`, `train`, `eval` and `publish` are the canonical names,
+but a project keeps `tokenize`, `embed` or `deploy`. Only the status set is closed. `kind` of an artifact and `level` of a log line are plain strings, so a project
 keeps its own kinds (`model`, `config`) and levels (`debug`, `trace`); an unknown log level is
 shown with its raw name.
 

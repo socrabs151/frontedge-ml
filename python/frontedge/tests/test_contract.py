@@ -189,6 +189,27 @@ class TestRunExtras:
         assert [option["id"] for option in options] == ["run-000", "run-001"]
 
 
+class TestOpenModel:
+    """A project keeps its own stage names, and a queued run may have no time yet."""
+
+    def test_a_custom_stage_name_is_allowed(self) -> None:
+        run = make_run(
+            stages=[
+                frontedge.Stage(
+                    name="tokenize",
+                    status=RunStatus.succeeded,
+                    started_at=datetime.now(UTC),
+                )
+            ]
+        )
+        assert run.stages[0].name == "tokenize"
+
+    def test_a_queued_run_needs_no_time(self) -> None:
+        run = make_run(status=RunStatus.queued, started_at=None, duration_ms=None)
+        assert run.started_at is None
+        assert run.duration_ms is None
+
+
 class TestOptionalFields:
     """A project without git metadata, a dataset or an owner must not invent values."""
 

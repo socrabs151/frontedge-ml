@@ -4,7 +4,7 @@
  * Needs a dev server at http://localhost:5173
  */
 
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -13,8 +13,15 @@ import { join } from "node:path";
 const OUT = process.env.FE_SHOTS_DIR ?? join(tmpdir(), "frontedge-shots");
 mkdirSync(OUT, { recursive: true });
 
-/** Edge is installed on the developer machine; CI uses the bundled Chromium. */
-const browser = await chromium.launch({ channel: "msedge" }).catch(() => chromium.launch());
+/** FE_BROWSER=firefox|webkit runs the same gate on another engine; Edge is the local default. */
+const engine = process.env.FE_BROWSER ?? "chromium";
+const browser =
+  engine === "firefox"
+    ? await firefox.launch()
+    : engine === "webkit"
+      ? await webkit.launch()
+      : await chromium.launch({ channel: "msedge" }).catch(() => chromium.launch());
+console.log(`browser: ${engine}`);
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
 const BASE = process.env.FE_BASE_URL ?? "http://localhost:5173";
@@ -25,8 +32,8 @@ async function shoot(name) {
   console.log(`screenshot: ${name}.png`);
 }
 
-async function audit(label) {
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
+async function audit(label, target = page) {
+  const results = await new AxeBuilder({ page: target }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   const serious = results.violations.filter((v) => v.impact === "critical" || v.impact === "serious");
   console.log(`axe [${label}]: ${results.violations.length} violations, ${serious.length} critical/serious`);
   for (const violation of results.violations) {
@@ -111,6 +118,63 @@ async function checkColumnReset() {
 }
 
 let seriousTotal = 0;
+/** A run is linkable: the hash changes on open and the same link survives a reload. */
+async function checkDeepLink() {
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".fe-table__row");
+  await page.locator(".fe-run-name").first().click();
+  await page.waitForSelector(".fe-detail__head", { timeout: 15000 });
+  const opened = await page.evaluate(() => location.hash);
+
+  await page.reload({ waitUntil: "networkidle" });
+  const survived = (await page.locator(".fe-detail__head").count()) === 1;
+  const afterReload = await page.evaluate(() => location.hash);
+
+  const ok = opened.startsWith("#/runs/") && survived && afterReload === opened;
+  console.log(
+    ok
+      ? "routing: a run is linkable and survives a reload"
+      : `routing: opened=${opened} afterReload=${afterReload} survived=${survived}`,
+  );
+  return ok ? 0 : 1;
+}
+
+/** Loading, empty and error are states too: every one must pass axe. */
+async function auditStates() {
+  const statePage = await context.newPage();
+  const pattern = "**/api/runs*";
+  let problems = 0;
+
+  await statePage.route(pattern, (route) => route.abort());
+  await statePage.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+  await statePage.waitForSelector(".fe-panel", { timeout: 15000 });
+  problems += await audit("error state", statePage);
+  await statePage.unroute(pattern);
+
+  await statePage.route(pattern, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      headers: { "X-Frontedge-Total": "0" },
+      body: "[]",
+    }),
+  );
+  await statePage.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+  await statePage.waitForSelector(".fe-panel", { timeout: 15000 });
+  problems += await audit("empty state", statePage);
+  await statePage.unroute(pattern);
+
+  await statePage.route(pattern, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    await route.continue();
+  });
+  await statePage.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+  await statePage.waitForSelector(".fe-skeleton", { timeout: 10000 });
+  problems += await audit("loading state", statePage);
+  await statePage.close();
+  return problems;
+}
+
 let layoutProblems = 0;
 
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
@@ -151,6 +215,9 @@ await page.setViewportSize({ width: 1280, height: 800 });
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
 await page.waitForSelector(".fe-table__row");
 await shoot("07-runs-light-1280");
+
+layoutProblems += await checkDeepLink();
+seriousTotal += await auditStates();
 
 await browser.close();
 console.log(

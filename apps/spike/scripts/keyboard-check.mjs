@@ -1,7 +1,14 @@
 /** Keyboard pass over the table (quality gate §8.1, item 3). */
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 
-const browser = await chromium.launch({ channel: "msedge" }).catch(() => chromium.launch());
+/** FE_BROWSER=firefox|webkit runs the same pass on another engine. */
+const engine = process.env.FE_BROWSER ?? "chromium";
+const browser =
+  engine === "firefox"
+    ? await firefox.launch()
+    : engine === "webkit"
+      ? await webkit.launch()
+      : await chromium.launch({ channel: "msedge" }).catch(() => chromium.launch());
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
 const BASE = process.env.FE_BASE_URL ?? "http://localhost:5173";

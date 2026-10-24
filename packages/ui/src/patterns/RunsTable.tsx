@@ -184,18 +184,29 @@ export function RunsTable({
         id: "startedAt",
         header: () => t("column.started"),
         size: 98,
-        cell: (info) => (
-          <span title={formatAbsoluteTime(toTime(info.getValue()), lang)}>
-            {formatRelativeTime(toTime(info.getValue()), now, lang)}
-          </span>
-        ),
+        cell: (info) => {
+          const value = info.getValue();
+          if (value == null) return <span>{EMPTY}</span>;
+          return (
+            <span title={formatAbsoluteTime(toTime(value), lang)}>
+              {formatRelativeTime(toTime(value), now, lang)}
+            </span>
+          );
+        },
       }) as ColumnDef<Run, unknown>,
 
       durationMs: columnHelper.accessor("durationMs", {
         id: "durationMs",
         header: () => t("column.duration"),
         size: 76,
-        cell: (info) => <span className="fe-num">{formatDuration(info.getValue(), lang)}</span>,
+        cell: (info) => {
+          const value = info.getValue();
+          return (
+            <span className="fe-num">
+              {value == null ? EMPTY : formatDuration(value, lang)}
+            </span>
+          );
+        },
       }) as ColumnDef<Run, unknown>,
     };
 

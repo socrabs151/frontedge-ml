@@ -113,6 +113,13 @@ The following are **public contracts** and change only in a major release:
   deployment notes cover a reverse proxy and the SSE stream.
 - The artifact Download link is hidden when the provider does not serve content, instead of
   leading to a 404.
+- Runs, evals and datasets live in the URL hash (`#/runs/run-003`): a run is linkable, survives a
+  reload, and the browser's back button works.
+- `Stage.name` is free-form: the four canonical names remain, but `tokenize`, `embed` or `deploy`
+  are allowed. Only the status set stays closed.
+- `Run.started_at` and `Run.duration_ms` are optional; a queued run shows en dashes.
+- The browser gate audits the loading, empty and error states with axe, and runs on Firefox and
+  WebKit in CI next to Chromium (`FE_BROWSER`).
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

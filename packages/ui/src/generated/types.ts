@@ -11,7 +11,7 @@ export interface Artifact {
 export type Freshness = "live" | "fresh" | "stale" | "partial";
 export type MetricDirection = "maximize" | "minimize" | "none";
 export interface MetricEvent {
-  stage: StageName;
+  stage: string;
   step: number;
   label: string;
   kind?: "regression" | "checkpoint" | "notice";
@@ -27,12 +27,11 @@ export interface ProvenanceEntry {
 }
 export type RunStatus = "queued" | "running" | "succeeded" | "failed" | "cancelled" | "lost";
 export interface Stage {
-  name: StageName;
+  name: string;
   status: RunStatus;
   startedAt: string;
   endedAt?: string | null;
 }
-export type StageName = "prepare" | "train" | "eval" | "publish";
 export interface Run {
   id: string;
   name: string;
@@ -40,8 +39,8 @@ export interface Run {
   freshness?: Freshness;
   dataset?: string;
   gitSha?: string;
-  startedAt: string;
-  durationMs: number;
+  startedAt?: string | null;
+  durationMs?: number | null;
   owner?: string;
   seed?: number | null;
   error?: string | null;

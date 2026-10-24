@@ -29,6 +29,20 @@ type Theme = "light" | "dark";
 type Density = "compact" | "default" | "comfortable";
 type Route = { name: "runs" } | { name: "run"; id: string } | { name: "evals" } | { name: "datasets" };
 
+/** Routes live in the hash: a run, an eval and a dataset are linkable and survive a reload. */
+function routeFromHash(hash: string): Route {
+  const [name, id] = hash.replace(/^#\/?/, "").split("/");
+  if (name === "runs" && id) return { name: "run", id: decodeURIComponent(id) };
+  if (name === "evals") return { name: "evals" };
+  if (name === "datasets") return { name: "datasets" };
+  return { name: "runs" };
+}
+
+function hashOfRoute(route: Route): string {
+  if (route.name === "run") return `#/runs/${encodeURIComponent(route.id)}`;
+  return `#/${route.name}`;
+}
+
 const ROW_HEIGHT: Record<Density, number> = { compact: 28, default: 32, comfortable: 40 };
 
 /** A preference from localStorage: a broken value must not break the screen. */
@@ -50,7 +64,12 @@ function Shell() {
   const [density, setDensity] = useState<Density>(
     () => (localStorage.getItem("fe-density") as Density | null) ?? "default",
   );
-  const [route, setRoute] = useState<Route>({ name: "runs" });
+  const [route, setRouteState] = useState<Route>(() => routeFromHash(window.location.hash));
+  const setRoute = useCallback((next: Route) => {
+    const hash = hashOfRoute(next);
+    if (window.location.hash !== hash) window.location.hash = hash;
+    setRouteState(next);
+  }, []);
   const [query, setQuery] = useState<RunsQuery>({});
   const [runs, setRuns] = useState<Run[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -128,6 +147,13 @@ function Shell() {
         }
       })
       .catch(() => setConfig(null));
+  }, []);
+
+  // The back button, a pasted link and a reload all arrive here.
+  useEffect(() => {
+    const onHashChange = () => setRouteState(routeFromHash(window.location.hash));
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   // What this installation supports: the sidebar shows only the screens the server mounts.

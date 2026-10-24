@@ -686,6 +686,6 @@ Rule: a domain term is English (it is what the user looks for in W&B/MLflow and 
 | Trace / Span | the tree of the calls of the model / a single call | `trace`, `span` |
 | Provenance | who, when, on which version of the data and of the code, ran what | `provenance` |
 | Freshness | live / fresh / stale / partial — on top of the status | `freshness` |
-| Stage | a stage of the run: prepare, train, eval, publish | `stage` |
+| Stage | a step of the run; prepare, train, eval and publish are the canonical names, a project may add its own | `stage` |
 | Run ribbon | the signature element: a bar of stages and metrics over time | `run ribbon` |
 | Status | queued · running · succeeded · failed · cancelled · lost | `status` |
