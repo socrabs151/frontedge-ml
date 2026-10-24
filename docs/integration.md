@@ -243,6 +243,16 @@ theme = "light"              # light | dark
 
 run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss", "bleu"]
 
+# Starting widths; resizable = false locks a column. column_resize = false locks the whole table.
+# The user's own widths are kept in the browser and win over these.
+[[columns]]
+id = "name"
+width = 150
+
+[[columns]]
+id = "status"
+resizable = false
+
 # The tabs of the evaluation screen: "examples" (the comparison table) and "summary"
 # (aggregates, changed and improved/worsened counts). An empty list shows both.
 eval_tabs = ["examples", "summary"]
@@ -282,6 +292,8 @@ All of the keys of `UiConfig`:
 | `density` | `compact`, `default` or `comfortable` — the row height (28/32/40 px) |
 | `theme` | `light` or `dark` |
 | `run_columns` | which columns to show in the list of runs; an empty list shows all of them |
+| `columns` | starting width and a resize lock per column id (`width`, `resizable`) |
+| `column_resize` | whether the user may resize columns at all; `true` by default |
 | `metrics` | the project's metrics: label, digits, direction and whether to chart (see below) |
 | `eval_tabs` | which tabs to show on the evaluation screen: `examples`, `summary`; empty — both, in this order |
 | `actions` | the declared actions (see §6) |

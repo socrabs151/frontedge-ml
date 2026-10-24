@@ -1,4 +1,13 @@
-import { Boxes, Database, GitBranch, GitCompareArrows, Moon, Sun } from "lucide-react";
+import {
+  Boxes,
+  Database,
+  GitBranch,
+  GitCompareArrows,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Sun,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FrontedgeMeta, Run, UiConfig, VisibilityState } from "@frontedge/ui";
 import { I18nProvider, Segmented, TooltipProvider, useI18n } from "@frontedge/ui";
@@ -15,6 +24,16 @@ type Density = "compact" | "default" | "comfortable";
 type Route = { name: "runs" } | { name: "run"; id: string } | { name: "evals" } | { name: "datasets" };
 
 const ROW_HEIGHT: Record<Density, number> = { compact: 28, default: 32, comfortable: 40 };
+
+/** A preference from localStorage: a broken value must not break the screen. */
+function stored<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 function Shell() {
   const t = useAppT();
@@ -34,14 +53,30 @@ function Shell() {
   const [config, setConfig] = useState<UiConfig | null>(null);
   const [capabilities, setCapabilities] = useState<FrontedgeMeta["capabilities"] | null>(null);
   const [baselineId, setBaselineId] = useState<string | undefined>(undefined);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    gitSha: false,
-  });
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
+    stored<VisibilityState>("fe-columns", { gitSha: false }),
+  );
+  const [columnSizing, setColumnSizing] = useState<Record<string, number>>(() =>
+    stored<Record<string, number>>("fe-column-widths", {}),
+  );
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem("fe-sidebar") === "collapsed");
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("fe-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem("fe-columns", JSON.stringify(columnVisibility));
+  }, [columnVisibility]);
+
+  useEffect(() => {
+    localStorage.setItem("fe-column-widths", JSON.stringify(columnSizing));
+  }, [columnSizing]);
+
+  useEffect(() => {
+    localStorage.setItem("fe-sidebar", collapsed ? "collapsed" : "expanded");
+  }, [collapsed]);
 
   useEffect(() => {
     document.documentElement.dataset.density = density;
@@ -112,9 +147,22 @@ function Shell() {
 
   return (
     <TooltipProvider>
-      <div className="shell">
+      <div className={`shell${collapsed ? " shell--collapsed" : ""}`}>
         <header className="topbar">
           <div className="topbar__brand">
+            <button
+              type="button"
+              className="fe-icon-btn"
+              onClick={() => setCollapsed((value) => !value)}
+              aria-label={t(collapsed ? "nav.expand" : "nav.collapse")}
+              title={t(collapsed ? "nav.expand" : "nav.collapse")}
+            >
+              {collapsed ? (
+                <PanelLeftOpen size={15} aria-hidden />
+              ) : (
+                <PanelLeftClose size={15} aria-hidden />
+              )}
+            </button>
             <span className="topbar__name">frontedge</span>
             <span className="topbar__project">
               <GitBranch size={12} aria-hidden />
@@ -160,9 +208,10 @@ function Shell() {
               className={`sidebar__item${route.name === "runs" ? " sidebar__item--active" : ""}`}
               aria-current={route.name === "runs" ? "page" : undefined}
               onClick={() => setRoute({ name: "runs" })}
+              title={t("nav.runs")}
             >
               <Boxes size={14} aria-hidden />
-              {t("nav.runs")}
+              <span className="sidebar__label">{t("nav.runs")}</span>
             </button>
             {capabilities?.evals !== false ? (
               <button
@@ -170,9 +219,10 @@ function Shell() {
                 className={`sidebar__item${route.name === "evals" ? " sidebar__item--active" : ""}`}
                 aria-current={route.name === "evals" ? "page" : undefined}
                 onClick={() => setRoute({ name: "evals" })}
+                title={t("nav.evals")}
               >
                 <GitCompareArrows size={14} aria-hidden />
-                {t("nav.evals")}
+                <span className="sidebar__label">{t("nav.evals")}</span>
               </button>
             ) : null}
             {capabilities?.datasets !== false ? (
@@ -181,9 +231,10 @@ function Shell() {
                 className={`sidebar__item${route.name === "datasets" ? " sidebar__item--active" : ""}`}
                 aria-current={route.name === "datasets" ? "page" : undefined}
                 onClick={() => setRoute({ name: "datasets" })}
+                title={t("nav.datasets")}
               >
                 <Database size={14} aria-hidden />
-                {t("nav.datasets")}
+                <span className="sidebar__label">{t("nav.datasets")}</span>
               </button>
             ) : null}
           </div>
@@ -213,6 +264,8 @@ function Shell() {
               rowHeight={ROW_HEIGHT[density]}
               columnVisibility={columnVisibility}
               onColumnVisibilityChange={setColumnVisibility}
+              columnSizing={columnSizing}
+              onColumnSizingChange={setColumnSizing}
               onOpenRun={(run) => setRoute({ name: "run", id: run.id })}
             />
           ) : route.name === "evals" ? (

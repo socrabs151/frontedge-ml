@@ -55,6 +55,8 @@ export interface RunsScreenProps {
   rowHeight: number;
   columnVisibility: VisibilityState;
   onColumnVisibilityChange: (visibility: VisibilityState) => void;
+  columnSizing: Record<string, number>;
+  onColumnSizingChange: (sizing: Record<string, number>) => void;
   onOpenRun: (run: Run) => void;
 }
 
@@ -75,6 +77,8 @@ export function RunsScreen({
   rowHeight,
   columnVisibility,
   onColumnVisibilityChange,
+  columnSizing,
+  onColumnSizingChange,
   onOpenRun,
 }: RunsScreenProps) {
   const t = useAppT();
@@ -280,6 +284,10 @@ export function RunsScreen({
             rowActions={rowActions}
             columnIds={config?.runColumns}
             metricSpecs={config?.metrics}
+            columnSpecs={config?.columns}
+            resizable={config?.columnResize !== false}
+            columnSizing={columnSizing}
+            onColumnSizingChange={onColumnSizingChange}
           />
           {total > runs.length || offset > 0 ? (
             <div className="fe-toolbar fe-toolbar--pagination">

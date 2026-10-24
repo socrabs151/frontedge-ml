@@ -96,9 +96,15 @@ The pattern takes the ids of the columns and the actions and builds the table it
   onOpenRun={openRun}
   columnIds={config.runColumns}
   metricSpecs={config.metrics}
+  columnSpecs={config.columns}
+  resizable={config.columnResize}
   rowActions={[{ id: "stop", label: "Stop", danger: true, onClick: stop }]}
 />
 ```
+
+`columnSpecs` sets a starting width and a per-column resize lock (`resizable: false`);
+`resizable={false}` locks the table. The resizer is a focusable separator: arrows change the
+width by 8 px (Shift — 24), a double click resets it.
 
 An unknown column id is built from the `metrics` dictionary of the run, so a project can show
 its own metrics without touching the package. `metricSpecs` (the `[[metrics]]` of

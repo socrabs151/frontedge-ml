@@ -10,6 +10,16 @@ eval_tabs = ["examples", "summary"]
 # Which columns to show in the run list. An empty list — show all.
 run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss", "bleu"]
 
+# Starting widths and resize locks. The user may resize any column unless resizable = false;
+# column_resize = false would lock the whole table.
+[[columns]]
+id = "name"
+width = 140
+
+[[columns]]
+id = "status"
+resizable = false
+
 # Metrics of the project: the run screen draws a card for each one, and a chart when the run
 # has a series for it. Without this list, every metric a run returns is shown.
 # "bleu" is a metric the interface knows nothing about — it appears because the project declares it.

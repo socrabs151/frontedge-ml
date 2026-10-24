@@ -76,6 +76,11 @@ The following are **public contracts** and change only in a major release:
 - `title` in `mount()` reaches the served HTML: the browser tab says what the installation is.
 - The sidebar hides the screens an installation does not mount, using the capabilities of
   `/api/meta`.
+- The runs table resizes: `[[columns]]` sets a starting width and a per-column `resizable` lock,
+  `column_resize` locks the whole table. The resizer is a keyboard-operable separator (arrows,
+  Shift for a larger step, double click to reset). The user's widths and hidden columns are kept
+  in the browser and win over the configuration.
+- The sidebar collapses to icons; the choice is remembered per browser.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

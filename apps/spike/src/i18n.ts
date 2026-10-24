@@ -13,6 +13,8 @@ const en = {
   "nav.evals": "Evals",
   "nav.datasets": "Datasets",
   "nav.language": "Language",
+  "nav.collapse": "Collapse the sidebar",
+  "nav.expand": "Expand the sidebar",
 
   "topbar.density": "Table density",
   "topbar.themeToDark": "Switch to the dark theme",
@@ -107,6 +109,8 @@ const ru: Record<AppStringKey, string> = {
   "nav.evals": "Evals",
   "nav.datasets": "Datasets",
   "nav.language": "Язык",
+  "nav.collapse": "Свернуть меню",
+  "nav.expand": "Развернуть меню",
 
   "topbar.density": "Плотность таблицы",
   "topbar.themeToDark": "Переключить на тёмную тему",

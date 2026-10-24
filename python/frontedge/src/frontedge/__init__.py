@@ -7,7 +7,7 @@
     app.include_router(frontedge.mount(my_runs_provider))
 """
 
-from .config import ActionResult, ActionSpec, MetricSpec, UiConfig, load_config
+from .config import ActionResult, ActionSpec, ColumnSpec, MetricSpec, UiConfig, load_config
 from .models import (
     Artifact,
     DatasetDetail,
@@ -44,6 +44,7 @@ __all__ = [
     "ActionSpec",
     "Artifact",
     "CallableProvider",
+    "ColumnSpec",
     "DatasetDetail",
     "DatasetInfo",
     "DatasetProvider",

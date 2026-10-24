@@ -7,6 +7,7 @@ export type {
   ActionResult,
   ActionSpec,
   Artifact,
+  ColumnSpec,
   DatasetDetail,
   DatasetInfo,
   EvalComparison,

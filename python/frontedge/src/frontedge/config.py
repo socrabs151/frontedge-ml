@@ -24,6 +24,7 @@ from .models import MetricDirection
 __all__ = [
     "ActionResult",
     "ActionSpec",
+    "ColumnSpec",
     "MetricSpec",
     "UiConfig",
     "load_config",
@@ -55,6 +56,16 @@ class ActionResult(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
 
 
+class ColumnSpec(BaseModel):
+    """A column of the runs table: how wide it starts and whether the user may resize it."""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, extra="forbid")
+
+    id: str
+    width: int | None = Field(default=None, ge=40, le=800)
+    resizable: bool = True
+
+
 class MetricSpec(BaseModel):
     """A metric of the project: what to call it and how to read it.
 
@@ -81,6 +92,10 @@ class UiConfig(BaseModel):
     density: Literal["compact", "default", "comfortable"] | None = None
     theme: Literal["light", "dark"] | None = None
     run_columns: list[str] = Field(default_factory=list)
+    #: Widths and resize locks per column id; the rest keep the built-in widths.
+    columns: list[ColumnSpec] = Field(default_factory=list)
+    #: Whether the table lets the user resize columns at all.
+    column_resize: bool = True
     #: The metrics of the project. An empty list means "every metric a run returns".
     metrics: list[MetricSpec] = Field(default_factory=list)
     #: Which tabs the evaluation screen shows. An empty list means "all of them".

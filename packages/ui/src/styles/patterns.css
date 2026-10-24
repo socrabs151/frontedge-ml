@@ -279,6 +279,24 @@
   table-layout: fixed;
 }
 
+.fe-table__resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  z-index: 3;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+  background: transparent;
+}
+
+.fe-table__resizer:hover,
+.fe-table__resizer--active {
+  background: var(--fe-accent);
+  opacity: 0.35;
+}
+
 .fe-table__th {
   position: sticky;
   top: 0;

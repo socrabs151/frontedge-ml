@@ -19,7 +19,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from . import __version__
-from .config import ActionResult, ActionSpec, MetricSpec, UiConfig, load_config_file
+from .config import ActionResult, ActionSpec, ColumnSpec, MetricSpec, UiConfig, load_config_file
 from .gen import generate_client, generate_types
 from .models import DatasetDetail, DatasetInfo, EvalSummary, Run, RunsPage, RunsQuery
 from .providers import (
@@ -60,6 +60,7 @@ MODELS = [
     UiConfig,
     ActionSpec,
     ActionResult,
+    ColumnSpec,
     MetricSpec,
 ]
 
@@ -142,6 +143,16 @@ def _config_problems(path: Path) -> list[dict[str, str]]:
                 {"field": f"run_columns.{index}", "message": f"duplicate column: {column}"}
             )
         seen_columns.add(column)
+
+    seen_column_specs: set[str] = set()
+    for index, column in enumerate(config.columns):
+        if not column.id.strip():
+            problems.append({"field": f"columns.{index}.id", "message": "the id is empty"})
+        elif column.id in seen_column_specs:
+            problems.append(
+                {"field": f"columns.{index}.id", "message": f"duplicate column: {column.id}"}
+            )
+        seen_column_specs.add(column.id)
 
     seen_eval_tabs: set[str] = set()
     for index, tab in enumerate(config.eval_tabs):

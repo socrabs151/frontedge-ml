@@ -5,7 +5,9 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
+  type ColumnSizingState,
   type SortingState,
+  type Updater,
   type VisibilityState,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -24,7 +26,7 @@ import {
 } from "../format";
 import { MetricCell } from "./MetricCell";
 import { RunRibbon } from "./RunRibbon";
-import type { MetricSpec, Run } from "../types";
+import type { ColumnSpec, MetricSpec, Run } from "../types";
 
 const columnHelper = createColumnHelper<Run>();
 
@@ -49,6 +51,13 @@ export interface RunsTableProps {
   columnIds?: string[];
   /** The project's metric metadata: labels, digits, direction. */
   metricSpecs?: MetricSpec[];
+  /** Starting widths and per-column resize locks. */
+  columnSpecs?: ColumnSpec[];
+  /** Whether the user may resize columns at all. */
+  resizable?: boolean;
+  /** Widths picked by the user. Omit to keep them in the table's own state. */
+  columnSizing?: ColumnSizingState;
+  onColumnSizingChange?: (sizing: ColumnSizingState) => void;
 }
 
 const KNOWN_COLUMNS = [
@@ -74,11 +83,23 @@ export function RunsTable({
   rowActions = [],
   columnIds,
   metricSpecs = [],
+  columnSpecs = [],
+  resizable = true,
+  columnSizing,
+  onColumnSizingChange,
 }: RunsTableProps) {
   const { t, lang } = useI18n();
   const [sorting, setSorting] = useState<SortingState>([{ id: "startedAt", desc: true }]);
   const [activeRowIndex, setActiveRowIndex] = useState(0);
+  const [ownSizing, setOwnSizing] = useState<ColumnSizingState>({});
+  const sizing = columnSizing ?? ownSizing;
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const updateSizing = (updater: Updater<ColumnSizingState>) => {
+    const next = typeof updater === "function" ? updater(sizing) : updater;
+    if (onColumnSizingChange) onColumnSizingChange(next);
+    else setOwnSizing(next);
+  };
 
   const baseline = useMemo(
     () => runs.find((candidate) => candidate.id === baselineId),
@@ -112,7 +133,7 @@ export function RunsTable({
       ribbon: columnHelper.display({
         id: "ribbon",
         header: () => t("column.stages"),
-        size: 80,
+        size: 72,
         enableSorting: false,
         cell: (info) => (
           <RunRibbon stages={info.row.original.stages} events={info.row.original.events} height={6} />
@@ -150,7 +171,7 @@ export function RunsTable({
       startedAt: columnHelper.accessor("startedAt", {
         id: "startedAt",
         header: () => t("column.started"),
-        size: 100,
+        size: 98,
         cell: (info) => (
           <span title={formatAbsoluteTime(toTime(info.getValue()), lang)}>
             {formatRelativeTime(toTime(info.getValue()), now, lang)}
@@ -161,7 +182,7 @@ export function RunsTable({
       durationMs: columnHelper.accessor("durationMs", {
         id: "durationMs",
         header: () => t("column.duration"),
-        size: 80,
+        size: 76,
         cell: (info) => <span className="fe-num">{formatDuration(info.getValue(), lang)}</span>,
       }) as ColumnDef<Run, unknown>,
     };
@@ -244,7 +265,15 @@ export function RunsTable({
       }) as ColumnDef<Run, unknown>;
 
     const ids = columnIds && columnIds.length > 0 ? columnIds : [...KNOWN_COLUMNS];
-    const built = ids.map((id) => fixed[id] ?? custom(id));
+    const built = ids.map((id) => {
+      const def = fixed[id] ?? custom(id);
+      const spec = columnSpecs.find((item) => item.id === id);
+      return {
+        ...def,
+        size: spec?.width ?? def.size,
+        enableResizing: resizable && spec?.resizable !== false,
+      } as ColumnDef<Run, unknown>;
+    });
 
     if (rowActions.length > 0) {
       built.push(
@@ -253,6 +282,7 @@ export function RunsTable({
           header: () => t("column.actions"),
           size: 100,
           enableSorting: false,
+          enableResizing: false,
           cell: (info) => (
             <span className="fe-table__actions">
               {rowActions.map((action) => (
@@ -276,12 +306,25 @@ export function RunsTable({
     }
 
     return built;
-  }, [baseline, baselineId, columnIds, lang, metricSpecs, now, rowActions]);
+  }, [
+    baseline,
+    baselineId,
+    columnIds,
+    columnSpecs,
+    lang,
+    metricSpecs,
+    now,
+    resizable,
+    rowActions,
+  ]);
 
   const table = useReactTable({
     data: runs,
     columns,
-    state: { sorting, columnVisibility },
+    state: { sorting, columnVisibility, columnSizing: sizing },
+    columnResizeMode: "onChange",
+    enableColumnResizing: resizable,
+    onColumnSizingChange: updateSizing,
     onSortingChange: setSorting,
     onColumnVisibilityChange: (updater) => {
       const next = typeof updater === "function" ? updater(columnVisibility) : updater;
@@ -352,7 +395,7 @@ export function RunsTable({
   return (
     <div className="fe-table">
       <div className="fe-table__scroll" ref={scrollRef}>
-        <table className="fe-table__table">
+        <table className="fe-table__table" style={{ minWidth: table.getTotalSize() }}>
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -392,6 +435,38 @@ export function RunsTable({
                       ) : (
                         flexRender(header.column.columnDef.header, header.getContext())
                       )}
+                      {header.column.getCanResize() ? (
+                        <span
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={t("table.resizeColumn", { column: header.column.id })}
+                          aria-valuenow={Math.round(header.getSize())}
+                          aria-valuemin={40}
+                          aria-valuemax={800}
+                          tabIndex={0}
+                          className={clsx(
+                            "fe-table__resizer",
+                            header.column.getIsResizing() && "fe-table__resizer--active",
+                          )}
+                          onMouseDown={header.getResizeHandler()}
+                          onTouchStart={header.getResizeHandler()}
+                          onDoubleClick={() =>
+                            updateSizing((previous) => {
+                              const next = { ...previous };
+                              delete next[header.column.id];
+                              return next;
+                            })
+                          }
+                          onKeyDown={(event) => {
+                            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                            event.preventDefault();
+                            const step = event.shiftKey ? 24 : 8;
+                            const delta = event.key === "ArrowRight" ? step : -step;
+                            const width = Math.min(800, Math.max(40, header.getSize() + delta));
+                            updateSizing((previous) => ({ ...previous, [header.column.id]: width }));
+                          }}
+                        />
+                      ) : null}
                     </th>
                   );
                 })}

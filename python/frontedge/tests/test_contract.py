@@ -150,6 +150,44 @@ class TestDocumentTitle:
         assert "<title>&lt;script&gt;</title>" in response.text
 
 
+class TestColumnSpecs:
+    """Widths and resize locks are configuration, and the user's own widths win at runtime."""
+
+    def test_columns_reach_the_client(self, tmp_path: Any) -> None:
+        file = tmp_path / "frontedge.toml"
+        file.write_text(
+            '[[columns]]\nid = "name"\nwidth = 150\n\n[[columns]]\nid = "status"\nresizable = false\n',
+            encoding="utf-8",
+        )
+        app = FastAPI()
+        app.include_router(frontedge.mount(runs_provider, config=file))
+        config = TestClient(app).get("/frontedge/api/config").json()
+        assert config["columns"] == [
+            {"id": "name", "width": 150, "resizable": True},
+            {"id": "status", "width": None, "resizable": False},
+        ]
+        assert config["columnResize"] is True
+
+    def test_a_width_outside_the_bounds_is_rejected(self) -> None:
+        from frontedge.config import UiConfig
+
+        with pytest.raises(Exception):
+            UiConfig.model_validate({"columns": [{"id": "name", "width": 10}]})
+
+    def test_column_resize_can_be_switched_off(self) -> None:
+        from frontedge.config import UiConfig
+
+        assert UiConfig.model_validate({"column_resize": False}).column_resize is False
+
+    def test_duplicate_column_specs_are_reported(self, tmp_path: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        file = tmp_path / "frontedge.toml"
+        file.write_text('[[columns]]\nid = "name"\n\n[[columns]]\nid = "name"\n', encoding="utf-8")
+        assert main(["check", str(file)]) == 1
+        assert "duplicate column: name" in capsys.readouterr().err
+
+
 class TestEvalTabs:
     """The evaluation screen's tabs are configuration, not screen code."""
 

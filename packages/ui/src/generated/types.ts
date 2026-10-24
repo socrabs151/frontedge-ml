@@ -134,6 +134,11 @@ export interface ActionSpec {
   danger?: boolean;
   description?: string | null;
 }
+export interface ColumnSpec {
+  id: string;
+  width?: number | null;
+  resizable?: boolean;
+}
 export interface MetricSpec {
   id: string;
   label?: string | null;
@@ -145,6 +150,8 @@ export interface UiConfig {
   density?: "compact" | "default" | "comfortable" | null;
   theme?: "light" | "dark" | null;
   runColumns?: string[];
+  columns?: ColumnSpec[];
+  columnResize?: boolean;
   metrics?: MetricSpec[];
   evalTabs?: ("examples" | "summary")[];
   actions?: ActionSpec[];
