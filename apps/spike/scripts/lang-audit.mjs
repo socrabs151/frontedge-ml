@@ -105,7 +105,7 @@ for (const dictionary of dictionaries) {
 // --- 3. Literals in components -------------------------------------------
 
 const ATTRIBUTE = /(?:aria-label|ariaLabel|title|placeholder|alt)="([^"]*[A-Za-z]{2,}[^"]*)"/;
-const TEXT_NODE = />\s*([A-Za-z][^<>{}]{2,}?)\s*</;
+const TEXT_NODE = />\s*([A-Za-z][^<>{}]{2,}?)\s*<\//;
 const BARE_LINE = /^[A-Za-z][A-Za-z ]{1,40}$/;
 const NOT_A_LITERAL = [
   /^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)+$/,
@@ -131,12 +131,19 @@ function sources(dir, out = []) {
 
 for (const dir of ["packages/ui/src", "apps/spike/src"]) {
   for (const file of sources(join(root, dir))) {
-    readFileSync(file, "utf8").split(/\r?\n/).forEach((line, index) => {
+    const sourceLines = readFileSync(file, "utf8").split(/\r?\n/);
+    sourceLines.forEach((line, index) => {
       if (/^\s*import\b|^\s*\/\/|^\s*\*|^\s*\/\*/.test(line)) return;
       const candidates = [];
       const attribute = line.match(ATTRIBUTE);
       const textNode = line.match(TEXT_NODE);
-      const bare = BARE_LINE.test(line.trim()) ? line.trim() : null;
+      // A bare word is a text node only when a closing tag follows; a lone prop is not.
+      let bare = null;
+      if (BARE_LINE.test(line.trim())) {
+        const next =
+          sourceLines.slice(index + 1).find((candidate) => candidate.trim() !== "") ?? "";
+        if (next.trim().startsWith("<")) bare = line.trim();
+      }
       if (attribute) candidates.push(attribute[1]);
       if (textNode) candidates.push(textNode[1]);
       if (bare) candidates.push(bare);

@@ -151,6 +151,7 @@ import type {{
   EvalComparison,
   EvalSummary,
   Example,
+  ExampleResult,
   LogLine,
   Run,
   RunOption,
@@ -173,6 +174,16 @@ export interface RunsQuery {{
 
 export interface RunsPage {{
   items: Run[];
+  total: number;
+}}
+
+export interface ExamplesPage {{
+  items: Example[];
+  total: number;
+}}
+
+export interface DatasetExamplesPage {{
+  items: ExampleResult[];
   total: number;
 }}
 
@@ -258,8 +269,47 @@ export function createClient(options: FrontedgeClientOptions = {{
       const search = params.toString();
       return json<RunOption[]>(`/runs/options${{search ? `?${{search}}` : ""}}`);
     }},
-    examples: (runId: string) =>
-      json<Example[]>(`/runs/${{encodeURIComponent(runId)}}/examples`),
+    examples: async (
+      runId: string,
+      query: {{ offset?: number; limit?: number; changed?: boolean }} = {{}},
+    ): Promise<ExamplesPage> => {{
+      const params = new URLSearchParams();
+      if (query.offset) params.set("offset", String(query.offset));
+      if (query.limit !== undefined) params.set("limit", String(query.limit));
+      if (query.changed) params.set("changed", "true");
+      const search = params.toString();
+      const path = `/runs/${{encodeURIComponent(runId)}}/examples${{search ? `?${{search}}` : ""}}`;
+      const response = await doFetch(`${{basePath}}${{path}}`, {{
+        headers: {{ accept: "application/json" }},
+      }});
+      if (!response.ok) {{
+        throw await failure(response, path);
+      }}
+      const items = (await response.json()) as Example[];
+      const total = Number(response.headers.get("X-Frontedge-Total") ?? items.length);
+      return {{ items, total }};
+    }},
+    datasetExamples: async (
+      datasetId: string,
+      query: {{ offset?: number; limit?: number; search?: string }} = {{}},
+    ): Promise<DatasetExamplesPage> => {{
+      const params = new URLSearchParams();
+      if (query.offset) params.set("offset", String(query.offset));
+      if (query.limit !== undefined) params.set("limit", String(query.limit));
+      if (query.search) params.set("search", query.search);
+      const search = params.toString();
+      const path =
+        `/datasets/${{encodeURIComponent(datasetId)}}/examples${{search ? `?${{search}}` : ""}}`;
+      const response = await doFetch(`${{basePath}}${{path}}`, {{
+        headers: {{ accept: "application/json" }},
+      }});
+      if (!response.ok) {{
+        throw await failure(response, path);
+      }}
+      const items = (await response.json()) as ExampleResult[];
+      const total = Number(response.headers.get("X-Frontedge-Total") ?? items.length);
+      return {{ items, total }};
+    }},
     getRun: (runId: string) => json<Run>(`/runs/${{runId}}`),
     artifactUrl: (artifactId: string) =>
       `${{basePath}}/artifacts/${{encodeURIComponent(artifactId)}}/content`,

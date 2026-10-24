@@ -19,6 +19,7 @@ from ..models import (
     EvalComparison,
     EvalSummary,
     Example,
+    ExampleResult,
     LogLine,
     Run,
     RunOption,
@@ -55,9 +56,31 @@ class RunPayload(Run):
     log_stream_url: str
 
 
-def _run_payload(run: Run, path: str) -> RunPayload:
+#: The list only draws a sparkline: 24 points are enough, and the payload stays small.
+SPARKLINE_POINTS = 24
+
+
+def _downsample(points: list[Any], limit: int = SPARKLINE_POINTS) -> list[Any]:
+    if len(points) <= limit:
+        return points
+    step = (len(points) - 1) / (limit - 1)
+    return [points[round(index * step)] for index in range(limit)]
+
+
+def _run_payload(run: Run, path: str, *, sparkline: bool = False) -> RunPayload:
+    """A run as the API returns it.
+
+    ``sparkline=True`` is for the list: every series is downsampled, because the table draws a
+    24-pixel graph. The detail endpoint returns the full series for the charts.
+    """
+    series = (
+        {name: _downsample(points) for name, points in run.series.items()}
+        if sparkline
+        else run.series
+    )
     return RunPayload(
-        **run.model_dump(),
+        **run.model_dump(exclude={"series"}),
+        series=series,
         log_stream_url=f"{path}/api/runs/{run.id}/logs/stream",
     )
 
@@ -146,10 +169,10 @@ def _build_router(
             if isinstance(result, RunsPage):
                 runs_ = as_models(result.items, Run, "list_runs")
                 response.headers["X-Frontedge-Total"] = str(result.total)
-                return [_run_payload(run, path) for run in runs_]
+                return [_run_payload(run, path, sparkline=True) for run in runs_]
             runs_ = as_models(result, Run, "list_runs")
             response.headers["X-Frontedge-Total"] = str(len(runs_))
-            return [_run_payload(run, path) for run in runs_]
+            return [_run_payload(run, path, sparkline=True) for run in runs_]
         else:
             runs_ = as_models(await source.list_runs(request), Run, "list_runs")
             total = len(runs_)
@@ -169,7 +192,7 @@ def _build_router(
                 runs_ = runs_[: query.limit]
 
         response.headers["X-Frontedge-Total"] = str(total)
-        return [_run_payload(run, path) for run in runs_]
+        return [_run_payload(run, path, sparkline=True) for run in runs_]
 
     @router.get(
         "/api/runs/options",
@@ -222,14 +245,26 @@ def _build_router(
         response_model=list[Example],
     )
     @_provider_errors
-    async def list_examples(request: Request, run_id: str) -> list[Example]:
-        """The examples of a run — empty when the provider does not serve them."""
+    async def list_examples(
+        request: Request,
+        response: Response,
+        run_id: str,
+        offset: int = 0,
+        limit: int | None = None,
+        changed: bool = False,
+    ) -> list[Example]:
+        """The examples of a run, a page at a time; the total is in X-Frontedge-Total."""
         if not provider_has_examples(source):
             return []
         run = as_model_or_none(await source.get_run(request, run_id), Run, "get_run")
         if run is None:
             raise HTTPException(status_code=404, detail="Run not found")
-        return as_models(await source.list_examples(request, run_id), Example, "list_examples")
+        items = as_models(await source.list_examples(request, run_id), Example, "list_examples")
+        if changed:
+            items = [example for example in items if example.score != example.baseline_score]
+        response.headers["X-Frontedge-Total"] = str(len(items))
+        page = items[max(0, offset) :]
+        return page[: max(0, limit)] if limit is not None else page
 
     @router.get(
         "/api/runs/{run_id}/logs/stream",
@@ -353,6 +388,40 @@ def _build_router(
         if result is None:
             raise HTTPException(status_code=404, detail="Dataset not found")
         return result
+
+    @router.get(
+        "/api/datasets/{dataset_id}/examples",
+        tags=["frontedge"],
+        response_model=list[ExampleResult],
+    )
+    @_provider_errors
+    async def dataset_examples(
+        request: Request,
+        response: Response,
+        dataset_id: str,
+        offset: int = 0,
+        limit: int | None = None,
+        search: str | None = None,
+    ) -> list[ExampleResult]:
+        """A page of the dataset examples; X-Frontedge-Total carries the filtered total."""
+        if datasets is None:
+            return []
+        detail = as_model_or_none(
+            await datasets.get_dataset(request, dataset_id), DatasetDetail, "get_dataset"
+        )
+        if detail is None:
+            raise HTTPException(status_code=404, detail="Dataset not found")
+        items = as_models(detail.examples, ExampleResult, "get_dataset")
+        if search:
+            needle = search.strip().lower()
+            items = [
+                example
+                for example in items
+                if needle in example.input.lower() or needle in example.output.lower()
+            ]
+        response.headers["X-Frontedge-Total"] = str(len(items))
+        page = items[max(0, offset) :]
+        return page[: max(0, limit)] if limit is not None else page
 
     # --- Metadata and interface -------------------------------------------
 

@@ -7,10 +7,13 @@ import {
   useI18n,
 } from "@frontedge/ui";
 import { RefreshCw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import type { DatasetDetail, DatasetInfo } from "@frontedge/ui";
+import { useEffect, useState } from "react";
+import type { DatasetDetail, DatasetInfo, ExampleResult } from "@frontedge/ui";
 import { useAppT } from "../i18n";
+import { Pager } from "../components/Pager";
 import { errorMessage, source } from "../data/source";
+
+const EXAMPLE_PAGE = 20;
 
 export function DatasetScreen() {
   const t = useAppT();
@@ -19,6 +22,9 @@ export function DatasetScreen() {
   const [datasets, setDatasets] = useState<DatasetInfo[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<DatasetDetail | null>(null);
+  const [examples, setExamples] = useState<ExampleResult[]>([]);
+  const [examplesTotal, setExamplesTotal] = useState(0);
+  const [examplesOffset, setExamplesOffset] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState("examples");
   const [search, setSearch] = useState("");
@@ -57,16 +63,35 @@ export function DatasetScreen() {
     };
   }, [selectedId]);
 
-  const examples = useMemo(() => {
-    if (!detail) return [];
-    const query = search.trim().toLowerCase();
-    if (!query) return detail.examples ?? [];
-    return (detail.examples ?? []).filter(
-      (example) =>
-        example.input.toLowerCase().includes(query) ||
-        example.output.toLowerCase().includes(query),
-    );
-  }, [detail, search]);
+  useEffect(() => {
+    if (!selectedId) {
+      setExamples([]);
+      setExamplesTotal(0);
+      return;
+    }
+    let cancelled = false;
+    // A short debounce: typing in the search must not fire a request per keystroke.
+    const timer = window.setTimeout(() => {
+      source
+        .datasetExamples(selectedId, {
+          offset: examplesOffset,
+          limit: EXAMPLE_PAGE,
+          search: search.trim() || undefined,
+        })
+        .then((page) => {
+          if (cancelled) return;
+          setExamples(page.items);
+          setExamplesTotal(page.total);
+        })
+        .catch((cause) => {
+          if (!cancelled) setError(errorMessage(cause));
+        });
+    }, 200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [selectedId, examplesOffset, search]);
 
   if (error) {
     return (
@@ -88,7 +113,7 @@ export function DatasetScreen() {
     {
       value: "examples",
       label: t("detail.examples"),
-      count: examples.length,
+      count: examplesTotal,
       content: (
         <div className="fe-detail__stack">
           <div className="fe-toolbar">
@@ -98,13 +123,24 @@ export function DatasetScreen() {
               value={search}
               placeholder={t("datasets.examplesSearch")}
               aria-label={t("datasets.examplesSearch")}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setExamplesOffset(0);
+              }}
             />
           </div>
-          {examples.length === 0 ? (
+          {examplesTotal === 0 ? (
             <p className="fe-note">{t("datasets.noExamples", { query: search })}</p>
           ) : (
-            <DatasetTable examples={examples} />
+            <>
+              <DatasetTable examples={examples} />
+              <Pager
+                offset={examplesOffset}
+                total={examplesTotal}
+                pageSize={EXAMPLE_PAGE}
+                onChange={setExamplesOffset}
+              />
+            </>
           )}
         </div>
       ),
@@ -139,7 +175,10 @@ export function DatasetScreen() {
               type="button"
               className="fe-datasets__item"
               aria-current={dataset.id === selectedId}
-              onClick={() => setSelectedId(dataset.id)}
+              onClick={() => {
+                setSelectedId(dataset.id);
+                setExamplesOffset(0);
+              }}
             >
               <span className="fe-datasets__name">{dataset.name}</span>
               <span className="fe-datasets__meta">

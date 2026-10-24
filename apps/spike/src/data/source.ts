@@ -6,6 +6,7 @@ import type {
   EvalComparison,
   EvalSummary,
   Example,
+  ExampleResult,
   FrontedgeMeta,
   LogLine,
   Run,
@@ -49,9 +50,16 @@ export interface RunsSource {
   meta(): Promise<FrontedgeMeta>;
   listRuns(query?: RunsQuery): Promise<RunsPage>;
   /** Compact list for the baseline and comparison pickers. */
-  runOptions(): Promise<RunOption[]>;
+  runOptions(query?: { search?: string }): Promise<RunOption[]>;
   getRun(runId: string): Promise<Run>;
-  examples(runId: string): Promise<Example[]>;
+  examples(
+    runId: string,
+    query?: { offset?: number; limit?: number; changed?: boolean },
+  ): Promise<{ items: Example[]; total: number }>;
+  datasetExamples(
+    datasetId: string,
+    query?: { offset?: number; limit?: number; search?: string },
+  ): Promise<{ items: ExampleResult[]; total: number }>;
   streamLogs(runId: string): AsyncGenerator<LogLine>;
   listEvals(): Promise<EvalSummary[]>;
   compareEval(
@@ -112,8 +120,12 @@ export const mockSource: RunsSource = {
     const page = query.limit === undefined ? runs.slice(offset) : runs.slice(offset, offset + query.limit);
     return { items: page, total };
   },
-  async runOptions() {
-    return mockRuns.slice(0, 500).map((run) => ({
+  async runOptions(query = {}) {
+    const needle = query.search?.trim().toLowerCase();
+    const found = needle
+      ? mockRuns.filter((run) => run.name.toLowerCase().includes(needle))
+      : mockRuns;
+    return found.slice(0, 500).map((run) => ({
       id: run.id,
       name: run.name,
       status: run.status,
@@ -127,8 +139,13 @@ export const mockSource: RunsSource = {
     if (!run) throw new Error(`Run ${runId} was not found`);
     return run;
   },
-  async examples() {
-    return mockExamples;
+  async examples(_runId, query = {}) {
+    const items = query.changed
+      ? mockExamples.filter((example) => example.score !== example.baselineScore)
+      : mockExamples;
+    const offset = query.offset ?? 0;
+    const limit = query.limit ?? items.length;
+    return { items: items.slice(offset, offset + limit), total: items.length };
   },
   async *streamLogs() {
     for (const line of mockLogs) {
@@ -146,6 +163,21 @@ export const mockSource: RunsSource = {
   },
   async getDataset(datasetId) {
     return makeDatasetDetail(datasetId) as unknown as DatasetDetail;
+  },
+  async datasetExamples(datasetId, query = {}) {
+    const detail = makeDatasetDetail(datasetId) as unknown as DatasetDetail;
+    let items = detail.examples ?? [];
+    if (query.search) {
+      const needle = query.search.trim().toLowerCase();
+      items = items.filter(
+        (example) =>
+          example.input.toLowerCase().includes(needle) ||
+          example.output.toLowerCase().includes(needle),
+      );
+    }
+    const offset = query.offset ?? 0;
+    const limit = query.limit ?? items.length;
+    return { items: items.slice(offset, offset + limit), total: items.length };
   },
   async config() {
     return {
@@ -189,9 +221,10 @@ export const apiSource: RunsSource = {
   kind: "api",
   meta: () => client.meta(),
   listRuns: (query) => client.listRuns(query ?? {}),
-  runOptions: () => client.runOptions({ limit: 500 }),
+  runOptions: (query) => client.runOptions({ limit: 500, search: query?.search }),
   getRun: (runId) => client.getRun(runId),
-  examples: (runId) => client.examples(runId),
+  examples: (runId, query) => client.examples(runId, query),
+  datasetExamples: (datasetId, query) => client.datasetExamples(datasetId, query),
   streamLogs: (runId) => client.streamLogs(runId),
   listEvals: () => client.listEvals(),
   compareEval: (evalId, reference, comparison) => client.compareEval(evalId, reference, comparison),

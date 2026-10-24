@@ -16,7 +16,10 @@ import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Example, LogLine, Run, UiConfig } from "@frontedge/ui";
 import { useAppT } from "../i18n";
+import { Pager } from "../components/Pager";
 import { errorMessage, source } from "../data/source";
+
+const EXAMPLE_PAGE = 20;
 
 export function RunDetailScreen({
   runId,
@@ -35,6 +38,8 @@ export function RunDetailScreen({
   const t = useAppT();
   const [run, setRun] = useState<Run | null>(null);
   const [examples, setExamples] = useState<Example[]>([]);
+  const [examplesTotal, setExamplesTotal] = useState(0);
+  const [examplesOffset, setExamplesOffset] = useState(0);
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState("metrics");
@@ -63,6 +68,8 @@ export function RunDetailScreen({
     setRun(null);
     setLogs([]);
     setExamples([]);
+    setExamplesTotal(0);
+    setExamplesOffset(0);
 
     source
       .getRun(runId)
@@ -72,13 +79,6 @@ export function RunDetailScreen({
       .catch((cause) => {
         if (!cancelled) setError(errorMessage(cause));
       });
-
-    source
-      .examples(runId)
-      .then((loaded) => {
-        if (!cancelled) setExamples(loaded);
-      })
-      .catch(() => undefined);
 
     const stream = source.streamLogs(runId);
     void (async () => {
@@ -96,6 +96,21 @@ export function RunDetailScreen({
       cancelled = true;
     };
   }, [runId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    source
+      .examples(runId, { offset: examplesOffset, limit: EXAMPLE_PAGE, changed: onlyDiff })
+      .then((page) => {
+        if (cancelled) return;
+        setExamples(page.items);
+        setExamplesTotal(page.total);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [runId, examplesOffset, onlyDiff]);
 
   if (error) {
     return (
@@ -213,7 +228,7 @@ export function RunDetailScreen({
     {
       value: "examples",
       label: t("detail.examples"),
-      count: examples.length,
+      count: examplesTotal,
       content: (
         <div className="fe-detail__stack">
           <div className="fe-detail__toolbar">
@@ -221,16 +236,27 @@ export function RunDetailScreen({
               <input
                 type="checkbox"
                 checked={onlyDiff}
-                onChange={(event) => setOnlyDiff(event.target.checked)}
+                onChange={(event) => {
+                  setOnlyDiff(event.target.checked);
+                  setExamplesOffset(0);
+                }}
               />
               {t("evals.onlyDiff")}
             </label>
-              <span className="fe-note fe-note--inline">{t("detail.scoreNote")}</span>
+            <span className="fe-note fe-note--inline">{t("detail.scoreNote")}</span>
           </div>
-          {examples.length === 0 ? (
+          {examplesTotal === 0 && !onlyDiff ? (
             <p className="fe-note">{t("detail.examplesMissing")}</p>
           ) : (
-            <ExamplesTable examples={examples} onlyDiff={onlyDiff} />
+            <>
+              <ExamplesTable examples={examples} onlyDiff={onlyDiff} />
+              <Pager
+                offset={examplesOffset}
+                total={examplesTotal}
+                pageSize={EXAMPLE_PAGE}
+                onChange={setExamplesOffset}
+              />
+            </>
           )}
         </div>
       ),

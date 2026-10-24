@@ -152,6 +152,108 @@ class TestStaticCache:
         assert response.headers["cache-control"] == "no-cache"
 
 
+class TestExamplePaging:
+    def test_run_examples_are_paged(self) -> None:
+        examples = [make_example(id=f"ex-{index:02d}") for index in range(45)]
+
+        class WithExamples:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+            async def list_examples(self, request: Any, run_id: str) -> list[Any]:
+                return examples
+
+        response = client_for(WithExamples()).get(
+            "/frontedge/api/runs/run-000/examples?offset=20&limit=10"
+        )
+        assert [example["id"] for example in response.json()] == [
+            f"ex-{index:02d}" for index in range(20, 30)
+        ]
+        assert response.headers["x-frontedge-total"] == "45"
+
+    def test_changed_only_is_filtered_before_paging(self) -> None:
+        examples = [
+            make_example(id="ex-0", score=0.5, baseline_score=0.5),
+            make_example(id="ex-1", score=0.7, baseline_score=0.5),
+        ]
+
+        class WithExamples:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+            async def list_examples(self, request: Any, run_id: str) -> list[Any]:
+                return examples
+
+        response = client_for(WithExamples()).get(
+            "/frontedge/api/runs/run-000/examples?changed=true"
+        )
+        assert [example["id"] for example in response.json()] == ["ex-1"]
+        assert response.headers["x-frontedge-total"] == "1"
+
+    def test_dataset_examples_are_paged_and_searchable(self) -> None:
+        rows = [
+            frontedge.ExampleResult(id="ex-0", input="alpha", output="a", changed=False),
+            frontedge.ExampleResult(id="ex-1", input="beta", output="b", changed=False),
+            frontedge.ExampleResult(id="ex-2", input="alpha two", output="c", changed=False),
+        ]
+
+        class Datasets:
+            async def list_datasets(self, request: Any) -> list[Any]:
+                return []
+
+            async def get_dataset(self, request: Any, dataset_id: str) -> Any:
+                return frontedge.DatasetDetail(
+                    id="d1",
+                    name="demo",
+                    version="v1",
+                    examples_count=len(rows),
+                    tags=[],
+                    datasheet=[],
+                    examples=rows,
+                )
+
+        response = client_for(datasets=Datasets()).get(
+            "/frontedge/api/datasets/d1/examples?search=alpha&offset=1&limit=1"
+        )
+        assert [example["id"] for example in response.json()] == ["ex-2"]
+        assert response.headers["x-frontedge-total"] == "2"
+
+
+class TestScale:
+    def test_the_list_returns_a_sparkline_not_the_full_series(self) -> None:
+        points = [frontedge.MetricPoint(step=index, value=index / 100) for index in range(100)]
+        run = make_run(series={"accuracy": points})
+
+        async def series_provider(request: Any) -> list[Run]:
+            return [run]
+
+        client = client_for(series_provider)
+        listed = client.get("/frontedge/api/runs").json()[0]
+        detail = client.get("/frontedge/api/runs/run-000").json()
+        assert len(listed["series"]["accuracy"]) == 24
+        assert len(detail["series"]["accuracy"]) == 100
+        assert listed["series"]["accuracy"][0]["step"] == 0
+        assert listed["series"]["accuracy"][-1]["step"] == 99
+
+    def test_ten_thousand_runs_page_and_pick(self) -> None:
+        many = [make_run(id=f"run-{index:05d}", name=f"exp-{index:05d}") for index in range(10_000)]
+
+        async def many_provider(request: Any) -> list[Run]:
+            return many
+
+        client = client_for(many_provider)
+        response = client.get("/frontedge/api/runs?limit=50")
+        assert len(response.json()) == 50
+        assert response.headers["x-frontedge-total"] == "10000"
+        assert len(client.get("/frontedge/api/runs/options?limit=1000").json()) == 1000
+
+
 class TestTags:
     def test_tags_default_to_empty(self) -> None:
         assert make_run().tags == []

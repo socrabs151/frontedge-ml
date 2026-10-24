@@ -122,6 +122,13 @@ The following are **public contracts** and change only in a major release:
   WebKit in CI next to Chromium (`FE_BROWSER`).
 - `Run.tags`: a free list of project labels. The toolbar filters by one tag (server-side through
   `query.tag`), the `tags` column shows chips, and the run header lists them.
+- Run examples are paged (`offset`, `limit`, `changed` for "differences only") with the total in
+  `X-Frontedge-Total`; dataset examples have their own paged, searchable endpoint. Both screens
+  show a Prev/Next pager instead of loading every example.
+- The runs list downsamples each series to 24 points for the sparkline; the detail keeps the full
+  series. The test suite lists a 10 000-run project with `limit` and picks from it.
+- The baseline and comparison pickers search the compact endpoint (`search`), so a run outside the
+  current page is selectable; the chosen baseline is fetched by id, so the deltas do not disappear.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

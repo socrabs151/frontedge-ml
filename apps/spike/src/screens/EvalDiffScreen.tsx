@@ -8,9 +8,10 @@ import {
   type DeltaFormat,
 } from "@frontedge/ui";
 import { RefreshCw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { EvalComparison, EvalSummary, RunOption, UiConfig } from "@frontedge/ui";
 import { useAppT } from "../i18n";
+import { RunPicker } from "../components/RunPicker";
 import { errorMessage, source } from "../data/source";
 
 type EvalTab = "examples" | "summary";
@@ -85,16 +86,6 @@ export function EvalDiffScreen({
       cancelled = true;
     };
   }, [evalId, reference, comparisonRun]);
-
-  const runOptions = useMemo(
-    () =>
-      runChoices.map((run) => (
-        <option key={run.id} value={run.id}>
-          {run.name}
-        </option>
-      )),
-    [runChoices],
-  );
 
   const configuredTabs: EvalTab[] =
     config?.evalTabs && config.evalTabs.length > 0
@@ -226,25 +217,25 @@ export function EvalDiffScreen({
         </select>
         <label className="fe-field">
           <span className="fe-field__label">{t("evals.reference")}</span>
-          <select
-            className="fe-select"
+          <RunPicker
             value={reference}
-            onChange={(event) => setReference(event.target.value)}
-            aria-label={t("evals.reference")}
-          >
-            {runOptions}
-          </select>
+            options={runChoices}
+            onSearch={(search) => source.runOptions({ search })}
+            onChange={setReference}
+            label={t("evals.reference")}
+            placeholder={t("runs.searchPlaceholder")}
+          />
         </label>
         <label className="fe-field">
           <span className="fe-field__label">{t("evals.run")}</span>
-          <select
-            className="fe-select"
+          <RunPicker
             value={comparisonRun}
-            onChange={(event) => setComparisonRun(event.target.value)}
-            aria-label={t("evals.run")}
-          >
-            {runOptions}
-          </select>
+            options={runChoices}
+            onSearch={(search) => source.runOptions({ search })}
+            onChange={setComparisonRun}
+            label={t("evals.run")}
+            placeholder={t("runs.searchPlaceholder")}
+          />
         </label>
       </div>
 

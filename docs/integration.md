@@ -162,7 +162,12 @@ app.include_router(frontedge.mount(MyProvider()))
 
 `stream_logs` is optional: without it the log stream stays empty. `read_artifact` is optional too.
 
-The total is returned in the `X-Frontedge-Total` header of `GET /api/runs`.
+The total is returned in the `X-Frontedge-Total` header of `GET /api/runs`, and the same header
+carries the count for the paged examples endpoints.
+
+The list carries a **24-point sparkline** per series (the table draws a 24-pixel graph); the detail
+endpoint carries the full series for the charts. The provider still returns full series: the
+server downsamples them on the way out, so a page of 50 runs does not ship 50 × 60 points.
 
 ### Check the provider before the server starts
 
@@ -201,13 +206,14 @@ router title in the OpenAPI document.
 | `GET /frontedge/api/runs` | a list of runs; accepts `limit`, `offset`, `search`, `status`, `dataset`, `tag` and answers with the `X-Frontedge-Total` header |
 | `GET /frontedge/api/runs/options` | a compact list for the pickers (`id`, `name`, `status`), `limit` up to 1000, `search` |
 | `GET /frontedge/api/runs/{id}` | one run |
-| `GET /frontedge/api/runs/{id}/examples` | the examples of a run (empty without `list_examples`) |
+| `GET /frontedge/api/runs/{id}/examples` | a page of the run examples (`offset`, `limit`, `changed`); the total is in `X-Frontedge-Total` |
 | `GET /frontedge/api/runs/{id}/logs/stream` | a log stream (SSE, `event: log`) |
 | `GET /frontedge/api/artifacts/{id}/content` | the bytes of an artifact (needs `read_artifact`) |
 | `GET /frontedge/api/evals` | a list of evaluations (if `evals=` is connected) |
 | `GET /frontedge/api/evals/{id}/compare?reference=&comparison=` | a comparison of two runs |
 | `GET /frontedge/api/datasets` | a list of datasets (if `datasets=` is connected) |
 | `GET /frontedge/api/datasets/{id}` | a dataset with its examples |
+| `GET /frontedge/api/datasets/{id}/examples` | a page of the dataset examples (`offset`, `limit`, `search`); the total is in `X-Frontedge-Total` |
 | `GET /frontedge/api/config` | the interface configuration (see §5) |
 | `GET /frontedge/api/meta` | the status, freshness and metric-direction vocabularies, plus the capabilities (see below) |
 | `POST /frontedge/api/actions/{id}` | runs a project action (see §6) |

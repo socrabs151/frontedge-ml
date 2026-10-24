@@ -183,10 +183,33 @@ function Shell() {
     return () => window.clearInterval(timer);
   }, [config, load]);
 
-  const baseline = useMemo(() => {
+  const pageBaseline = useMemo(() => {
     if (!runs) return undefined;
     return runs.find((run) => run.id === baselineId) ?? runs.find((run) => run.status === "succeeded");
   }, [runs, baselineId]);
+
+  // The baseline may be outside the current page: fetch it once so the deltas stay honest.
+  const [baselineRun, setBaselineRun] = useState<Run | undefined>(undefined);
+  useEffect(() => {
+    if (!baselineId) {
+      setBaselineRun(undefined);
+      return;
+    }
+    let cancelled = false;
+    source
+      .getRun(baselineId)
+      .then((run) => {
+        if (!cancelled) setBaselineRun(run);
+      })
+      .catch(() => {
+        if (!cancelled) setBaselineRun(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [baselineId]);
+
+  const baseline = baselineRun ?? pageBaseline;
 
   return (
     <TooltipProvider>
@@ -299,7 +322,8 @@ function Shell() {
               updatedAt={updatedAt}
               query={query}
               onQueryChange={setQuery}
-              baselineId={baseline?.id}
+              baselineId={baselineId ?? pageBaseline?.id}
+              baselineRun={baselineRun}
               onBaselineChange={setBaselineId}
               config={config}
               datasets={DATASET_NAMES}

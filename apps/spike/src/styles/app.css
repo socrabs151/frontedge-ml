@@ -30,6 +30,73 @@ body {
   padding: 0;
 }
 
+/* --- Run picker ------------------------------------------------------ */
+
+.fe-runpicker__wrap {
+  position: relative;
+}
+
+.fe-runpicker__trigger {
+  min-width: 170px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.fe-runpicker {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 40;
+  width: 280px;
+  padding: var(--fe-space-1);
+  background: var(--fe-surface-overlay);
+  border: 1px solid var(--fe-border);
+  border-radius: var(--fe-radius-panel);
+  box-shadow: var(--fe-overlay-shadow);
+}
+
+.fe-runpicker__search {
+  width: 100%;
+  margin-bottom: var(--fe-space-1);
+}
+
+.fe-runpicker__list {
+  max-height: 240px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.fe-runpicker__option {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fe-space-2);
+  padding: 6px var(--fe-space-2);
+  border-radius: var(--fe-radius-control);
+  font-size: var(--fe-text-13);
+  cursor: pointer;
+}
+
+.fe-runpicker__option[data-active="true"] {
+  background: var(--fe-surface-hover);
+}
+
+.fe-runpicker__option[aria-selected="true"] {
+  background: var(--fe-surface-selected);
+}
+
+.fe-runpicker__meta {
+  color: var(--fe-text-muted);
+  font-size: var(--fe-text-11);
+}
+
+.fe-runpicker__empty {
+  padding: 6px var(--fe-space-2);
+  color: var(--fe-text-muted);
+  font-size: var(--fe-text-13);
+}
+
 /* --- Top bar --------------------------------------------------------- */
 
 .topbar {

@@ -40,6 +40,8 @@ export interface RowAction {
 export interface RunsTableProps {
   runs: Run[];
   baselineId?: string;
+  /** The baseline when it is not on the loaded page: deltas must not silently disappear. */
+  baselineRun?: Run;
   now: number;
   rowHeight: number;
   columnVisibility: VisibilityState;
@@ -89,6 +91,7 @@ const isNumericColumn = (id: string) => !TEXT_COLUMNS.has(id);
 export function RunsTable({
   runs,
   baselineId,
+  baselineRun,
   now,
   rowHeight,
   columnVisibility,
@@ -116,8 +119,8 @@ export function RunsTable({
   };
 
   const baseline = useMemo(
-    () => runs.find((candidate) => candidate.id === baselineId),
-    [runs, baselineId],
+    () => runs.find((candidate) => candidate.id === baselineId) ?? baselineRun,
+    [runs, baselineId, baselineRun],
   );
 
   const columns = useMemo(() => {

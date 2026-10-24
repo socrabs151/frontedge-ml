@@ -139,6 +139,30 @@ async function checkDeepLink() {
   return ok ? 0 : 1;
 }
 
+/** The run pickers search through the compact endpoint; axe visits the open panel too. */
+async function checkPicker() {
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".fe-table__row");
+  const trigger = page.locator(".fe-runpicker__trigger").first();
+  await trigger.click();
+  await page.waitForSelector(".fe-runpicker", { timeout: 5000 });
+  const search = page.getByRole("combobox").first();
+  await search.fill("exp-18");
+  await page.waitForTimeout(500);
+  const options = await page.getByRole("option").count();
+  const problems = await audit("run picker", page);
+  await search.press("Enter");
+  await page.waitForTimeout(300);
+  const chosen = (await trigger.textContent())?.trim() ?? "";
+  const ok = options > 0 && chosen.includes("exp-18");
+  console.log(
+    ok
+      ? `picker: searched ${options} option(s), selected ${chosen}`
+      : `picker: options=${options} chosen=${chosen}`,
+  );
+  return problems + (ok ? 0 : 1);
+}
+
 /** Loading, empty and error are states too: every one must pass axe. */
 async function auditStates() {
   const statePage = await context.newPage();
@@ -217,6 +241,7 @@ await page.waitForSelector(".fe-table__row");
 await shoot("07-runs-light-1280");
 
 layoutProblems += await checkDeepLink();
+seriousTotal += await checkPicker();
 seriousTotal += await auditStates();
 
 await browser.close();

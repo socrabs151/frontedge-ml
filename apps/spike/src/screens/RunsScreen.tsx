@@ -12,6 +12,7 @@ import { Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Run, RunOption, RunStatus, UiConfig } from "@frontedge/ui";
 import { useAppT } from "../i18n";
+import { RunPicker } from "../components/RunPicker";
 import { errorMessage, source, type RunsQuery } from "../data/source";
 
 const STATUS_FILTERS: Array<{
@@ -48,6 +49,8 @@ export interface RunsScreenProps {
   query: RunsQuery;
   onQueryChange: (query: RunsQuery) => void;
   baselineId?: string;
+  /** The baseline run when it is not on the current page. */
+  baselineRun?: Run;
   onBaselineChange: (runId: string | undefined) => void;
   config: UiConfig | null;
   datasets: string[];
@@ -72,6 +75,7 @@ export function RunsScreen({
   query,
   onQueryChange,
   baselineId,
+  baselineRun,
   onBaselineChange,
   config,
   datasets,
@@ -131,16 +135,6 @@ export function RunsScreen({
     [config],
   );
 
-  const baselineOptions = useMemo(
-    () =>
-      runChoices.map((run) => (
-        <option key={run.id} value={run.id}>
-          {run.name}
-        </option>
-      )),
-    [runChoices],
-  );
-
   return (
     <div className="fe-runs">
       <header className="fe-runs__head">
@@ -151,14 +145,14 @@ export function RunsScreen({
         <div className="fe-runs__actions">
           <label className="fe-field">
             <span className="fe-field__label">{t("runs.baseline")}</span>
-            <select
-              className="fe-select"
-              value={baselineId ?? ""}
-              onChange={(event) => onBaselineChange(event.target.value || undefined)}
-              aria-label={t("runs.baseline")}
-            >
-              {baselineOptions}
-            </select>
+            <RunPicker
+              value={baselineId}
+              options={runChoices}
+              onSearch={(search) => source.runOptions({ search })}
+              onChange={(id) => onBaselineChange(id || undefined)}
+              label={t("runs.baseline")}
+              placeholder={t("runs.searchPlaceholder")}
+            />
           </label>
           <Button
             variant="ghost"
@@ -311,6 +305,7 @@ export function RunsScreen({
           <RunsTable
             runs={runs}
             baselineId={baselineId}
+            baselineRun={baselineRun}
             now={now}
             rowHeight={rowHeight}
             columnVisibility={columnVisibility}
