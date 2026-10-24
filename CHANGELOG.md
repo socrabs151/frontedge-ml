@@ -69,6 +69,9 @@ The following are **public contracts** and change only in a major release:
 - The sparkline in a metric cell is pinned to the cell's right edge: the graphs of a column share
   one baseline even when the deltas differ in width. The cell no longer clips its content, and the
   browser gate checks both.
+- A delta below the precision of the value it sits next to reads `±0` (the tooltip keeps the exact
+  number), so an exponential like `+4.00e-4` cannot break the column's rhythm. A value still falls
+  back to the exponential form when the fixed form would show zero.
 - `Run.dataset`, `Run.git_sha` and `Run.owner` are optional and default to an empty string; the
   interface shows an en dash, so an adapter does not have to invent a dataset or a commit.
 - `Artifact.kind` and `LogLine.level` are strings: a project keeps its own artifact kinds and log

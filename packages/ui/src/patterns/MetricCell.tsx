@@ -46,6 +46,9 @@ export function MetricCell({
   const hasBaseline = baseline !== undefined && Number.isFinite(baseline);
   const delta = hasBaseline && value !== undefined ? value - baseline : undefined;
   const deltaMeta = delta !== undefined ? describeDelta(delta, direction) : undefined;
+  const deltaText = delta !== undefined ? formatDelta(delta, digits, lang) : "";
+  // A change below the shown precision has no direction: "↑ ±0" contradicts itself.
+  const negligible = deltaText === "±0";
   const hasSpark = Boolean(withSparkline && series && series.length > 1);
 
   return (
@@ -56,9 +59,9 @@ export function MetricCell({
           className="fe-metric__delta fe-num"
           title={`${delta > 0 ? "+" : "−"}${formatMetric(Math.abs(delta), digits, lang)} ${t("delta.toBaseline", { baseline: baselineText })}`}
         >
-          <span aria-hidden>{deltaMeta.sign}</span>
-          {formatDelta(delta, digits, lang)}
-          {deltaMeta.word && showWord ? (
+          {negligible ? null : <span aria-hidden>{deltaMeta.sign}</span>}
+          {deltaText}
+          {!negligible && deltaMeta.word && showWord ? (
             <span className="fe-metric__word">{t(`delta.${deltaMeta.word}`)}</span>
           ) : null}
         </span>
@@ -104,6 +107,8 @@ export function MetricCard({
   const hasBaseline = baseline !== undefined && Number.isFinite(baseline);
   const delta = hasBaseline && value !== undefined ? value - baseline : undefined;
   const deltaMeta = delta !== undefined ? describeDelta(delta, direction) : undefined;
+  const deltaText = delta !== undefined ? formatDelta(delta, digits, lang) : "";
+  const negligible = deltaText === "±0";
 
   return (
     <div className="fe-metric-card">
@@ -122,9 +127,9 @@ export function MetricCard({
       </div>
       {delta !== undefined && deltaMeta ? (
         <div className="fe-metric-card__delta fe-num">
-          <span aria-hidden>{deltaMeta.sign}</span>
-          {formatDelta(delta, digits, lang)}
-          {deltaMeta.word ? (
+          {negligible ? null : <span aria-hidden>{deltaMeta.sign}</span>}
+          {deltaText}
+          {!negligible && deltaMeta.word ? (
             <span className="fe-metric-card__word">{t(`delta.${deltaMeta.word}`)}</span>
           ) : null}
           <span className="fe-metric-card__baseline">{t("delta.toBaseline", { baseline: baselineText })}</span>

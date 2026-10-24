@@ -45,12 +45,17 @@ async function checkMetricCells() {
   const result = await page.evaluate(() => {
     const groups = new Map();
     let clipped = 0;
+    let wideDelta = null;
     for (const row of document.querySelectorAll(".fe-table__row")) {
       [...row.querySelectorAll("td")].forEach((cell, index) => {
         const spark = cell.querySelector(".fe-metric__spark");
         if (spark) {
           if (!groups.has(index)) groups.set(index, []);
           groups.get(index).push(spark.getBoundingClientRect().right);
+        }
+        const delta = cell.querySelector(".fe-metric__delta");
+        if (delta && delta.getBoundingClientRect().width > 56) {
+          wideDelta = `${delta.textContent?.trim()} (${Math.round(delta.getBoundingClientRect().width)}px)`;
         }
         if (cell.querySelector(".fe-metric") && cell.scrollWidth > cell.clientWidth + 1) {
           clipped += 1;
@@ -64,17 +69,19 @@ async function checkMetricCells() {
         spread: Math.round((Math.max(...rights) - Math.min(...rights)) * 10) / 10,
       }))
       .filter((entry) => entry.spread > 1);
-    return { misaligned, clipped };
+    return { misaligned, clipped, wideDelta };
   });
+  const problems = result.misaligned.length + result.clipped + (result.wideDelta ? 1 : 0);
   console.log(
-    result.misaligned.length === 0 && result.clipped === 0
-      ? "metric cells: sparklines aligned, no clipping"
-      : `metric cells: ${result.misaligned.length} misaligned column(s), ${result.clipped} clipped cell(s)`,
+    problems === 0
+      ? "metric cells: sparklines aligned, no clipping, deltas fit"
+      : `metric cells: ${result.misaligned.length} misaligned column(s), ${result.clipped} clipped cell(s), ${result.wideDelta ? "a wide delta" : "no wide delta"}`,
   );
   for (const entry of result.misaligned) {
     console.log(`  - column ${entry.column}: sparklines differ by ${entry.spread}px`);
   }
-  return result.misaligned.length + result.clipped;
+  if (result.wideDelta) console.log(`  - delta wider than its track: ${result.wideDelta}`);
+  return problems;
 }
 
 /** Resize a column from the keyboard and put it back through the Columns menu. */

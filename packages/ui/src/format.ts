@@ -23,14 +23,19 @@ export function formatMetric(
   if (abs >= 100000) {
     return value.toLocaleString(localeOf(lang), { maximumFractionDigits: 0 });
   }
-  if (abs !== 0 && abs < 0.001) {
+  const fixed = value.toFixed(digits);
+  // Exponential only when the fixed form would show zero: a real value must not read as 0.
+  if (abs !== 0 && Number(fixed) === 0) {
     return value.toExponential(2);
   }
-  return value.toFixed(digits);
+  return fixed;
 }
 
 export function formatDelta(value: number, digits = 3, lang: Lang = "en"): string {
   if (value === 0) return "±0";
+  // A change below the precision of the value it sits next to reads as ±0: the tooltip keeps
+  // the exact number, and the column stays aligned.
+  if (Math.abs(value) < 0.5 * 10 ** -digits) return "±0";
   const sign = value > 0 ? "+" : "−";
   return `${sign}${formatMetric(Math.abs(value), digits, lang)}`;
 }
