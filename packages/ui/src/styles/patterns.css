@@ -164,12 +164,18 @@
 .fe-metric {
   position: relative;
   display: flex;
+  justify-content: flex-end;
   align-items: center;
   gap: 6px;
   min-width: 0;
   width: 100%;
-  /* The sparkline is taken out of the flow, so a wide delta never pushes it. */
+  /* The sparkline is taken out of the flow, so a wide delta never pushes it. The value and the
+     delta sit against the sparkline instead of drifting to the left edge of a wide column. */
   padding-right: 30px;
+}
+
+.fe-metric--no-spark {
+  padding-right: 0;
 }
 
 .fe-metric__spark {
@@ -189,8 +195,11 @@
 
 .fe-metric__delta {
   display: inline-flex;
+  justify-content: flex-end;
   align-items: baseline;
   gap: 3px;
+  /* A fixed track: "±0" and "↑ +0.048" end on the same line, so the values line up. */
+  min-width: 54px;
   font-size: var(--fe-text-12);
   color: var(--fe-text-tertiary);
 }

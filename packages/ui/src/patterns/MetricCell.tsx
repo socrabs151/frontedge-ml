@@ -46,9 +46,10 @@ export function MetricCell({
   const hasBaseline = baseline !== undefined && Number.isFinite(baseline);
   const delta = hasBaseline && value !== undefined ? value - baseline : undefined;
   const deltaMeta = delta !== undefined ? describeDelta(delta, direction) : undefined;
+  const hasSpark = Boolean(withSparkline && series && series.length > 1);
 
   return (
-    <span className="fe-metric">
+    <span className={`fe-metric${hasSpark ? "" : " fe-metric--no-spark"}`}>
       <span className="fe-metric__value fe-num">{formatMetric(value, digits, lang)}</span>
       {delta !== undefined && deltaMeta ? (
         <span
@@ -62,12 +63,12 @@ export function MetricCell({
           ) : null}
         </span>
       ) : null}
-      {withSparkline && series && series.length > 1 ? (
+      {hasSpark ? (
         // Pinned to the right edge: the sparklines of a column must share one baseline, and the
-        // delta before them is as wide as its number.
+        // delta before them has a fixed width, so the values line up too.
         <span className="fe-metric__spark">
           <Sparkline
-            values={series}
+            values={series ?? []}
             color={color}
             width={24}
             height={14}
