@@ -288,6 +288,22 @@
   table-layout: fixed;
 }
 
+.fe-tags {
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.fe-tag {
+  padding: 0 6px;
+  border: 1px solid var(--fe-border);
+  border-radius: var(--fe-radius-pill);
+  color: var(--fe-text-secondary);
+  font-size: var(--fe-text-11);
+  line-height: 16px;
+  white-space: nowrap;
+}
+
 .fe-table__resizer {
   position: absolute;
   top: 0;

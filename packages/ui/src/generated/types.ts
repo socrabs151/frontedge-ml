@@ -42,6 +42,7 @@ export interface Run {
   startedAt?: string | null;
   durationMs?: number | null;
   owner?: string;
+  tags?: string[];
   seed?: number | null;
   error?: string | null;
   exitCode?: number | null;
@@ -60,6 +61,7 @@ export interface RunOption {
   status: RunStatus;
   dataset?: string;
   startedAt?: string | null;
+  tags?: string[];
 }
 export interface Example {
   id: string;

@@ -198,7 +198,7 @@ router title in the OpenAPI document.
 
 | Method and path | What it returns |
 |---|---|
-| `GET /frontedge/api/runs` | a list of runs; accepts `limit`, `offset`, `search`, `status`, `dataset` and answers with the `X-Frontedge-Total` header |
+| `GET /frontedge/api/runs` | a list of runs; accepts `limit`, `offset`, `search`, `status`, `dataset`, `tag` and answers with the `X-Frontedge-Total` header |
 | `GET /frontedge/api/runs/options` | a compact list for the pickers (`id`, `name`, `status`), `limit` up to 1000, `search` |
 | `GET /frontedge/api/runs/{id}` | one run |
 | `GET /frontedge/api/runs/{id}/examples` | the examples of a run (empty without `list_examples`) |
@@ -354,9 +354,13 @@ All of the keys of `UiConfig`:
 | `baseline_run` | the run pinned as the baseline for the deltas |
 | `page_size` | how many runs to request at a time (server-side pagination) |
 
-The available run columns are `name`, `status`, `ribbon`, `dataset`, `gitSha`, `startedAt`,
+The available run columns are `name`, `status`, `ribbon`, `dataset`, `tags`, `gitSha`, `startedAt`,
 `durationMs`, `accuracy` and `loss` — plus any metric name of your own data, which is built from
 the `metrics` dictionary.
+
+`Run.tags` is a free list of project labels (`production`, `nightly`): the `tags` column shows
+them as chips, the toolbar filters the list by one tag, and the value travels to the provider as
+`query.tag` when `list_runs` takes a query.
 
 ### 5.1 Your own metrics
 

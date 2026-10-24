@@ -124,6 +124,7 @@ def _build_router(
         search: str | None = None,
         status: str | None = None,
         dataset: str | None = None,
+        tag: str | None = None,
     ) -> list[RunPayload]:
         """A list of runs.
 
@@ -137,6 +138,7 @@ def _build_router(
             search=search,
             status=[part for part in (status or "").split(",") if part],
             dataset=dataset,
+            tag=tag,
         )
 
         if provider_accepts_query(source):
@@ -158,6 +160,8 @@ def _build_router(
                 runs_ = [run for run in runs_ if run.status in query.status]
             if query.dataset:
                 runs_ = [run for run in runs_ if run.dataset == query.dataset]
+            if query.tag:
+                runs_ = [run for run in runs_ if query.tag in run.tags]
             total = len(runs_)
             if query.offset:
                 runs_ = runs_[query.offset :]
@@ -199,6 +203,7 @@ def _build_router(
                 status=run.status,
                 dataset=run.dataset,
                 started_at=run.started_at,
+                tags=run.tags,
             )
             for run in as_models(items, Run, "list_runs")
         ]

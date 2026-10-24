@@ -144,6 +144,14 @@ def make_runs(count: int = 200) -> list[Run]:
             else Freshness.fresh
         )
 
+        tags = ["experiment"]
+        if index % 3 == 0:
+            tags.append("production")
+        if index % 5 == 0:
+            tags.append("nightly")
+        if status is RunStatus.failed:
+            tags.append("regression")
+
         runs.append(
             Run(
                 id=f"run-{index:03d}",
@@ -155,6 +163,7 @@ def make_runs(count: int = 200) -> list[Run]:
                 started_at=started_at,
                 duration_ms=duration_ms,
                 owner=OWNERS[index % len(OWNERS)],
+                tags=tags,
                 seed=1000 + index * 7,
                 metrics={
                     "accuracy": round(accuracy, 4),

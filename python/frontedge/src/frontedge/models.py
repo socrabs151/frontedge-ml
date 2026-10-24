@@ -147,6 +147,8 @@ class Run(FrontedgeModel):
     started_at: datetime | None = Field(default=None, json_schema_extra=role("timestamp"))
     duration_ms: int | None = Field(default=None, json_schema_extra=role("duration"))
     owner: str = ""
+    #: Free labels of the project ("production", "nightly"): filtered by, shown as chips.
+    tags: list[str] = Field(default_factory=list)
     seed: int | None = None
     error: str | None = Field(default=None, json_schema_extra=role("text"))
     exit_code: int | None = None
@@ -168,6 +170,7 @@ class RunOption(FrontedgeModel):
     status: RunStatus
     dataset: str = ""
     started_at: datetime | None = None
+    tags: list[str] = Field(default_factory=list)
 
 
 class Example(FrontedgeModel):
@@ -255,6 +258,7 @@ class RunsQuery(FrontedgeModel):
     search: str | None = None
     status: list[str] = Field(default_factory=list)
     dataset: str | None = None
+    tag: str | None = None
 
 
 class RunsPage(FrontedgeModel):

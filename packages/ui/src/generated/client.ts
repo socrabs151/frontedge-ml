@@ -24,6 +24,7 @@ export interface RunsQuery {
   search?: string;
   status?: string;
   dataset?: string;
+  tag?: string;
 }
 
 export interface RunsPage {
@@ -94,6 +95,7 @@ export function createClient(options: FrontedgeClientOptions = {
       if (query.search) params.set("search", query.search);
       if (query.status) params.set("status", query.status);
       if (query.dataset) params.set("dataset", query.dataset);
+      if (query.tag) params.set("tag", query.tag);
       const search = params.toString();
       const response = await doFetch(`${basePath}/runs${search ? `?${search}` : ""}`, {
         headers: { accept: "application/json" },

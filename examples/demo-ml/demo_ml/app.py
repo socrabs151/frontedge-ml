@@ -69,6 +69,8 @@ class DemoProvider:
                 runs = [run for run in runs if run.status in query.status]
             if query.dataset:
                 runs = [run for run in runs if run.dataset == query.dataset]
+            if query.tag:
+                runs = [run for run in runs if query.tag in run.tags]
             total = len(runs)
             if query.offset:
                 runs = runs[query.offset :]

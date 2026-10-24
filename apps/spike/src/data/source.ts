@@ -29,6 +29,7 @@ export interface RunsQuery {
   search?: string;
   status?: string;
   dataset?: string;
+  tag?: string;
 }
 
 export interface RunsPage {
@@ -103,6 +104,9 @@ export const mockSource: RunsSource = {
     if (query.dataset) {
       runs = runs.filter((run) => run.dataset === query.dataset);
     }
+    if (query.tag) {
+      runs = runs.filter((run) => run.tags?.includes(query.tag!));
+    }
     const total = runs.length;
     const offset = query.offset ?? 0;
     const page = query.limit === undefined ? runs.slice(offset) : runs.slice(offset, offset + query.limit);
@@ -115,6 +119,7 @@ export const mockSource: RunsSource = {
       status: run.status,
       dataset: run.dataset ?? "",
       startedAt: run.startedAt,
+      tags: run.tags ?? [],
     }));
   },
   async getRun(runId) {

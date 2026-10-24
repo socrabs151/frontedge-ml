@@ -347,6 +347,18 @@ export function RunDetailScreen({
           <span className="fe-muted">{t("detail.seed")}</span>{" "}
           <span className="fe-mono fe-num">{run.seed}</span>
         </span>
+        {run.tags && run.tags.length > 0 ? (
+          <span className="fe-detail__meta-item">
+            <span className="fe-muted">{t("column.tags")}</span>{" "}
+            <span className="fe-tags">
+              {run.tags.map((tag) => (
+                <span key={tag} className="fe-tag">
+                  {tag}
+                </span>
+              ))}
+            </span>
+          </span>
+        ) : null}
       </div>
 
       <RunTimeline stages={run.stages} />

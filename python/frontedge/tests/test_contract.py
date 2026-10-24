@@ -152,6 +152,30 @@ class TestStaticCache:
         assert response.headers["cache-control"] == "no-cache"
 
 
+class TestTags:
+    def test_tags_default_to_empty(self) -> None:
+        assert make_run().tags == []
+
+    def test_the_list_filters_by_tag(self) -> None:
+        async def tagged(request: Any) -> list[Run]:
+            return [
+                make_run(id="run-1", tags=["production"]),
+                make_run(id="run-2", tags=["nightly"]),
+            ]
+
+        client = client_for(tagged)
+        payload = client.get("/frontedge/api/runs?tag=production").json()
+        assert [run["id"] for run in payload] == ["run-1"]
+        assert client.get("/frontedge/api/runs?tag=production").headers["x-frontedge-total"] == "1"
+
+    def test_options_carry_tags(self) -> None:
+        async def tagged(request: Any) -> list[Run]:
+            return [make_run(tags=["production"])]
+
+        options = client_for(tagged).get("/frontedge/api/runs/options").json()
+        assert options[0]["tags"] == ["production"]
+
+
 class TestRunExtras:
     """The endpoints the interface needs beyond the run itself."""
 

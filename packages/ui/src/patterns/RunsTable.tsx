@@ -65,6 +65,7 @@ const KNOWN_COLUMNS = [
   "status",
   "ribbon",
   "dataset",
+  "tags",
   "gitSha",
   "startedAt",
   "durationMs",
@@ -78,6 +79,7 @@ const TEXT_COLUMNS = new Set([
   "status",
   "ribbon",
   "dataset",
+  "tags",
   "gitSha",
   "startedAt",
   "actions",
@@ -150,6 +152,25 @@ export function RunsTable({
         cell: (info) => (
           <RunRibbon stages={info.row.original.stages} events={info.row.original.events} height={6} />
         ),
+      }) as ColumnDef<Run, unknown>,
+
+      tags: columnHelper.accessor("tags", {
+        id: "tags",
+        header: () => t("column.tags"),
+        size: 120,
+        cell: (info) => {
+          const tags = info.getValue() ?? [];
+          if (tags.length === 0) return <span>{EMPTY}</span>;
+          return (
+            <span className="fe-tags">
+              {tags.map((tag) => (
+                <span key={tag} className="fe-tag">
+                  {tag}
+                </span>
+              ))}
+            </span>
+          );
+        },
       }) as ColumnDef<Run, unknown>,
 
       dataset: columnHelper.accessor("dataset", {

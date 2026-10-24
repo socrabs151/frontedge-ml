@@ -101,7 +101,18 @@ export function RunsScreen({
   }, [search, query, onQueryChange]);
 
   const activeFilters =
-    (query.status ? 1 : 0) + (query.dataset ? 1 : 0) + (query.search ? 1 : 0);
+    (query.status ? 1 : 0) +
+    (query.dataset ? 1 : 0) +
+    (query.search ? 1 : 0) +
+    (query.tag ? 1 : 0);
+
+  const tagOptions = useMemo(() => {
+    const found = new Set<string>();
+    for (const run of runChoices) {
+      for (const tag of run.tags ?? []) found.add(tag);
+    }
+    return [...found].sort();
+  }, [runChoices]);
 
   const rowActions = useMemo(
     () =>
@@ -214,6 +225,27 @@ export function RunsScreen({
             </option>
           ))}
         </select>
+        {tagOptions.length > 0 ? (
+          <select
+            className="fe-select"
+            value={query.tag ?? "all"}
+            onChange={(event) =>
+              onQueryChange({
+                ...query,
+                tag: event.target.value === "all" ? undefined : event.target.value,
+                offset: 0,
+              })
+            }
+            aria-label={t("runs.allTags")}
+          >
+            <option value="all">{t("runs.allTags")}</option>
+            {tagOptions.map((tag) => (
+              <option key={tag} value={tag}>
+                {tag}
+              </option>
+            ))}
+          </select>
+        ) : null}
         {activeFilters > 0 ? (
           <button
             type="button"

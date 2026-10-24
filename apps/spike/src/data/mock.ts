@@ -124,6 +124,11 @@ export function makeRuns(count = 200): Run[] {
       });
     }
 
+    const tags = ["experiment"];
+    if (index % 3 === 0) tags.push("production");
+    if (index % 5 === 0) tags.push("nightly");
+    if (status === "failed") tags.push("regression");
+
     runs.push({
       id: `run-${index.toString().padStart(3, "0")}`,
       name: `exp-${String(index).padStart(3, "0")}-${SUFFIXES[index % SUFFIXES.length]}`,
@@ -134,6 +139,7 @@ export function makeRuns(count = 200): Run[] {
       startedAt: new Date(startedAt).toISOString(),
       durationMs,
       owner: OWNERS[index % OWNERS.length]!,
+      tags,
       seed: 1000 + index * 7,
       metrics: {
         accuracy: Number(accuracyBase.toFixed(4)),

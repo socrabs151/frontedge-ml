@@ -120,6 +120,8 @@ The following are **public contracts** and change only in a major release:
 - `Run.started_at` and `Run.duration_ms` are optional; a queued run shows en dashes.
 - The browser gate audits the loading, empty and error states with axe, and runs on Firefox and
   WebKit in CI next to Chromium (`FE_BROWSER`).
+- `Run.tags`: a free list of project labels. The toolbar filters by one tag (server-side through
+  `query.tag`), the `tags` column shows chips, and the run header lists them.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.
