@@ -43,7 +43,15 @@ jobs:
         run: uv sync --all-packages
 
       - name: Python contract tests
-        run: uv run --package frontedge pytest python/frontedge/tests -q
+        run: uv run --package frontedge pytest python/frontedge/tests -q 2>&1 | tee pytest.log
+
+      - name: Surface the failing tests
+        if: failure()
+        run: |
+          [ -f pytest.log ] || exit 0
+          grep -E "^(FAILED|ERROR)" pytest.log | head -n 40 | while IFS= read -r line; do
+            echo "::error title=pytest::$line"
+          done
 
       - name: Configuration check
         run: uv run --package frontedge frontedge check examples/demo-ml/frontedge.toml
