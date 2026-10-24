@@ -93,6 +93,8 @@ jobs:
 
   python-311:
     runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: "3.11"
     steps:
       - uses: actions/checkout@v4
 
@@ -106,7 +108,15 @@ jobs:
       - name: Contract tests on 3.11
         run: |
           uv run --package frontedge python --version
-          uv run --package frontedge pytest python/frontedge/tests -q
+          uv run --package frontedge pytest python/frontedge/tests -q 2>&1 | tee pytest-311.log
+
+      - name: Surface the failing tests
+        if: failure()
+        run: |
+          [ -f pytest-311.log ] || exit 0
+          grep -E "^(FAILED|ERROR)" pytest-311.log | head -n 40 | while IFS= read -r line; do
+            echo "::error title=pytest::$line"
+          done
 
   browser:
     runs-on: ubuntu-latest
