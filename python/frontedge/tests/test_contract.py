@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -22,6 +23,14 @@ from frontedge import Run, RunStatus
 from frontedge.providers import adapt_provider
 from frontedge.runtime.sse import event_stream
 from frontedge.screens.runs import log_line
+
+STATIC_INDEX = (
+    Path(__file__).resolve().parents[1] / "src" / "frontedge" / "static" / "index.html"
+)
+# The built interface is generated, not stored: tests that read it skip on a source tree.
+requires_interface = pytest.mark.skipif(
+    not STATIC_INDEX.is_file(), reason="the interface is not built (run pnpm build:ui)"
+)
 
 
 def make_run(**overrides: Any) -> Run:
@@ -201,6 +210,7 @@ class TestOpenVocabularies:
         assert line.level == "debug"
 
 
+@requires_interface
 class TestDocumentTitle:
     def test_the_mount_title_reaches_the_document(self) -> None:
         app = FastAPI()
@@ -298,6 +308,7 @@ class TestHttp:
         assert response.status_code == 404
         assert "application/json" in response.headers["content-type"]
 
+    @requires_interface
     def test_mount_path_is_substituted_into_html(self) -> None:
         """The prefix must reach the HTML, or assets and the API resolve under /frontedge."""
         response = client_for(path="/ml").get("/ml/")
