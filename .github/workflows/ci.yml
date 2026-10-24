@@ -32,6 +32,14 @@ jobs:
       - name: Build the npm package
         run: pnpm --filter @frontedge/ui build
 
+      - name: Package contents
+        run: |
+          mkdir -p /tmp/ui-pack
+          pnpm --filter @frontedge/ui pack --pack-destination /tmp/ui-pack
+          tar -tzf /tmp/ui-pack/*.tgz | grep -q 'package/dist/styles.css'
+          tar -tzf /tmp/ui-pack/*.tgz | grep -q 'package/dist/index.js'
+          tar -tzf /tmp/ui-pack/*.tgz | grep -q 'package/LICENSE'
+
       - name: Build the interface
         run: pnpm build:ui
 
@@ -55,6 +63,22 @@ jobs:
 
       - name: Configuration check
         run: uv run --package frontedge frontedge check examples/demo-ml/frontedge.toml
+
+      - name: Smoke the built wheel
+        run: |
+          rm -rf dist /tmp/smoke-env /tmp/smoke-app
+          uv build --package frontedge
+          uv venv /tmp/smoke-env
+          uv pip install --python /tmp/smoke-env/bin/python dist/*.whl 'uvicorn>=0.32'
+          /tmp/smoke-env/bin/frontedge init /tmp/smoke-app
+          cd /tmp/smoke-app
+          /tmp/smoke-env/bin/uvicorn app:app --port 8099 > /tmp/smoke.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8099/frontedge/api/meta > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8099/frontedge/api/runs | grep -q baseline
+          curl -sf http://127.0.0.1:8099/frontedge/ | grep -q 'id="root"'
 
       - name: Check generated types are up to date
         run: |
