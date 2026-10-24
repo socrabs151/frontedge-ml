@@ -86,6 +86,20 @@ The following are **public contracts** and change only in a major release:
   "Reset column widths". The user's widths and hidden columns are kept in the browser and win over
   the configuration.
 - The sidebar collapses to icons; the choice is remembered per browser.
+- `GET /api/runs/options` returns a compact project-wide list for the baseline and comparison
+  pickers (`id`, `name`, `status`), so they no longer see only the current page. The list is
+  capped (`limit`, up to 1000) and accepts `search`.
+- `GET /api/runs/{id}/examples` and the optional provider method `list_examples`: the Examples tab
+  of a run now has data. `/api/meta` reports it as `capabilities.runs.examples`.
+- The runs list sends `page_size` as `limit`, so server-side pagination actually pages.
+- Capabilities are read from the wrapped provider: an object provider without logs, artifacts or
+  examples no longer claims them.
+- The mount path lives in a meta tag instead of an inline script: a strict CSP needs no
+  `'unsafe-inline'`. `docs/integration.md` has a security section (auth, actions, CSP, artifacts).
+- The dead "Export CSV" button is removed from the list header; export stays a declared action.
+- The generated client keeps the server's `detail` on `/runs` errors, like on the other paths.
+- The release workflow builds the interface before the wheel (the wheel used to ship without it)
+  and publishes with `uv publish dist/*` (there is no `--package` flag).
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

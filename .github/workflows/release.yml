@@ -56,14 +56,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.11.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
       - uses: astral-sh/setup-uv@v5
         with:
           version: "0.12.17"
+      - run: pnpm install --frozen-lockfile
       - run: uv sync --all-packages
-      - name: Build and publish the wheel
+      # The wheel ships the built interface: without this the package serves 503.
+      - run: pnpm build:ui
+      - name: Build the wheel
         run: uv build --package frontedge
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-      - run: uv publish --package frontedge
+      - name: Publish to PyPI
+        run: uv publish dist/*.whl dist/*.tar.gz
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
