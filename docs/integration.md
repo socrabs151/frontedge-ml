@@ -243,8 +243,13 @@ theme = "light"              # light | dark
 
 run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss", "bleu"]
 
+# The tabs of the evaluation screen: "examples" (the comparison table) and "summary"
+# (aggregates, changed and improved/worsened counts). An empty list shows both.
+eval_tabs = ["examples", "summary"]
+
 # Starting widths; resizable = false locks a column. column_resize = false locks the whole table.
 # The user's own widths are kept in the browser and win over these.
+# Keys above the first [[table]] belong to the file; keys below it belong to that table.
 [[columns]]
 id = "name"
 width = 150
@@ -252,10 +257,6 @@ width = 150
 [[columns]]
 id = "status"
 resizable = false
-
-# The tabs of the evaluation screen: "examples" (the comparison table) and "summary"
-# (aggregates, changed and improved/worsened counts). An empty list shows both.
-eval_tabs = ["examples", "summary"]
 
 # The metrics of the project. The run screen draws a card for each one and a chart when the run
 # has a series for it. An empty list shows every metric a run returns.
