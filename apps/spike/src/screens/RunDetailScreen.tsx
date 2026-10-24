@@ -22,11 +22,14 @@ export function RunDetailScreen({
   runId,
   baseline,
   config,
+  canReadArtifacts = true,
   onBack,
 }: {
   runId: string;
   baseline?: Run;
   config: UiConfig | null;
+  /** Whether the provider serves artifact content: otherwise the row has no dead link. */
+  canReadArtifacts?: boolean;
   onBack: () => void;
 }) {
   const t = useAppT();
@@ -251,14 +254,16 @@ export function RunDetailScreen({
               <span className="fe-artifacts__size fe-num">
                 {(artifact.sizeBytes / 1_000_000).toFixed(1)} MB
               </span>
-              <a
-                className="fe-artifacts__download"
-                href={source.artifactUrl(artifact.id)}
-                download={artifact.name}
-              >
-                <Download size={13} aria-hidden />
-                {t("detail.download")}
-              </a>
+              {canReadArtifacts ? (
+                <a
+                  className="fe-artifacts__download"
+                  href={source.artifactUrl(artifact.id)}
+                  download={artifact.name}
+                >
+                  <Download size={13} aria-hidden />
+                  {t("detail.download")}
+                </a>
+              ) : null}
             </li>
           ))}
         </ul>

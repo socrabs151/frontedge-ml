@@ -105,6 +105,14 @@ The following are **public contracts** and change only in a major release:
 - `examples/minimal`: the same project, committed and runnable against two sample runs.
 - CI builds the wheel, installs it into a clean venv, runs `frontedge init` and curls the served
   interface; it also checks that the npm tarball carries `dist/styles.css` and the license.
+- Python 3.11 is supported (was 3.12 only), the package ships `py.typed`, and the classifiers and
+  the license file are in the wheel. `ruff` and `mypy` run in CI, and a separate job tests 3.11.
+- The npm consumer smoke installs the packed tarball into a fresh Vite app on **React 18**,
+  type-checks it, builds it and renders the table in a browser.
+- Hashed assets are served with a one-year immutable cache; `index.html` stays `no-cache`. The
+  deployment notes cover a reverse proxy and the SSE stream.
+- The artifact Download link is hidden when the provider does not serve content, instead of
+  leading to a 404.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

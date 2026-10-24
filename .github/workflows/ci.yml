@@ -50,6 +50,12 @@ jobs:
       - name: Install Python workspace
         run: uv sync --all-packages
 
+      - name: Python lint
+        run: uv run --package frontedge ruff check python/frontedge
+
+      - name: Python types
+        run: uv run --package frontedge mypy python/frontedge/src
+
       - name: Python contract tests
         run: uv run --package frontedge pytest python/frontedge/tests -q 2>&1 | tee pytest.log
 
@@ -84,6 +90,23 @@ jobs:
         run: |
           uv run --package frontedge frontedge gen --out packages/ui/src/generated
           git diff --exit-code packages/ui/src/generated
+
+  python-311:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.17"
+
+      - name: Install on Python 3.11
+        run: uv sync --all-packages --python 3.11
+
+      - name: Contract tests on 3.11
+        run: |
+          uv run --package frontedge python --version
+          uv run --package frontedge pytest python/frontedge/tests -q
 
   browser:
     runs-on: ubuntu-latest
@@ -139,3 +162,6 @@ jobs:
         env:
           FE_BASE_URL: http://127.0.0.1:8000/frontedge
         run: pnpm check:lang
+
+      - name: Consumer smoke (React 18)
+        run: node apps/spike/scripts/smoke-npm.mjs

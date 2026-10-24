@@ -295,6 +295,7 @@ function Shell() {
               runId={route.id}
               baseline={baseline}
               config={config}
+              canReadArtifacts={capabilities?.runs.artifacts !== false}
               onBack={() => setRoute({ name: "runs" })}
             />
           )}
