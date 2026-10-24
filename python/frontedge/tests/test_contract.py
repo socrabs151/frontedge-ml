@@ -42,6 +42,18 @@ def make_run(**overrides: Any) -> Run:
     return Run(**payload)
 
 
+def make_example(**overrides: Any) -> frontedge.Example:
+    payload: dict[str, Any] = {
+        "id": "ex-000",
+        "input": "question",
+        "output": "answer",
+        "score": 0.5,
+        "changed": False,
+    }
+    payload.update(overrides)
+    return frontedge.Example(**payload)
+
+
 async def runs_provider(request: Any) -> list[Run]:
     return [make_run()]
 
@@ -112,6 +124,43 @@ class TestCustomMetrics:
         schema = UiConfig.model_json_schema(by_alias=False)
         assert "metrics" in schema["properties"]
         assert "MetricSpec" in schema["$defs"]
+
+
+class TestRunExtras:
+    """The endpoints the interface needs beyond the run itself."""
+
+    def test_examples_endpoint_returns_the_slice(self) -> None:
+        class WithExamples:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+            async def list_examples(self, request: Any, run_id: str) -> list[Any]:
+                return [make_example()]
+
+        payload = client_for(WithExamples()).get("/frontedge/api/runs/run-000/examples").json()
+        assert payload[0]["id"] == "ex-000"
+
+    def test_examples_endpoint_is_empty_without_the_method(self) -> None:
+        response = client_for().get("/frontedge/api/runs/run-000/examples")
+        assert response.status_code == 200
+        assert response.json() == []
+
+    def test_run_options_are_compact(self) -> None:
+        options = client_for().get("/frontedge/api/runs/options").json()
+        assert options[0]["id"] == "run-000"
+        assert options[0]["name"] == "exp-000"
+        assert "series" not in options[0]
+        assert "stages" not in options[0]
+
+    def test_run_options_honour_the_limit(self) -> None:
+        async def many(request: Any) -> list[Run]:
+            return [make_run(id=f"run-{index:03d}") for index in range(5)]
+
+        options = client_for(many).get("/frontedge/api/runs/options?limit=2").json()
+        assert [option["id"] for option in options] == ["run-000", "run-001"]
 
 
 class TestOptionalFields:
@@ -235,7 +284,7 @@ class TestHttp:
         """The interface must know its prefix, otherwise assets and the API are looked up under /frontedge."""
         response = client_for(path="/ml").get("/ml/")
         assert response.status_code == 200
-        assert '__FRONTEDGE_MOUNT__ = "/ml"' in response.text
+        assert '<meta name="frontedge-mount" content="/ml"' in response.text
 
     def test_log_stream_url_follows_mount_path(self) -> None:
         payload = client_for(path="/ml").get("/ml/api/runs").json()[0]
@@ -425,10 +474,33 @@ class TestMetaCapabilities:
     def test_function_provider_has_no_extra_capabilities(self) -> None:
         capabilities = client_for().get("/frontedge/api/meta").json()["capabilities"]
         assert capabilities["screens"] == ["runs", "run"]
-        assert capabilities["runs"] == {"query": False, "logs": False, "artifacts": False}
+        assert capabilities["runs"] == {
+            "query": False,
+            "logs": False,
+            "artifacts": False,
+            "examples": False,
+        }
         assert capabilities["evals"] is False
         assert capabilities["datasets"] is False
         assert capabilities["actions"] == []
+
+    def test_an_object_provider_does_not_claim_what_it_lacks(self) -> None:
+        """The adapter defines every optional method, so the flags must come from the wrapped one."""
+
+        class Minimal:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+        capabilities = client_for(Minimal()).get("/frontedge/api/meta").json()["capabilities"]
+        assert capabilities["runs"] == {
+            "query": False,
+            "logs": False,
+            "artifacts": False,
+            "examples": False,
+        }
 
     def test_full_provider_reports_every_capability(self) -> None:
         class Full:
@@ -443,6 +515,9 @@ class TestMetaCapabilities:
 
             async def read_artifact(self, request: Any, artifact_id: str) -> bytes:
                 return b"data"
+
+            async def list_examples(self, request: Any, run_id: str) -> list[Any]:
+                return [make_example()]
 
         class EvalStub:
             async def list_evals(self, request: Any) -> list[Any]:
@@ -472,7 +547,12 @@ class TestMetaCapabilities:
         )
         capabilities = TestClient(app).get("/frontedge/api/meta").json()["capabilities"]
         assert capabilities["screens"] == ["runs", "run", "evals", "datasets"]
-        assert capabilities["runs"] == {"query": True, "logs": True, "artifacts": True}
+        assert capabilities["runs"] == {
+            "query": True,
+            "logs": True,
+            "artifacts": True,
+            "examples": True,
+        }
         assert capabilities["evals"] is True
         assert capabilities["datasets"] is True
         assert capabilities["actions"] == ["stop"]

@@ -27,16 +27,16 @@ production.
 
 ## 2. Installation
 
-```bash
-uv add frontedge           # or: pip install frontedge
-```
-
-The package is not on PyPI yet — releases are cut by tagging the repository (Phase 4). Until
-then, install from the sources:
+The package is not on PyPI yet — releases are cut by tagging the repository (Phase 4). Install
+from a checkout; the interface has to be built into the package once:
 
 ```bash
-uv add "frontedge @ git+https://github.com/socrabs151/frontedge-ml.git#subdirectory=python/frontedge"
+pnpm install && pnpm build:ui
+pip install ./python/frontedge        # or: uv pip install -e ./python/frontedge
 ```
+
+A plain `git+` install has no built interface and answers 503: the built assets are generated, not
+stored. `pnpm build:ui` needs Node 22 and pnpm.
 
 For your own frontend on the components:
 
@@ -86,6 +86,7 @@ app.include_router(frontedge.mount(my_runs_provider))
 | `get_run(request, run_id)` | yes | — |
 | `stream_logs(request, run_id)` | no | the "Logs" tab stays empty |
 | `read_artifact(request, artifact_id)` | no | `GET /api/artifacts/{id}/content` answers 404 |
+| `list_examples(request, run_id)` | no | the Examples tab of a run stays empty |
 | `list_runs(request, query)` | no | the library filters and paginates the list itself |
 
 A failed run carries its reason in `error` and the exit code of the process in `exit_code`; both
@@ -174,7 +175,9 @@ router title in the OpenAPI document.
 | Method and path | What it returns |
 |---|---|
 | `GET /frontedge/api/runs` | a list of runs; accepts `limit`, `offset`, `search`, `status`, `dataset` and answers with the `X-Frontedge-Total` header |
+| `GET /frontedge/api/runs/options` | a compact list for the pickers (`id`, `name`, `status`), `limit` up to 1000, `search` |
 | `GET /frontedge/api/runs/{id}` | one run |
+| `GET /frontedge/api/runs/{id}/examples` | the examples of a run (empty without `list_examples`) |
 | `GET /frontedge/api/runs/{id}/logs/stream` | a log stream (SSE, `event: log`) |
 | `GET /frontedge/api/artifacts/{id}/content` | the bytes of an artifact (needs `read_artifact`) |
 | `GET /frontedge/api/evals` | a list of evaluations (if `evals=` is connected) |
@@ -189,6 +192,19 @@ The built interface is served under the mount path, with an SPA fallback for the
 `/api`.
 
 An unknown path under `/frontedge/api/` answers 404 in JSON, not HTML.
+
+### 4.3 Security
+
+- **Authorisation is yours.** The router has no auth: the `request` reaches every provider method,
+  so a dependency on your router or a check inside the provider works as usual. Protect the API
+  and the static paths the same way you protect the rest of the app.
+- **Actions are POST handlers.** Anyone who can reach `POST /api/actions/{id}` can run one; guard
+  it with the same auth dependency, and treat `danger: true` as a UI hint, not as protection.
+- **No inline script.** The mount path lives in `<meta name="frontedge-mount">`, so a strict CSP
+  works without `'unsafe-inline'`. The built interface loads one module script and its CSS from the
+  mount path; allow `script-src 'self'` and `style-src 'self'`.
+- **Artifact names** come from the provider and are used in `Content-Disposition`; the URL segment
+  is what the provider gets, so return only ids you are willing to see in a header.
 
 ### 4.1 Capabilities
 
@@ -205,7 +221,7 @@ have to guess from the configuration:
   "capabilities": {
     "screens": ["runs", "run", "evals", "datasets"],
     "actions": ["stop", "export"],
-    "runs": { "query": true, "logs": true, "artifacts": false },
+    "runs": { "query": true, "logs": true, "artifacts": false, "examples": true },
     "evals": true,
     "datasets": true
   }

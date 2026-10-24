@@ -12,7 +12,12 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
-from .providers import provider_accepts_query, provider_has_logs, provider_reads_artifacts
+from .providers import (
+    provider_accepts_query,
+    provider_has_examples,
+    provider_has_logs,
+    provider_reads_artifacts,
+)
 
 __all__ = ["Capabilities", "Meta", "RunsCapabilities", "build_meta"]
 
@@ -25,6 +30,7 @@ class RunsCapabilities(BaseModel):
     query: bool
     logs: bool
     artifacts: bool
+    examples: bool
 
 
 class Capabilities(BaseModel):
@@ -75,6 +81,7 @@ def build_meta(
                 query=runs is not None and provider_accepts_query(runs),
                 logs=runs is not None and provider_has_logs(runs),
                 artifacts=runs is not None and provider_reads_artifacts(runs),
+                examples=runs is not None and provider_has_examples(runs),
             ),
             evals=evals is not None,
             datasets=datasets is not None,

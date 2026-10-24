@@ -21,6 +21,7 @@ from frontedge.models import (
     DatasetInfo,
     EvalComparison,
     EvalSummary,
+    Example,
     LogLine,
     Run,
     RunsPage,
@@ -32,6 +33,7 @@ from .data import (
     make_dataset_detail,
     make_datasets,
     make_evals,
+    make_examples,
     make_log_lines,
     make_runs,
 )
@@ -89,6 +91,10 @@ class DemoProvider:
         if not artifact_id:
             return None
         return f"Demo artifact {artifact_id}\n".encode("utf-8")
+
+    async def list_examples(self, request: Request, run_id: str) -> list[Example]:
+        """The examples of a run — the same slice for every run in the demo."""
+        return [Example.model_validate(item) for item in make_examples(24)]
 
 
 class DemoEvalProvider:

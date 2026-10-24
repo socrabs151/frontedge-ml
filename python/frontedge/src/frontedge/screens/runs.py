@@ -17,8 +17,10 @@ from ..models import (
     DatasetInfo,
     EvalComparison,
     EvalSummary,
+    Example,
     LogLine,
     Run,
+    RunOption,
     RunsPage,
     RunsQuery,
 )
@@ -33,6 +35,7 @@ from ..providers import (
     as_model_or_none,
     as_models,
     provider_accepts_query,
+    provider_has_examples,
     provider_has_logs,
     provider_reads_artifacts,
 )
@@ -164,6 +167,42 @@ def _build_router(
         response.headers["X-Frontedge-Total"] = str(total)
         return [_run_payload(run, path) for run in runs_]
 
+    @router.get(
+        "/api/runs/options",
+        tags=["frontedge"],
+        response_model=list[RunOption],
+    )
+    @_provider_errors
+    async def run_options(
+        request: Request,
+        limit: int = 200,
+        search: str | None = None,
+    ) -> list[RunOption]:
+        """A compact list for the baseline and comparison pickers: no series, no stages."""
+        capped = max(1, min(limit, 1000))
+        if provider_accepts_query(source):
+            result = await source.list_runs(  # type: ignore[call-arg]
+                request, RunsQuery(limit=capped, search=search, offset=0)
+            )
+            items = result.items if isinstance(result, RunsPage) else result
+        else:
+            items = await source.list_runs(request)
+            found = as_models(items, Run, "list_runs")
+            if search:
+                needle = search.strip().lower()
+                found = [run for run in found if needle in run.name.lower()]
+            items = found[:capped]
+        return [
+            RunOption(
+                id=run.id,
+                name=run.name,
+                status=run.status,
+                dataset=run.dataset,
+                started_at=run.started_at,
+            )
+            for run in as_models(items, Run, "list_runs")
+        ]
+
     @router.get("/api/runs/{run_id}", tags=["frontedge"], response_model=RunPayload)
     @_provider_errors
     async def get_run(request: Request, run_id: str) -> RunPayload:
@@ -171,6 +210,21 @@ def _build_router(
         if run is None:
             raise HTTPException(status_code=404, detail="Run not found")
         return _run_payload(run, path)
+
+    @router.get(
+        "/api/runs/{run_id}/examples",
+        tags=["frontedge"],
+        response_model=list[Example],
+    )
+    @_provider_errors
+    async def list_examples(request: Request, run_id: str) -> list[Example]:
+        """The examples of a run — empty when the provider does not serve them."""
+        if not provider_has_examples(source):
+            return []
+        run = as_model_or_none(await source.get_run(request, run_id), Run, "get_run")
+        if run is None:
+            raise HTTPException(status_code=404, detail="Run not found")
+        return as_models(await source.list_examples(request, run_id), Example, "list_examples")
 
     @router.get(
         "/api/runs/{run_id}/logs/stream",

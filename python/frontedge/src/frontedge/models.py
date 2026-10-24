@@ -26,6 +26,7 @@ __all__ = [
     "MetricPoint",
     "ProvenanceEntry",
     "Run",
+    "RunOption",
     "RunStatus",
     "Stage",
     "StageName",
@@ -149,6 +150,16 @@ class Run(FrontedgeModel):
     events: list[MetricEvent] = Field(default_factory=list)
     artifacts: list[Artifact] = Field(default_factory=list)
     provenance: list[ProvenanceEntry] = Field(default_factory=list)
+
+
+class RunOption(FrontedgeModel):
+    """A compact run entry for the baseline and comparison pickers: no series, no stages."""
+
+    id: str
+    name: str
+    status: RunStatus
+    dataset: str = ""
+    started_at: datetime | None = None
 
 
 class Example(FrontedgeModel):

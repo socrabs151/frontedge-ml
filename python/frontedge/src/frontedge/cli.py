@@ -42,11 +42,13 @@ from .models import (
     LogLine,
     MetricPoint,
     Run,
+    RunOption,
     Stage,
 )
 
 MODELS = [
     Run,
+    RunOption,
     Stage,
     MetricPoint,
     Artifact,

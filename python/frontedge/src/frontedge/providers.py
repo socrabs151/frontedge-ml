@@ -14,7 +14,15 @@ from typing import Any, Protocol, TypeVar, runtime_checkable
 from fastapi import Request
 from pydantic import BaseModel, ValidationError
 
-from .models import DatasetDetail, DatasetInfo, EvalComparison, EvalSummary, LogLine, Run
+from .models import (
+    DatasetDetail,
+    DatasetInfo,
+    EvalComparison,
+    EvalSummary,
+    Example,
+    LogLine,
+    Run,
+)
 
 __all__ = [
     "CallableProvider",
@@ -123,7 +131,12 @@ class FrontedgeProvider(Protocol):
         """Run log stream."""
         ...
 
+    async def list_examples(self, request: Request, run_id: str) -> Sequence[Example]:
+        """The examples of a run, for the Examples tab."""
+        ...
+
 class CallableProvider:
+    """Adapter for an async function ``(request) -> Sequence[Run]``."""
     """Adapter for an async function ``(request) -> Sequence[Run]``.
 
     Details and logs come from the same list: enough to build the interface
@@ -151,11 +164,19 @@ ProviderInput = FrontedgeProvider | Callable[[Request], Awaitable[Sequence[Run]]
 
 
 class _ProviderAdapter:
-    """Wrapper for a provider that may lack ``stream_logs``."""
+    """Wrapper for a provider that may lack the optional methods.
+
+    The adapter defines every optional method, so the capability flags must be captured from the
+    wrapped provider at construction time — otherwise ``/api/meta`` would report features that do
+    not exist.
+    """
 
     def __init__(self, provider: Any) -> None:
         self._provider = provider
         self.supports_query = _accepts_query(getattr(provider, "list_runs", None))
+        self.has_logs = callable(getattr(provider, "stream_logs", None))
+        self.has_artifacts = callable(getattr(provider, "read_artifact", None))
+        self.has_examples = callable(getattr(provider, "list_examples", None))
 
     async def list_runs(self, request: Request, query: Any = None) -> Any:
         if self.supports_query:
@@ -177,6 +198,12 @@ class _ProviderAdapter:
         if reader is None:
             return None
         return await reader(request, artifact_id)
+
+    async def list_examples(self, request: Request, run_id: str) -> Sequence[Example] | None:
+        lister = getattr(self._provider, "list_examples", None)
+        if lister is None:
+            return None
+        return await lister(request, run_id)
 
 
 def _accepts_query(target: Any) -> bool:
@@ -201,7 +228,16 @@ def provider_accepts_query(provider: Any) -> bool:
 
 def provider_reads_artifacts(provider: Any) -> bool:
     """Whether the provider can serve artifact content."""
+    if isinstance(provider, _ProviderAdapter):
+        return provider.has_artifacts
     return callable(getattr(provider, "read_artifact", None))
+
+
+def provider_has_examples(provider: Any) -> bool:
+    """Whether the provider can list the examples of a run."""
+    if isinstance(provider, _ProviderAdapter):
+        return provider.has_examples
+    return callable(getattr(provider, "list_examples", None))
 
 
 def adapt_provider(provider: ProviderInput) -> FrontedgeProvider:
@@ -227,4 +263,6 @@ def provider_has_logs(provider: Any) -> bool:
     """Whether the provider has a log stream (the callable adapter has none)."""
     if isinstance(provider, CallableProvider):
         return False
+    if isinstance(provider, _ProviderAdapter):
+        return provider.has_logs
     return callable(getattr(provider, "stream_logs", None))

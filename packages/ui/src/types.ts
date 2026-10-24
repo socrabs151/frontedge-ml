@@ -22,6 +22,7 @@ export type {
   MetricSpec,
   ProvenanceEntry,
   Run,
+  RunOption,
   RunStatus,
   Stage,
   StageName,

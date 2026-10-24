@@ -55,6 +55,13 @@ export interface Run {
   artifacts?: Artifact[];
   provenance?: ProvenanceEntry[];
 }
+export interface RunOption {
+  id: string;
+  name: string;
+  status: RunStatus;
+  dataset?: string;
+  startedAt?: string | null;
+}
 export interface Example {
   id: string;
   input: string;

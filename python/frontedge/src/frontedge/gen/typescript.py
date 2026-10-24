@@ -150,8 +150,10 @@ import type {{
   DatasetInfo,
   EvalComparison,
   EvalSummary,
+  Example,
   LogLine,
   Run,
+  RunOption,
   UiConfig,
 }} from "./types";
 
@@ -176,7 +178,7 @@ export interface RunsPage {{
 export interface FrontedgeCapabilities {{
   screens: Array<"runs" | "run" | "evals" | "datasets">;
   actions: string[];
-  runs: {{ query: boolean; logs: boolean; artifacts: boolean }};
+  runs: {{ query: boolean; logs: boolean; artifacts: boolean; examples: boolean }};
   evals: boolean;
   datasets: boolean;
 }}
@@ -241,12 +243,21 @@ export function createClient(options: FrontedgeClientOptions = {{
         headers: {{ accept: "application/json" }},
       }});
       if (!response.ok) {{
-        throw new Error(`frontedge: ${{response.status}} ${{response.statusText}} (/runs)`);
+        throw await failure(response, "/runs");
       }}
       const items = (await response.json()) as Run[];
       const total = Number(response.headers.get("X-Frontedge-Total") ?? items.length);
       return {{ items, total }};
     }},
+    runOptions: (query: {{ limit?: number; search?: string }} = {{}}) => {{
+      const params = new URLSearchParams();
+      if (query.limit !== undefined) params.set("limit", String(query.limit));
+      if (query.search) params.set("search", query.search);
+      const search = params.toString();
+      return json<RunOption[]>(`/runs/options${{search ? `?${{search}}` : ""}}`);
+    }},
+    examples: (runId: string) =>
+      json<Example[]>(`/runs/${{encodeURIComponent(runId)}}/examples`),
     getRun: (runId: string) => json<Run>(`/runs/${{runId}}`),
     artifactUrl: (artifactId: string) =>
       `${{basePath}}/artifacts/${{encodeURIComponent(artifactId)}}/content`,
