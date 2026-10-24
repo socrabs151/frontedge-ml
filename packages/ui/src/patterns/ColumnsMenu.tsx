@@ -13,10 +13,13 @@ export function ColumnsMenu({
   columns,
   visibility,
   onVisibilityChange,
+  onResetWidths,
 }: {
   columns: ColumnOption[];
   visibility: VisibilityState;
   onVisibilityChange: (visibility: VisibilityState) => void;
+  /** Offered only when the user has changed a width. */
+  onResetWidths?: () => void;
 }) {
   const t = useT();
   const hiddenCount = columns.filter((column) => visibility[column.id] === false).length;
@@ -57,6 +60,14 @@ export function ColumnsMenu({
               </DropdownMenu.CheckboxItem>
             );
           })}
+          {onResetWidths ? (
+            <>
+              <DropdownMenu.Separator className="fe-menu__separator" />
+              <DropdownMenu.Item className="fe-menu__item" onSelect={onResetWidths}>
+                {t("menu.resetWidths")}
+              </DropdownMenu.Item>
+            </>
+          ) : null}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

@@ -233,6 +233,9 @@ export function RunsScreen({
           columns={COLUMN_OPTIONS}
           visibility={columnVisibility}
           onVisibilityChange={onColumnVisibilityChange}
+          onResetWidths={
+            Object.keys(columnSizing).length > 0 ? () => onColumnSizingChange({}) : undefined
+          }
         />
       </div>
 

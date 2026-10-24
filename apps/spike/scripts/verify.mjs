@@ -77,6 +77,32 @@ async function checkMetricCells() {
   return result.misaligned.length + result.clipped;
 }
 
+/** Resize a column from the keyboard and put it back through the Columns menu. */
+async function checkColumnReset() {
+  const header = page.locator(".fe-table__th", { hasText: /^Run$/ }).first();
+  const width = () => header.evaluate((node) => Math.round(node.getBoundingClientRect().width));
+  const before = await width();
+  await header.locator(".fe-table__resizer").focus();
+  await page.keyboard.press("ArrowRight");
+  await page.waitForTimeout(150);
+  const resized = await width();
+
+  await page.getByRole("button", { name: /Columns/ }).click();
+  const reset = page.getByRole("menuitem", { name: "Reset column widths" });
+  const offered = (await reset.count()) > 0;
+  if (offered) await reset.click();
+  await page.waitForTimeout(200);
+  const after = await width();
+
+  const ok = resized > before && offered && after === before;
+  console.log(
+    ok
+      ? "column widths: resize and reset"
+      : `column widths: before=${before} resized=${resized} after=${after} offered=${offered}`,
+  );
+  return ok ? 0 : 1;
+}
+
 let seriousTotal = 0;
 let layoutProblems = 0;
 
@@ -85,6 +111,7 @@ await page.waitForSelector(".fe-table__row");
 await shoot("01-runs-light-1440");
 seriousTotal += await audit("runs light");
 layoutProblems += await checkMetricCells();
+layoutProblems += await checkColumnReset();
 
 // dark theme
 await page.getByRole("button", { name: /dark theme/i }).click();

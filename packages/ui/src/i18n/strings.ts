@@ -44,6 +44,7 @@ export const en = {
 
   "menu.columns": "Columns",
   "menu.hidden": "hidden",
+  "menu.resetWidths": "Reset column widths",
 
   "log.lines": "lines",
   "log.live": "live",
@@ -113,6 +114,7 @@ export const ru: Dictionary = {
 
   "menu.columns": "Колонки",
   "menu.hidden": "скрыто",
+  "menu.resetWidths": "Сбросить ширины колонок",
 
   "log.lines": "строк",
   "log.live": "live",
