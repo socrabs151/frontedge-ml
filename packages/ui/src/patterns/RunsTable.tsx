@@ -72,6 +72,18 @@ const KNOWN_COLUMNS = [
   "loss",
 ] as const;
 
+/** Columns that hold text. Everything else is a number and aligns to the right, like its cells. */
+const TEXT_COLUMNS = new Set([
+  "name",
+  "status",
+  "ribbon",
+  "dataset",
+  "gitSha",
+  "startedAt",
+  "actions",
+]);
+const isNumericColumn = (id: string) => !TEXT_COLUMNS.has(id);
+
 export function RunsTable({
   runs,
   baselineId,
@@ -402,7 +414,7 @@ export function RunsTable({
                 {headerGroup.headers.map((header) => {
                   const sorted = header.column.getIsSorted();
                   const canSort = header.column.getCanSort();
-                  const isNumeric = ["accuracy", "loss", "durationMs"].includes(header.column.id);
+                  const isNumeric = isNumericColumn(header.column.id);
                   return (
                     <th
                       key={header.id}
@@ -502,8 +514,7 @@ export function RunsTable({
                       className={clsx(
                         "fe-table__td",
                         cell.column.id === "name" && "fe-table__td--sticky",
-                        ["accuracy", "loss", "durationMs"].includes(cell.column.id) &&
-                          "fe-table__td--num",
+                        isNumericColumn(cell.column.id) && "fe-table__td--num",
                         cell.column.id === "ribbon" && "fe-table__td--ribbon",
                       )}
                     >
