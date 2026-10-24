@@ -8,9 +8,9 @@ import {
   type ColumnOption,
   type VisibilityState,
 } from "@frontedge/ui";
-import { Download, Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
+import { Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { Run, RunStatus, UiConfig } from "@frontedge/ui";
+import type { Run, RunOption, RunStatus, UiConfig } from "@frontedge/ui";
 import { useAppT } from "../i18n";
 import { errorMessage, source, type RunsQuery } from "../data/source";
 
@@ -57,6 +57,8 @@ export interface RunsScreenProps {
   onColumnVisibilityChange: (visibility: VisibilityState) => void;
   columnSizing: Record<string, number>;
   onColumnSizingChange: (sizing: Record<string, number>) => void;
+  /** The runs the baseline picker offers: the whole project, not just the page. */
+  runChoices: RunOption[];
   onOpenRun: (run: Run) => void;
 }
 
@@ -79,6 +81,7 @@ export function RunsScreen({
   onColumnVisibilityChange,
   columnSizing,
   onColumnSizingChange,
+  runChoices,
   onOpenRun,
 }: RunsScreenProps) {
   const t = useAppT();
@@ -119,12 +122,12 @@ export function RunsScreen({
 
   const baselineOptions = useMemo(
     () =>
-      (runs ?? []).map((run) => (
+      runChoices.map((run) => (
         <option key={run.id} value={run.id}>
           {run.name}
         </option>
       )),
-    [runs],
+    [runChoices],
   );
 
   return (
@@ -162,9 +165,6 @@ export function RunsScreen({
                   }),
                 })
               : t("runs.refresh")}
-          </Button>
-          <Button variant="secondary" size="sm" icon={<Download size={13} aria-hidden />}>
-            {t("runs.exportCsv")}
           </Button>
         </div>
       </header>

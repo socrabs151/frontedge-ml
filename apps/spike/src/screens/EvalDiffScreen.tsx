@@ -9,18 +9,19 @@ import {
 } from "@frontedge/ui";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { EvalComparison, EvalSummary, Run, UiConfig } from "@frontedge/ui";
+import type { EvalComparison, EvalSummary, RunOption, UiConfig } from "@frontedge/ui";
 import { useAppT } from "../i18n";
 import { errorMessage, source } from "../data/source";
 
 type EvalTab = "examples" | "summary";
 
 export function EvalDiffScreen({
-  runs,
+  runChoices,
   baselineId,
   config,
 }: {
-  runs: Run[] | null;
+  /** The runs the pickers offer: the whole project, not just the current page. */
+  runChoices: RunOption[];
   baselineId?: string;
   config: UiConfig | null;
 }) {
@@ -58,14 +59,14 @@ export function EvalDiffScreen({
   }, []);
 
   useEffect(() => {
-    if (!runs || runs.length === 0) return;
-    setReference((current) => current || baselineId || runs[0]!.id);
+    if (runChoices.length === 0) return;
+    setReference((current) => current || baselineId || runChoices[0]!.id);
     setComparisonRun((current) => {
       if (current) return current;
-      const candidate = runs.find((run) => run.id !== (baselineId ?? runs[0]!.id));
-      return candidate?.id ?? runs[0]!.id;
+      const candidate = runChoices.find((run) => run.id !== (baselineId ?? runChoices[0]!.id));
+      return candidate?.id ?? runChoices[0]!.id;
     });
-  }, [runs, baselineId]);
+  }, [runChoices, baselineId]);
 
   useEffect(() => {
     if (!evalId || !reference || !comparisonRun) return;
@@ -87,12 +88,12 @@ export function EvalDiffScreen({
 
   const runOptions = useMemo(
     () =>
-      (runs ?? []).map((run) => (
+      runChoices.map((run) => (
         <option key={run.id} value={run.id}>
           {run.name}
         </option>
       )),
-    [runs],
+    [runChoices],
   );
 
   const configuredTabs: EvalTab[] =

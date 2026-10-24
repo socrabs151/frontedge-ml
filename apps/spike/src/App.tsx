@@ -9,7 +9,13 @@ import {
   Sun,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FrontedgeMeta, Run, UiConfig, VisibilityState } from "@frontedge/ui";
+import type {
+  FrontedgeMeta,
+  Run,
+  RunOption,
+  UiConfig,
+  VisibilityState,
+} from "@frontedge/ui";
 import { I18nProvider, Segmented, TooltipProvider, useI18n } from "@frontedge/ui";
 import { DATASET_NAMES, NOW_TIME } from "./data/mock";
 import { errorMessage, source, type RunsQuery } from "./data/source";
@@ -51,6 +57,7 @@ function Shell() {
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [config, setConfig] = useState<UiConfig | null>(null);
+  const [runChoices, setRunChoices] = useState<RunOption[]>([]);
   const [capabilities, setCapabilities] = useState<FrontedgeMeta["capabilities"] | null>(null);
   const [baselineId, setBaselineId] = useState<string | undefined>(undefined);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
@@ -83,21 +90,31 @@ function Shell() {
     localStorage.setItem("fe-density", density);
   }, [density]);
 
+  const pageSize = config?.pageSize ?? 50;
+
   const load = useCallback(() => {
     setError(null);
     source
-      .listRuns(query)
+      .listRuns({ ...query, limit: pageSize })
       .then((page) => {
         setRuns(page.items);
         setTotal(page.total);
         setUpdatedAt(Date.now());
       })
       .catch((cause) => setError(errorMessage(cause)));
-  }, [query]);
+  }, [pageSize, query]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  // The pickers cover the project, not only the visible page. They are small: id, name, status.
+  useEffect(() => {
+    source
+      .runOptions()
+      .then(setRunChoices)
+      .catch(() => setRunChoices([]));
+  }, []);
 
   useEffect(() => {
     source
@@ -266,10 +283,11 @@ function Shell() {
               onColumnVisibilityChange={setColumnVisibility}
               columnSizing={columnSizing}
               onColumnSizingChange={setColumnSizing}
+              runChoices={runChoices}
               onOpenRun={(run) => setRoute({ name: "run", id: run.id })}
             />
           ) : route.name === "evals" ? (
-            <EvalDiffScreen runs={runs} baselineId={baseline?.id} config={config} />
+            <EvalDiffScreen runChoices={runChoices} baselineId={baseline?.id} config={config} />
           ) : route.name === "datasets" ? (
             <DatasetScreen />
           ) : (

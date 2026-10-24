@@ -49,8 +49,11 @@ Frontedge — этот слой, упакованный.
 
 ## Быстрый старт
 
+На PyPI пока нет. Из репозитория: соберите интерфейс один раз и установите пакет:
+
 ```bash
-pip install frontedge          # или: uv add frontedge
+pnpm install && pnpm build:ui
+pip install ./python/frontedge        # или: uv pip install -e ./python/frontedge
 ```
 
 ```python

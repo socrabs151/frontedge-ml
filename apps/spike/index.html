@@ -9,11 +9,9 @@
       content="Frontedge — a reusable frontend layer for ML projects: runs, datasets, evaluations, traces."
     />
     <title>@@FRONTEDGE_TITLE@@</title>
-    <script>
-      // The server substitutes the mount path (frontedge.runtime.static), so the
-      // interface works under any prefix, not only under /frontedge.
-      window.__FRONTEDGE_MOUNT__ = "@@FRONTEDGE_MOUNT@@";
-    </script>
+    <!-- The server substitutes the mount path, so the interface works under any prefix.
+         A meta tag instead of an inline script: a strict CSP needs no 'unsafe-inline'. -->
+    <meta name="frontedge-mount" content="@@FRONTEDGE_MOUNT@@" />
   </head>
   <body>
     <div id="root" class="fe-root"></div>

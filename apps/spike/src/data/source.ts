@@ -9,6 +9,7 @@ import type {
   FrontedgeMeta,
   LogLine,
   Run,
+  RunOption,
   UiConfig,
 } from "@frontedge/ui";
 import {
@@ -46,6 +47,8 @@ export interface RunsSource {
   /** What this installation supports: screens, actions, query, logs, artifacts. */
   meta(): Promise<FrontedgeMeta>;
   listRuns(query?: RunsQuery): Promise<RunsPage>;
+  /** Compact list for the baseline and comparison pickers. */
+  runOptions(): Promise<RunOption[]>;
   getRun(runId: string): Promise<Run>;
   examples(runId: string): Promise<Example[]>;
   streamLogs(runId: string): AsyncGenerator<LogLine>;
@@ -81,7 +84,7 @@ export const mockSource: RunsSource = {
       capabilities: {
         screens: ["runs", "run", "evals", "datasets"],
         actions: [],
-        runs: { query: false, logs: true, artifacts: false },
+        runs: { query: false, logs: true, artifacts: false, examples: true },
         evals: true,
         datasets: true,
       },
@@ -104,6 +107,15 @@ export const mockSource: RunsSource = {
     const offset = query.offset ?? 0;
     const page = query.limit === undefined ? runs.slice(offset) : runs.slice(offset, offset + query.limit);
     return { items: page, total };
+  },
+  async runOptions() {
+    return mockRuns.slice(0, 500).map((run) => ({
+      id: run.id,
+      name: run.name,
+      status: run.status,
+      dataset: run.dataset ?? "",
+      startedAt: run.startedAt,
+    }));
   },
   async getRun(runId) {
     const run = mockRuns.find((candidate) => candidate.id === runId);
@@ -156,7 +168,10 @@ export const mockSource: RunsSource = {
  * so the interface finds its own API under whatever prefix it is served from.
  */
 function apiBasePath(): string {
-  const mount = (globalThis as { __FRONTEDGE_MOUNT__?: string }).__FRONTEDGE_MOUNT__;
+  // The server writes the mount path into the document meta tag; the global is the fallback for
+  // an older build. No inline script, so a strict CSP works without 'unsafe-inline'.
+  const meta = document.querySelector('meta[name="frontedge-mount"]')?.getAttribute("content");
+  const mount = meta || (globalThis as { __FRONTEDGE_MOUNT__?: string }).__FRONTEDGE_MOUNT__;
   if (mount && mount !== "@@FRONTEDGE_MOUNT@@") {
     return `${mount.replace(/\/$/, "")}/api`;
   }
@@ -169,10 +184,9 @@ export const apiSource: RunsSource = {
   kind: "api",
   meta: () => client.meta(),
   listRuns: (query) => client.listRuns(query ?? {}),
+  runOptions: () => client.runOptions({ limit: 500 }),
   getRun: (runId) => client.getRun(runId),
-  async examples() {
-    return [];
-  },
+  examples: (runId) => client.examples(runId),
   streamLogs: (runId) => client.streamLogs(runId),
   listEvals: () => client.listEvals(),
   compareEval: (evalId, reference, comparison) => client.compareEval(evalId, reference, comparison),

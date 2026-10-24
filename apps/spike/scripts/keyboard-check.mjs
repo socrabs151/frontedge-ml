@@ -35,7 +35,8 @@ if (afterUp !== start) problems.push(`ArrowUp: expected ${start}, got ${afterUp}
 await page.keyboard.press("End");
 await wait(200);
 const afterEnd = await focusedIndex();
-if (afterEnd === null || afterEnd < 100) problems.push(`End: did not reach the end, got ${afterEnd}`);
+// The list is paginated (50 by default), so "the end" is the end of the page, not of the project.
+if (afterEnd === null || afterEnd < 40) problems.push(`End: did not reach the end, got ${afterEnd}`);
 
 await page.keyboard.press("Home");
 await wait(200);

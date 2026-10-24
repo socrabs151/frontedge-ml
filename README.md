@@ -49,8 +49,11 @@ Frontedge is that layer, packaged.
 
 ## Quick start
 
+Not on PyPI yet. From the repository, build the interface once and install the package:
+
 ```bash
-pip install frontedge          # or: uv add frontedge
+pnpm install && pnpm build:ui
+pip install ./python/frontedge        # or: uv pip install -e ./python/frontedge
 ```
 
 ```python

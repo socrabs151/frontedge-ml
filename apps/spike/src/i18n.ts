@@ -22,7 +22,6 @@ const en = {
 
   "runs.title": "Runs",
   "runs.subtitle": "Runs of the project squad-ru-eval, base branch main",
-  "runs.exportCsv": "Export CSV",
   "runs.updatedAt": "updated {time}",
   "runs.refresh": "Refresh",
   "runs.searchPlaceholder": "Find a run by name",
@@ -60,7 +59,7 @@ const en = {
   "detail.exitCode": "exit code {code}",
   "detail.download": "Download",
   "detail.examplesMissing":
-    "The examples endpoint is not wired yet: add GET /api/runs/{id}/examples to the provider.",
+    "This provider returns no examples: add list_examples to it to see the per-example scores.",
   "detail.seedsNote":
     "One seed is shown. Other seeds appear once the provider returns them in series: an average over two seeds hides the outliers.",
   "detail.actionDone": "Done",
@@ -118,7 +117,6 @@ const ru: Record<AppStringKey, string> = {
 
   "runs.title": "Runs",
   "runs.subtitle": "Runs проекта squad-ru-eval, основная ветка main",
-  "runs.exportCsv": "Экспорт CSV",
   "runs.updatedAt": "обновлено {time}",
   "runs.refresh": "Обновить",
   "runs.searchPlaceholder": "Найти Run по имени",
@@ -157,7 +155,7 @@ const ru: Record<AppStringKey, string> = {
   "detail.exitCode": "код выхода {code}",
   "detail.download": "Скачать",
   "detail.examplesMissing":
-    "Эндпоинт Examples ещё не подключён: добавьте в провайдера GET /api/runs/{id}/examples.",
+    "Провайдер не возвращает примеры: добавьте list_examples, чтобы видеть оценки по примерам.",
   "detail.seedsNote":
     "Показан один сид. Другие сиды появятся, когда провайдер отдаст их в series: среднее по двум сидам скрывает выбросы.",
   "detail.actionDone": "Готово",
