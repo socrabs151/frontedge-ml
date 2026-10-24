@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from html import escape
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
@@ -12,8 +13,9 @@ __all__ = ["STATIC_DIR", "static_router", "static_root"]
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 _INDEX = "index.html"
-# Value placeholder (not a key!) — otherwise the replacement would eat the variable name too.
+# Value placeholders (not keys!) — otherwise the replacement would eat the variable name too.
 _MOUNT_PLACEHOLDER = "@@FRONTEDGE_MOUNT@@"
+_TITLE_PLACEHOLDER = "@@FRONTEDGE_TITLE@@"
 
 
 def static_root() -> Path:
@@ -21,11 +23,11 @@ def static_root() -> Path:
     return STATIC_DIR
 
 
-def static_router(mount: str = "/frontedge") -> APIRouter:
+def static_router(mount: str = "/frontedge", title: str = "Frontedge") -> APIRouter:
     """Router serving the built interface with an index.html fallback.
 
-    The mount path is substituted into the HTML, so the interface knows where to
-    look for its API and works under any prefix.
+    The mount path and the document title are substituted into the HTML, so the interface knows
+    where to look for its API and the browser tab says what the installation is.
     """
     router = APIRouter()
 
@@ -47,7 +49,11 @@ def static_router(mount: str = "/frontedge") -> APIRouter:
                 status_code=503,
                 detail="Interface is not built: run `pnpm build` and copy dist to frontedge/static",
             )
-        html = index.read_text(encoding="utf-8").replace(_MOUNT_PLACEHOLDER, mount)
+        html = (
+            index.read_text(encoding="utf-8")
+            .replace(_MOUNT_PLACEHOLDER, mount)
+            .replace(_TITLE_PLACEHOLDER, escape(title))
+        )
         return Response(html, media_type="text/html", headers={"Cache-Control": "no-cache"})
 
     return router

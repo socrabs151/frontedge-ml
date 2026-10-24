@@ -69,6 +69,13 @@ The following are **public contracts** and change only in a major release:
 - The sparkline in a metric cell is pinned to the cell's right edge: the graphs of a column share
   one baseline even when the deltas differ in width. The cell no longer clips its content, and the
   browser gate checks both.
+- `Run.dataset`, `Run.git_sha` and `Run.owner` are optional and default to an empty string; the
+  interface shows an en dash, so an adapter does not have to invent a dataset or a commit.
+- `Artifact.kind` and `LogLine.level` are strings: a project keeps its own artifact kinds and log
+  levels, and an unknown level renders with its raw name.
+- `title` in `mount()` reaches the served HTML: the browser tab says what the installation is.
+- The sidebar hides the screens an installation does not mount, using the capabilities of
+  `/api/meta`.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

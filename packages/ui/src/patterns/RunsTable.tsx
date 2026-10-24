@@ -14,7 +14,14 @@ import { useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n/I18nProvider";
-import { formatAbsoluteTime, formatDuration, formatMetric, formatRelativeTime, toTime } from "../format";
+import {
+  EMPTY,
+  formatAbsoluteTime,
+  formatDuration,
+  formatMetric,
+  formatRelativeTime,
+  toTime,
+} from "../format";
 import { MetricCell } from "./MetricCell";
 import { RunRibbon } from "./RunRibbon";
 import type { MetricSpec, Run } from "../types";
@@ -116,18 +123,28 @@ export function RunsTable({
         id: "dataset",
         header: "Dataset",
         size: 110,
-        cell: (info) => (
-          <span className="fe-mono" title={info.getValue()}>
-            {info.getValue()}
-          </span>
-        ),
+        cell: (info) => {
+          const value = info.getValue();
+          return (
+            <span className="fe-mono" title={value || undefined}>
+              {value || EMPTY}
+            </span>
+          );
+        },
       }) as ColumnDef<Run, unknown>,
 
       gitSha: columnHelper.accessor("gitSha", {
         id: "gitSha",
         header: "Git",
         size: 70,
-        cell: (info) => <span className="fe-mono fe-dim">{info.getValue().slice(0, 7)}</span>,
+        cell: (info) => {
+          const value = info.getValue();
+          return (
+            <span className="fe-mono fe-dim" title={value || undefined}>
+              {value ? value.slice(0, 7) : EMPTY}
+            </span>
+          );
+        },
       }) as ColumnDef<Run, unknown>,
 
       startedAt: columnHelper.accessor("startedAt", {

@@ -3,12 +3,16 @@ import { useEffect, useRef, useState } from "react";
 import { useT } from "../i18n/I18nProvider";
 import type { LogLine } from "../types";
 
-const LEVEL_LABEL: Record<LogLine["level"], string> = {
+const LEVEL_LABEL: Record<string, string> = {
   info: "INFO",
   progress: "RUN",
   warning: "WARNING",
   error: "ERROR",
 };
+
+/** A project may log its own levels: keep the class name safe and show the raw level. */
+const levelClass = (level: string) => level.replace(/[^a-z0-9-]/gi, "").toLowerCase();
+const levelLabel = (level: string) => LEVEL_LABEL[level] ?? level.toUpperCase();
 
 /** Live log stream: severity as a text prefix, tail follow, and a way back to the bottom. */
 export function LogStream({
@@ -82,8 +86,8 @@ export function LogStream({
           <p className="fe-note fe-note--inline">{t("log.streamClosed")}</p>
         ) : null}
         {lines.map((line) => (
-          <div key={line.id} className={`fe-logs__line fe-logs__line--${line.level}`}>
-            <span className="fe-logs__level">{LEVEL_LABEL[line.level]}</span>
+          <div key={line.id} className={`fe-logs__line fe-logs__line--${levelClass(line.level)}`}>
+            <span className="fe-logs__level">{levelLabel(line.level)}</span>
             <span className="fe-logs__time fe-num">
               {new Date(line.at).toLocaleTimeString("en-GB", { hour12: false })}
             </span>

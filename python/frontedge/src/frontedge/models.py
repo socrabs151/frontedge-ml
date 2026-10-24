@@ -78,8 +78,10 @@ class MetricDirection(StrEnum):
     none = "none"
 
 
-ArtifactKind = Literal["checkpoint", "log", "report", "dataset", "figure"]
-LogLevel = Literal["info", "progress", "warning", "error"]
+#: Known kinds of an artifact. The field is a string: a project may have its own.
+ArtifactKind = str
+#: Known log levels. The field is a string: an unknown level still renders, with its raw name.
+LogLevel = str
 
 
 class FrontedgeModel(BaseModel):
@@ -129,11 +131,13 @@ class Run(FrontedgeModel):
     name: str = Field(json_schema_extra=role("text"))
     status: RunStatus = Field(json_schema_extra=role("status"))
     freshness: Freshness = Field(default=Freshness.fresh, json_schema_extra=role("freshness"))
-    dataset: str = Field(json_schema_extra=role("dataset"))
-    git_sha: str = Field(json_schema_extra=role("code"))
+    # Empty when the project has no dataset, no git metadata or no owner: the interface shows
+    # an en dash instead of forcing an adapter to invent a value.
+    dataset: str = Field(default="", json_schema_extra=role("dataset"))
+    git_sha: str = Field(default="", json_schema_extra=role("code"))
     started_at: datetime = Field(json_schema_extra=role("timestamp"))
     duration_ms: int = Field(json_schema_extra=role("duration"))
-    owner: str
+    owner: str = ""
     seed: int | None = None
     error: str | None = Field(default=None, json_schema_extra=role("text"))
     exit_code: int | None = None

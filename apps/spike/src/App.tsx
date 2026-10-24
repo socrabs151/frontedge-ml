@@ -1,6 +1,6 @@
 import { Boxes, Database, GitBranch, GitCompareArrows, Moon, Sun } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Run, UiConfig, VisibilityState } from "@frontedge/ui";
+import type { FrontedgeMeta, Run, UiConfig, VisibilityState } from "@frontedge/ui";
 import { I18nProvider, Segmented, TooltipProvider, useI18n } from "@frontedge/ui";
 import { DATASET_NAMES, NOW_TIME } from "./data/mock";
 import { errorMessage, source, type RunsQuery } from "./data/source";
@@ -32,6 +32,7 @@ function Shell() {
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [config, setConfig] = useState<UiConfig | null>(null);
+  const [capabilities, setCapabilities] = useState<FrontedgeMeta["capabilities"] | null>(null);
   const [baselineId, setBaselineId] = useState<string | undefined>(undefined);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
     gitSha: false,
@@ -76,6 +77,23 @@ function Shell() {
       })
       .catch(() => setConfig(null));
   }, []);
+
+  // What this installation supports: the sidebar shows only the screens the server mounts.
+  useEffect(() => {
+    source
+      .meta()
+      .then((loaded) => setCapabilities(loaded.capabilities))
+      .catch(() => setCapabilities(null));
+  }, []);
+
+  useEffect(() => {
+    if (route.name === "evals" && capabilities && !capabilities.evals) {
+      setRoute({ name: "runs" });
+    }
+    if (route.name === "datasets" && capabilities && !capabilities.datasets) {
+      setRoute({ name: "runs" });
+    }
+  }, [capabilities, route.name]);
 
   // Live refresh: while the tab is visible, the list refreshes itself.
   useEffect(() => {
@@ -146,24 +164,28 @@ function Shell() {
               <Boxes size={14} aria-hidden />
               {t("nav.runs")}
             </button>
-            <button
-              type="button"
-              className={`sidebar__item${route.name === "evals" ? " sidebar__item--active" : ""}`}
-              aria-current={route.name === "evals" ? "page" : undefined}
-              onClick={() => setRoute({ name: "evals" })}
-            >
-              <GitCompareArrows size={14} aria-hidden />
-              {t("nav.evals")}
-            </button>
-            <button
-              type="button"
-              className={`sidebar__item${route.name === "datasets" ? " sidebar__item--active" : ""}`}
-              aria-current={route.name === "datasets" ? "page" : undefined}
-              onClick={() => setRoute({ name: "datasets" })}
-            >
-              <Database size={14} aria-hidden />
-              {t("nav.datasets")}
-            </button>
+            {capabilities?.evals !== false ? (
+              <button
+                type="button"
+                className={`sidebar__item${route.name === "evals" ? " sidebar__item--active" : ""}`}
+                aria-current={route.name === "evals" ? "page" : undefined}
+                onClick={() => setRoute({ name: "evals" })}
+              >
+                <GitCompareArrows size={14} aria-hidden />
+                {t("nav.evals")}
+              </button>
+            ) : null}
+            {capabilities?.datasets !== false ? (
+              <button
+                type="button"
+                className={`sidebar__item${route.name === "datasets" ? " sidebar__item--active" : ""}`}
+                aria-current={route.name === "datasets" ? "page" : undefined}
+                onClick={() => setRoute({ name: "datasets" })}
+              >
+                <Database size={14} aria-hidden />
+                {t("nav.datasets")}
+              </button>
+            ) : null}
           </div>
           <div className="sidebar__foot">
             <p className="sidebar__note">

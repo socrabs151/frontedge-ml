@@ -114,6 +114,42 @@ class TestCustomMetrics:
         assert "MetricSpec" in schema["$defs"]
 
 
+class TestOptionalFields:
+    """A project without git metadata, a dataset or an owner must not invent values."""
+
+    def test_a_run_may_omit_dataset_git_and_owner(self) -> None:
+        payload = make_run().model_dump()
+        for field in ("dataset", "git_sha", "owner"):
+            payload.pop(field)
+        run = Run(**payload)
+        assert (run.dataset, run.git_sha, run.owner) == ("", "", "")
+
+
+class TestOpenVocabularies:
+    def test_a_project_may_have_its_own_artifact_kind(self) -> None:
+        artifact = frontedge.Artifact(id="a", name="model.bin", kind="model", size_bytes=1)
+        assert artifact.kind == "model"
+
+    def test_a_project_may_log_its_own_level(self) -> None:
+        line = frontedge.LogLine(id=1, at=datetime.now(UTC), level="debug", text="x")
+        assert line.level == "debug"
+
+
+class TestDocumentTitle:
+    def test_the_mount_title_reaches_the_document(self) -> None:
+        app = FastAPI()
+        app.include_router(frontedge.mount(runs_provider, title="My ML"))
+        response = TestClient(app).get("/frontedge/")
+        assert response.status_code == 200
+        assert "<title>My ML</title>" in response.text
+
+    def test_the_title_is_escaped(self) -> None:
+        app = FastAPI()
+        app.include_router(frontedge.mount(runs_provider, title="<script>"))
+        response = TestClient(app).get("/frontedge/")
+        assert "<title>&lt;script&gt;</title>" in response.text
+
+
 class TestEvalTabs:
     """The evaluation screen's tabs are configuration, not screen code."""
 

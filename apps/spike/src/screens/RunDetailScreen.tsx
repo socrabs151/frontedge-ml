@@ -1,5 +1,6 @@
 import {
   Button,
+  EMPTY,
   EmptyState,
   ExamplesTable,
   LoadingRows,
@@ -327,10 +328,11 @@ export function RunDetailScreen({
       <div className="fe-detail__meta">
         <span className="fe-detail__meta-item">
           <span className="fe-muted">{t("detail.dataset")}</span>{" "}
-          <span className="fe-mono">{run.dataset}</span>
+          <span className="fe-mono">{run.dataset || EMPTY}</span>
         </span>
         <span className="fe-detail__meta-item">
-          <span className="fe-muted">{t("detail.git")}</span> <span className="fe-mono">{run.gitSha}</span>
+          <span className="fe-muted">{t("detail.git")}</span>{" "}
+          <span className="fe-mono">{run.gitSha || EMPTY}</span>
         </span>
         <span className="fe-detail__meta-item">
           <span className="fe-muted">{t("tag.baseline")}</span>{" "}

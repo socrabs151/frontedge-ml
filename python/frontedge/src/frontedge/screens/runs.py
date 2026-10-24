@@ -328,7 +328,7 @@ def _build_router(
         """Unknown API path — 404 in JSON, not an SPA HTML page."""
         raise HTTPException(status_code=404, detail=f"Unknown API endpoint: /{rest}")
 
-    router.include_router(static_router(path))
+    router.include_router(static_router(path, title))
     router.title = title
     return router
 
@@ -385,6 +385,6 @@ def log_line(text: str, level: str = "info") -> LogLine:
     return LogLine(
         id=next(_log_ids),
         at=datetime.now(UTC),
-        level=level,  # type: ignore[arg-type]
+        level=level,
         text=text,
     )

@@ -3,7 +3,7 @@
 export interface Artifact {
   id: string;
   name: string;
-  kind?: "checkpoint" | "log" | "report" | "dataset" | "figure";
+  kind?: string;
   sizeBytes: number;
   createdAt?: string | null;
   contentUrl?: string | null;
@@ -38,11 +38,11 @@ export interface Run {
   name: string;
   status: RunStatus;
   freshness?: Freshness;
-  dataset: string;
-  gitSha: string;
+  dataset?: string;
+  gitSha?: string;
   startedAt: string;
   durationMs: number;
-  owner: string;
+  owner?: string;
   seed?: number | null;
   error?: string | null;
   exitCode?: number | null;
@@ -75,7 +75,7 @@ export interface ExampleResult {
 export interface LogLine {
   id: number;
   at: string;
-  level: "info" | "progress" | "warning" | "error";
+  level: string;
   text: string;
 }
 export interface EvalSummary {

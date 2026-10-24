@@ -91,6 +91,11 @@ app.include_router(frontedge.mount(my_runs_provider))
 A failed run carries its reason in `error` and the exit code of the process in `exit_code`; both
 reach the client as `error` and `exitCode`.
 
+`dataset`, `git_sha` and `owner` may be omitted: they default to an empty string and the interface
+shows an en dash. `kind` of an artifact and `level` of a log line are plain strings, so a project
+keeps its own kinds (`model`, `config`) and levels (`debug`, `trace`); an unknown log level is
+shown with its raw name.
+
 You can pass an object instead of a function — then all of the methods are available:
 
 ```python
@@ -163,6 +168,9 @@ from `request.app` cannot be checked this way — start the server and call `/ap
 `config=`, `path=` (the prefix the interface is mounted under, `/frontedge` by default) and
 `title=`. `frontedge.runs()` is the same router without the eval and dataset screens.
 
+`title` is the browser tab: it is substituted into the served HTML (escaped) and used as the
+router title in the OpenAPI document.
+
 | Method and path | What it returns |
 |---|---|
 | `GET /frontedge/api/runs` | a list of runs; accepts `limit`, `offset`, `search`, `status`, `dataset` and answers with the `X-Frontedge-Total` header |
@@ -206,7 +214,8 @@ have to guess from the configuration:
 
 `runs.query` tells whether the provider filters and paginates itself (`list_runs(request, query)`),
 `logs` — whether `stream_logs` exists, `artifacts` — whether `read_artifact` exists. `screens` and
-`actions` come from what you passed to `mount`.
+`actions` come from what you passed to `mount`. The interface reads this: a screen the installation
+does not mount is not shown in the sidebar.
 
 ### 4.2 A broken provider
 

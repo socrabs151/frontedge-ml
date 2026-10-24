@@ -6,6 +6,7 @@ import type {
   EvalComparison,
   EvalSummary,
   Example,
+  FrontedgeMeta,
   LogLine,
   Run,
   UiConfig,
@@ -42,6 +43,8 @@ export interface RunsPage {
  */
 export interface RunsSource {
   readonly kind: "mock" | "api";
+  /** What this installation supports: screens, actions, query, logs, artifacts. */
+  meta(): Promise<FrontedgeMeta>;
   listRuns(query?: RunsQuery): Promise<RunsPage>;
   getRun(runId: string): Promise<Run>;
   examples(runId: string): Promise<Example[]>;
@@ -68,6 +71,22 @@ const mockLogs = makeLogs(80);
 
 export const mockSource: RunsSource = {
   kind: "mock",
+  async meta() {
+    return {
+      name: "frontedge",
+      version: "0.0.0-mock",
+      statuses: ["queued", "running", "succeeded", "failed", "cancelled", "lost"],
+      freshness: ["live", "fresh", "stale", "partial"],
+      metricDirections: ["maximize", "minimize", "none"],
+      capabilities: {
+        screens: ["runs", "run", "evals", "datasets"],
+        actions: [],
+        runs: { query: false, logs: true, artifacts: false },
+        evals: true,
+        datasets: true,
+      },
+    };
+  },
   async listRuns(query: RunsQuery = {}) {
     let runs = mockRuns;
     if (query.search) {
@@ -148,6 +167,7 @@ const client = createClient({ basePath: apiBasePath() });
 
 export const apiSource: RunsSource = {
   kind: "api",
+  meta: () => client.meta(),
   listRuns: (query) => client.listRuns(query ?? {}),
   getRun: (runId) => client.getRun(runId),
   async examples() {
