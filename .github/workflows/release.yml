@@ -55,8 +55,8 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @frontedge/ui build
-      - run: pnpm --filter @frontedge/ui publish --access public --no-git-checks
+      - run: pnpm --filter @frontedge-ml/ui build
+      - run: pnpm --filter @frontedge-ml/ui publish --access public --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

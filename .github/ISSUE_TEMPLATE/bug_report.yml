@@ -12,7 +12,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: frontedge / @frontedge/ui version, or commit
+      description: frontedge / @frontedge-ml/ui version, or commit
       placeholder: 0.1.0
     validations:
       required: true

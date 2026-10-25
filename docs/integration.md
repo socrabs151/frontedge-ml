@@ -62,7 +62,7 @@ Four files, and the dashboard already runs on two sample runs:
 For your own frontend on the components:
 
 ```bash
-npm i @frontedge/ui react react-dom
+npm i @frontedge-ml/ui react react-dom
 ```
 
 ## 3. Provider: 20 lines
@@ -466,11 +466,11 @@ names the action, so the button reports a failure instead of a blank 500.
 ## 7. Your own screens on our components
 
 If the standard screens are not enough — build your own on the primitives. The tokens and the
-components come from `@frontedge/ui`:
+components come from `@frontedge-ml/ui`:
 
 ```tsx
-import "@frontedge/ui/styles.css";
-import { RunsTable, StatusBadge, type Run } from "@frontedge/ui";
+import "@frontedge-ml/ui/styles.css";
+import { RunsTable, StatusBadge, type Run } from "@frontedge-ml/ui";
 
 export function MyRuns({ runs }: { runs: Run[] }) {
   return (

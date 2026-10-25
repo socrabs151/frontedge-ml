@@ -11,11 +11,11 @@ import {
   RunTimeline,
   StatusBadge,
   Tabs,
-} from "@frontedge/ui";
+} from "@frontedge-ml/ui";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-import { formatMetric, useI18n } from "@frontedge/ui";
-import type { Example, LogLine, Run, UiConfig } from "@frontedge/ui";
+import { formatMetric, useI18n } from "@frontedge-ml/ui";
+import type { Example, LogLine, Run, UiConfig } from "@frontedge-ml/ui";
 import { useAppT } from "../i18n";
 import { Pager } from "../components/Pager";
 import { errorMessage, source } from "../data/source";

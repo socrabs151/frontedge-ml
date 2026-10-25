@@ -1,10 +1,10 @@
-# @frontedge/ui
+# @frontedge-ml/ui
 
 Design system and ML interface patterns for [frontedge](https://github.com/socrabs151/frontedge-ml)
 — the frontend layer for ML engineering.
 
 ```bash
-npm i @frontedge/ui react react-dom
+npm i @frontedge-ml/ui react react-dom
 ```
 
 ## What is inside
@@ -20,8 +20,8 @@ npm i @frontedge/ui react react-dom
 ## Usage
 
 ```tsx
-import "@frontedge/ui/styles.css";
-import { RunsTable, StatusBadge, type Run } from "@frontedge/ui";
+import "@frontedge-ml/ui/styles.css";
+import { RunsTable, StatusBadge, type Run } from "@frontedge-ml/ui";
 
 export function MyRuns({ runs }: { runs: Run[] }) {
   return (
@@ -54,7 +54,7 @@ The language is English by default. To switch it, wrap the tree in `I18nProvider
 provider components still work and speak English:
 
 ```tsx
-import { I18nProvider } from "@frontedge/ui";
+import { I18nProvider } from "@frontedge-ml/ui";
 
 <I18nProvider defaultLang="en">
   <App />

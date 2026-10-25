@@ -14,7 +14,7 @@ app.include_router(frontedge.mount(my_runs_provider))
 
 [![license](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 [![pypi](https://img.shields.io/pypi/v/frontedge.svg)](https://pypi.org/project/frontedge/)
-[![npm](https://img.shields.io/npm/v/@frontedge/ui.svg)](https://www.npmjs.com/package/@frontedge/ui)
+[![npm](https://img.shields.io/npm/v/@frontedge-ml/ui.svg)](https://www.npmjs.com/package/@frontedge-ml/ui)
 [![python](https://img.shields.io/pypi/pyversions/frontedge.svg)](https://pypi.org/project/frontedge/)
 [![node](https://img.shields.io/badge/node-22%2B-5FA04E.svg)](package.json)
 [![ci](https://github.com/socrabs151/frontedge-ml/actions/workflows/ci.yml/badge.svg)](https://github.com/socrabs151/frontedge-ml/actions/workflows/ci.yml)
@@ -150,8 +150,8 @@ its series. Filtering, search and pagination run on the server when the provider
 For your own screens, use the components directly:
 
 ```tsx
-import "@frontedge/ui/styles.css";
-import { RunsTable, StatusBadge } from "@frontedge/ui";
+import "@frontedge-ml/ui/styles.css";
+import { RunsTable, StatusBadge } from "@frontedge-ml/ui";
 ```
 
 Full contract: **[docs/integration.md](docs/integration.md)**. If you are an agent working in a
@@ -162,7 +162,7 @@ user's repository, **[AGENTS.md](AGENTS.md)** has the same contract in short for
 | | |
 |---|---|
 | [`frontedge`](python/frontedge) (PyPI) | the Python package: models, providers, routers, the type generator |
-| [`@frontedge/ui`](packages/ui) (npm) | the design system: tokens, primitives, ML patterns, generated types |
+| [`@frontedge-ml/ui`](packages/ui) (npm) | the design system: tokens, primitives, ML patterns, generated types |
 
 TypeScript types are generated from the Python models, so the two can never drift:
 

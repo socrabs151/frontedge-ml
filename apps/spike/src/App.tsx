@@ -15,8 +15,8 @@ import type {
   RunOption,
   UiConfig,
   VisibilityState,
-} from "@frontedge/ui";
-import { I18nProvider, Segmented, TooltipProvider, useI18n } from "@frontedge/ui";
+} from "@frontedge-ml/ui";
+import { I18nProvider, Segmented, TooltipProvider, useI18n } from "@frontedge-ml/ui";
 import { errorMessage, source, type RunsQuery } from "./data/source";
 import { useAppT } from "./i18n";
 import { RunsScreen } from "./screens/RunsScreen";

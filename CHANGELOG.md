@@ -64,7 +64,7 @@ The following are **public contracts** and change only in a major release:
 - Interface configuration in TOML or JSON: column sets, tabs and declared actions.
 - Project actions: handlers declared in code, invoked by id, results shown to the user.
 - TypeScript type generator: pydantic models to `types.ts` and a typed client, pure Python.
-- npm package `@frontedge/ui`: tokens, primitives and ML patterns, published as ESM and CJS
+- npm package `@frontedge-ml/ui`: tokens, primitives and ML patterns, published as ESM and CJS
   with type declarations.
 - Screens: runs list, run detail, eval diff, dataset explorer.
 - Quality gates: token contrast against WCAG 2.2, axe audit, keyboard pass, Python contract
@@ -78,7 +78,7 @@ The following are **public contracts** and change only in a major release:
   application's variables.
 - Base styles are scoped to `.fe-root` and to the portalled surfaces: importing the package no
   longer restyles the host document.
-- `@frontedge/ui/styles.css` is one built file; the `@import`s are inlined at build time.
+- `@frontedge-ml/ui/styles.css` is one built file; the `@import`s are inlined at build time.
 - Components fall back to English when no `I18nProvider` is mounted, so a single pattern can be
   dropped into an existing application.
 - `frontedge.toml` rejects unknown keys instead of ignoring them.
@@ -151,6 +151,8 @@ The following are **public contracts** and change only in a major release:
   series. The test suite lists a 10 000-run project with `limit` and picks from it.
 - The baseline and comparison pickers search the compact endpoint (`search`), so a run outside the
   current page is selectable; the chosen baseline is fetched by id, so the deltas do not disappear.
+- The npm package is `@frontedge-ml/ui`: the scope `frontedge` was already taken on npm, so the
+  imports, the badges and the release filter use the repository's name. PyPI stays `frontedge`.
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.

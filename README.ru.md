@@ -14,7 +14,7 @@ app.include_router(frontedge.mount(my_runs_provider))
 
 [![license](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 [![pypi](https://img.shields.io/pypi/v/frontedge.svg)](https://pypi.org/project/frontedge/)
-[![npm](https://img.shields.io/npm/v/@frontedge/ui.svg)](https://www.npmjs.com/package/@frontedge/ui)
+[![npm](https://img.shields.io/npm/v/@frontedge-ml/ui.svg)](https://www.npmjs.com/package/@frontedge-ml/ui)
 [![python](https://img.shields.io/pypi/pyversions/frontedge.svg)](https://pypi.org/project/frontedge/)
 [![node](https://img.shields.io/badge/node-22%2B-5FA04E.svg)](package.json)
 [![ci](https://github.com/socrabs151/frontedge-ml/actions/workflows/ci.yml/badge.svg)](https://github.com/socrabs151/frontedge-ml/actions/workflows/ci.yml)
@@ -150,8 +150,8 @@ digits = 2
 Свои экраны собираются на компонентах напрямую:
 
 ```tsx
-import "@frontedge/ui/styles.css";
-import { RunsTable, StatusBadge } from "@frontedge/ui";
+import "@frontedge-ml/ui/styles.css";
+import { RunsTable, StatusBadge } from "@frontedge-ml/ui";
 ```
 
 Полный контракт: **[docs/integration.md](docs/integration.md)**. Если ты агент и работаешь в
@@ -162,7 +162,7 @@ import { RunsTable, StatusBadge } from "@frontedge/ui";
 | | |
 |---|---|
 | [`frontedge`](python/frontedge) (PyPI) | Python-пакет: модели, провайдеры, роутеры, генератор типов |
-| [`@frontedge/ui`](packages/ui) (npm) | дизайн-система: токены, примитивы, ML-паттерны, сгенерированные типы |
+| [`@frontedge-ml/ui`](packages/ui) (npm) | дизайн-система: токены, примитивы, ML-паттерны, сгенерированные типы |
 
 TypeScript-типы генерируются из Python-моделей, поэтому разойтись не могут:
 

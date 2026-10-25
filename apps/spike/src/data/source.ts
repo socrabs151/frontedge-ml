@@ -1,4 +1,4 @@
-import { createClient } from "@frontedge/ui";
+import { createClient } from "@frontedge-ml/ui";
 import type {
   ActionResult,
   DatasetDetail,
@@ -12,7 +12,7 @@ import type {
   Run,
   RunOption,
   UiConfig,
-} from "@frontedge/ui";
+} from "@frontedge-ml/ui";
 import {
   makeComparison,
   makeDatasets,

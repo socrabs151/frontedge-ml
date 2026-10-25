@@ -168,7 +168,7 @@ importers:
 
   apps/spike:
     dependencies:
-      '@frontedge/ui':
+      '@frontedge-ml/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       lucide-react:

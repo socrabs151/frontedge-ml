@@ -1,5 +1,5 @@
 /**
- * Consumer smoke: pack @frontedge/ui, install the tarball into a fresh Vite app on React 18,
+ * Consumer smoke: pack @frontedge-ml/ui, install the tarball into a fresh Vite app on React 18,
  * type-check it, build it and render it in a browser.
  *
  * Run from the repository root: node apps/spike/scripts/smoke-npm.mjs
@@ -18,8 +18,8 @@ const appDir = mkdtempSync(join(tmpdir(), "frontedge-consumer-"));
 
 const MAIN = `import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "@frontedge/ui/styles.css";
-import { RunsTable, StatusBadge, type Run } from "@frontedge/ui";
+import "@frontedge-ml/ui/styles.css";
+import { RunsTable, StatusBadge, type Run } from "@frontedge-ml/ui";
 
 const startedAt = new Date(Date.now() - 42 * 60_000).toISOString();
 const runs: Run[] = [
@@ -103,7 +103,7 @@ function serveDist() {
 
 let preview;
 try {
-  run(`pnpm --filter @frontedge/ui pack --pack-destination "${packDir}"`, root);
+  run(`pnpm --filter @frontedge-ml/ui pack --pack-destination "${packDir}"`, root);
   const tarball = join(packDir, readdirSync(packDir).find((name) => name.endsWith(".tgz")));
   if (!existsSync(tarball)) throw new Error("the tarball was not created");
 
@@ -115,7 +115,7 @@ try {
         private: true,
         type: "module",
         dependencies: {
-          "@frontedge/ui": `file:${tarball.replace(/\\/g, "/")}`,
+          "@frontedge-ml/ui": `file:${tarball.replace(/\\/g, "/")}`,
           react: "18.3.1",
           "react-dom": "18.3.1",
         },

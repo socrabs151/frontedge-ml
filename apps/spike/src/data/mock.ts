@@ -1,4 +1,4 @@
-import type { Example, LogLine, MetricPoint, Run, RunStatus, Stage, StageName } from "@frontedge/ui";
+import type { Example, LogLine, MetricPoint, Run, RunStatus, Stage, StageName } from "@frontedge-ml/ui";
 
 /** Deterministic generator: the same seed always gives the same data. */
 function mulberry32(seed: number) {

@@ -22,5 +22,5 @@ function inline(file, seen) {
 }
 
 mkdirSync(join(packageRoot, "dist"), { recursive: true });
-writeFileSync(target, `/* @frontedge/ui — built from src/styles */\n\n${inline(entry, new Set())}\n`);
+writeFileSync(target, `/* @frontedge-ml/ui — built from src/styles */\n\n${inline(entry, new Set())}\n`);
 console.log(`styles: ${target}`);

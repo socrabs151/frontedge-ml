@@ -7,10 +7,10 @@ import {
   Search,
   type ColumnOption,
   type VisibilityState,
-} from "@frontedge/ui";
+} from "@frontedge-ml/ui";
 import { Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { Run, RunOption, RunStatus, SortingState, UiConfig } from "@frontedge/ui";
+import type { Run, RunOption, RunStatus, SortingState, UiConfig } from "@frontedge-ml/ui";
 import { useAppT } from "../i18n";
 import { RunPicker } from "../components/RunPicker";
 import { errorMessage, source, type RunsQuery } from "../data/source";

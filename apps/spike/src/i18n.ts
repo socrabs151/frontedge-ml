@@ -1,4 +1,4 @@
-import { en as uiEn, ru as uiRu, useI18n } from "@frontedge/ui";
+import { en as uiEn, ru as uiRu, useI18n } from "@frontedge-ml/ui";
 
 /**
  * Application strings.

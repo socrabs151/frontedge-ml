@@ -5,7 +5,7 @@ Instructions for an agent working in this repository.
 ## What this is
 
 `frontedge` is a frontend layer for ML engineering: a Python package that mounts ready-made
-screens into any FastAPI app, and an npm package `@frontedge/ui` with the design system.
+screens into any FastAPI app, and an npm package `@frontedge-ml/ui` with the design system.
 The current stage is **Phase 3**: the design system, four screens, the Python package and the
 type generator work and are covered by gates. Publication to PyPI and npm is Phase 4.
 

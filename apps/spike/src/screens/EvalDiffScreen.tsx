@@ -6,10 +6,10 @@ import {
   Segmented,
   Tabs,
   type DeltaFormat,
-} from "@frontedge/ui";
+} from "@frontedge-ml/ui";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { EvalComparison, EvalSummary, RunOption, UiConfig } from "@frontedge/ui";
+import type { EvalComparison, EvalSummary, RunOption, UiConfig } from "@frontedge-ml/ui";
 import { useAppT } from "../i18n";
 import { RunPicker } from "../components/RunPicker";
 import { errorMessage, source } from "../data/source";

@@ -14,7 +14,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "paths": {
-      "@frontedge/ui": ["../../packages/ui/src/index.ts"]
+      "@frontedge-ml/ui": ["../../packages/ui/src/index.ts"]
     }
   },
   "include": ["src"]

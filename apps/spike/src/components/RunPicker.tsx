@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import type { RunOption } from "@frontedge/ui";
+import type { RunOption } from "@frontedge-ml/ui";
 
 /**
  * A searchable select for a run. The options come from the compact endpoint: typing asks the

@@ -1,4 +1,4 @@
-import { Button } from "@frontedge/ui";
+import { Button } from "@frontedge-ml/ui";
 import { useAppT } from "../i18n";
 
 /** Prev/Next over a server-side page; hidden when everything fits on one page. */

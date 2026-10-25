@@ -16,8 +16,8 @@ export default defineConfig(({ mode }) => {
       alias: {
         // The spike app works against the library sources, not the built
         // package: otherwise the build fails when dist is not there yet.
-        "@frontedge/ui/styles.css": `${uiSrc}/styles/index.css`,
-        "@frontedge/ui": `${uiSrc}/index.ts`,
+        "@frontedge-ml/ui/styles.css": `${uiSrc}/styles/index.css`,
+        "@frontedge-ml/ui": `${uiSrc}/index.ts`,
       },
     },
     server: {

@@ -5,10 +5,10 @@ import {
   ProvenanceList,
   Tabs,
   useI18n,
-} from "@frontedge/ui";
+} from "@frontedge-ml/ui";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { DatasetDetail, DatasetInfo, ExampleResult } from "@frontedge/ui";
+import type { DatasetDetail, DatasetInfo, ExampleResult } from "@frontedge-ml/ui";
 import { useAppT } from "../i18n";
 import { Pager } from "../components/Pager";
 import { errorMessage, source } from "../data/source";

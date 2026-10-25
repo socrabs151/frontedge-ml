@@ -1,4 +1,4 @@
-/* Application shell: the layout around the screens. Styles live in @frontedge/ui. */
+/* Application shell: the layout around the screens. Styles live in @frontedge-ml/ui. */
 
 /* The package styles only the .fe-root subtree; the page itself belongs to the app. */
 html,

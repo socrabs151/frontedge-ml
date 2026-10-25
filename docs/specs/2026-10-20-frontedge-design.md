@@ -8,7 +8,7 @@ Author: socrabs151 + opencode
 
 | # | Decision |
 |---|---|
-| Name | **frontedge** — PyPI `frontedge`, npm `@frontedge/ui`. The idea: the leading edge, where the model meets the human |
+| Name | **frontedge** — PyPI `frontedge`, npm `@frontedge-ml/ui` (the npm scope `frontedge` was already taken, 2026-10-25). The idea: the leading edge, where the model meets the human |
 | Owner of the data model | **(A)** a fixed Frontedge model (`frontedge.Run`, `frontedge.Dataset`, …). The user writes an adapter. `x-frontedge` is the contract for L2 and for the generator. A layer over user models — Phase 5 |
 | Phase 1–2 scope | **both screens**: the runs list and the run detail |
 | Phase 1 quality gate | axe audit, contrast test, keyboard pass, screenshots of both themes — see §8.1 |
@@ -26,7 +26,7 @@ Author: socrabs151 + opencode
 
 It is a "CMS for the frontend" in the sense that the content model is not stored in an admin panel but is **derived from code**: the user's pydantic models and OpenAPI are the source of truth for types and semantics. Later (Phase 5) a layer over arbitrary user models may appear on top of the same schema — the visual editor is not part of the plan (owner decision, 2026-10-20, §6.4).
 
-Repository: `https://github.com/socrabs151/frontedge-ml` (the Python package is `frontedge` on PyPI, the components are `@frontedge/ui` on npm).
+Repository: `https://github.com/socrabs151/frontedge-ml` (the Python package is `frontedge` on PyPI, the components are `@frontedge-ml/ui` on npm).
 
 An analogy for the product vocabulary:
 
@@ -396,7 +396,7 @@ frontedge/
 │   │   ├── runtime/           → SSE, artifacts, auth points, mounting
 │   │   └── static/            → the built interface (or a build on the fly)
 │   └── pyproject.toml
-├── packages/ui/               → npm: @frontedge/ui
+├── packages/ui/               → npm: @frontedge-ml/ui
 │   ├── src/styles/            → CSS custom properties, themes
 │   ├── src/components/        → primitives
 │   ├── src/patterns/          → ML patterns: runs table, ribbon, diff
@@ -454,7 +454,7 @@ configuration:
   a provider (20–40 lines).
 - **L2 — extension without an editor.** The configuration (`frontedge.toml` or JSON) — data:
   columns, tabs, declared actions; the handlers of the actions — the code of the project; own
-  screens — on the `@frontedge/ui` components (React), without a schema and without a render
+  screens — on the `@frontedge-ml/ui` components (React), without a schema and without a render
   engine.
 - **L3 — visual editor: we do not build it.** If it is ever needed — it is a form over the same
   configuration, not a new language.
@@ -631,7 +631,7 @@ Decisions taken along the way:
 - **The vocabulary of the `x-frontedge` roles was not extended**: the new fields fit into the existing roles.
 
 ### Phase 4 — L1/L2 in public form
-PyPI `frontedge`, npm `@frontedge/ui`, `frontedge init` (a scaffold), documentation: `README.md` (human), `docs/integration.md` + `AGENTS.md` (machine: contracts, commands, typical tasks), an example.
+PyPI `frontedge`, npm `@frontedge-ml/ui`, `frontedge init` (a scaffold), documentation: `README.md` (human), `docs/integration.md` + `AGENTS.md` (machine: contracts, commands, typical tasks), an example.
 
 ### Phase 5 — A layer over arbitrary user models
 A screen schema + a render layer driven by a manifest from the backend, so that a project that does not want to write an adapter can describe its models as data. Only the known screen types are rendered — free-form UI generation stays an anti-goal (§2). A separate project, only after the confirmed benefit of L1/L2. The visual editor is not part of it: the configuration stays data (owner decision, 2026-10-20).
@@ -661,11 +661,11 @@ The visual editor, auth, plugins, mobile design, a landing page, framework perfo
 All six questions were closed by the owner; the answers are duplicated in the table at the beginning of the document.
 
 1. **React 19 + TS + Vite** — accepted (§6.3).
-2. **The name: `frontedge`** — PyPI `frontedge`, npm `@frontedge/ui` (§1).
+2. **The name: `frontedge`** — PyPI `frontedge`, npm `@frontedge-ml/ui` (§1).
 3. **The default theme is the light one**, dark in the settings; the series colours are fixed across the themes (§4.4).
 4. **The interface language** — English by default with a Russian toggle; domain terms stay English in both (§4.10).
 5. **A density of 32px**, a switch of 28/40 (§4.6).
-6. **The packages** — take the PyPI name `frontedge` at once; npm — `@frontedge/ui`.
+6. **The packages** — take the PyPI name `frontedge` at once; npm — `@frontedge-ml/ui`.
 
 ---
 
