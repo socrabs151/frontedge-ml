@@ -29,7 +29,8 @@ async def event_stream(
     than the keepalive (a normal pause between log lines) would lose the stream
     forever.
     """
-    queue: asyncio.Queue[Any] = asyncio.Queue()
+    # Bounded: a slow client applies backpressure to the provider instead of eating memory.
+    queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=1000)
     done = object()
 
     async def pump() -> None:

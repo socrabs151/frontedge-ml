@@ -41,7 +41,7 @@ export const en = {
 
   "tag.baseline": "baseline",
   "footer.runs": "runs",
-  "footer.deltasToBaseline": "deltas are relative to the baseline",
+  "footer.deltasToBaseline": "deltas are relative to {run}",
 
   "menu.columns": "Columns",
   "menu.hidden": "hidden",
@@ -112,7 +112,7 @@ export const ru: Dictionary = {
 
   "tag.baseline": "baseline",
   "footer.runs": "Runs",
-  "footer.deltasToBaseline": "дельты считаются к Baseline",
+  "footer.deltasToBaseline": "дельты считаются к {run}",
 
   "menu.columns": "Колонки",
   "menu.hidden": "скрыто",

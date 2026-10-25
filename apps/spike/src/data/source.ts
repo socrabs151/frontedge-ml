@@ -31,6 +31,8 @@ export interface RunsQuery {
   status?: string;
   dataset?: string;
   tag?: string;
+  sort?: string;
+  order?: "asc" | "desc";
 }
 
 export interface RunsPage {
@@ -81,6 +83,15 @@ const mockRuns = makeRuns(200);
 const mockExamples = makeExamples(32);
 const mockLogs = makeLogs(80);
 
+function sortValue(run: Run, key: string): string | number | null {
+  if (key === "startedAt") return run.startedAt ? Date.parse(run.startedAt) : null;
+  if (key === "durationMs") return run.durationMs ?? null;
+  if (key === "name" || key === "status" || key === "owner") return run[key] ?? null;
+  if (key === "dataset") return run.dataset ?? null;
+  const metric = run.metrics[key];
+  return typeof metric === "number" ? metric : null;
+}
+
 export const mockSource: RunsSource = {
   kind: "mock",
   async meta() {
@@ -114,6 +125,21 @@ export const mockSource: RunsSource = {
     }
     if (query.tag) {
       runs = runs.filter((run) => run.tags?.includes(query.tag!));
+    }
+    if (query.sort) {
+      const key = query.sort;
+      const desc = query.order !== "asc";
+      runs = [...runs].sort((a, b) => {
+        const left = sortValue(a, key);
+        const right = sortValue(b, key);
+        if (left === null) return right === null ? 0 : 1;
+        if (right === null) return -1;
+        const cmp =
+          typeof left === "number" && typeof right === "number"
+            ? left - right
+            : String(left).localeCompare(String(right));
+        return desc ? -cmp : cmp;
+      });
     }
     const total = runs.length;
     const offset = query.offset ?? 0;
@@ -181,6 +207,7 @@ export const mockSource: RunsSource = {
   },
   async config() {
     return {
+      project: "squad-ru-eval",
       density: "default",
       theme: "light",
       runColumns: ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss"],

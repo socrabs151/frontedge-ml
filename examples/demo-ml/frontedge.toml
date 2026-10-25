@@ -1,6 +1,7 @@
 # Interface configuration for frontedge in this demo.
 # The file is read at startup: /frontedge/api/config serves it to the interface.
 
+project = "squad-ru-eval"
 density = "default"
 theme = "light"
 

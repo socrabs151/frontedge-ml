@@ -29,7 +29,8 @@ from frontedge import (
     StageName,
 )
 
-NOW = datetime(2026, 10, 20, 18, 40, tzinfo=UTC)
+# Generated relative to the server start, so "2 h ago" means two hours ago.
+NOW = datetime.now(UTC)
 
 SUFFIXES = ["lr3e-4", "bs256", "warm", "ft", "xlm-r", "s1", "lora", "quant8", "d40", "h7"]
 OWNERS = ["socrabs", "m.ivanova", "d.kim", "svc-train"]

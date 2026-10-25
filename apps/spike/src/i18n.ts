@@ -21,7 +21,8 @@ const en = {
   "topbar.themeToLight": "Switch to the light theme",
 
   "runs.title": "Runs",
-  "runs.subtitle": "Runs of the project squad-ru-eval, base branch main",
+  "runs.subtitle": "Runs of {project}",
+  "runs.subtitleNoProject": "All runs",
   "runs.updatedAt": "updated {time}",
   "runs.refresh": "Refresh",
   "runs.searchPlaceholder": "Find a run by name",
@@ -117,7 +118,8 @@ const ru: Record<AppStringKey, string> = {
   "topbar.themeToLight": "Переключить на светлую тему",
 
   "runs.title": "Runs",
-  "runs.subtitle": "Runs проекта squad-ru-eval, основная ветка main",
+  "runs.subtitle": "Runs проекта {project}",
+  "runs.subtitleNoProject": "Все Runs",
   "runs.updatedAt": "обновлено {time}",
   "runs.refresh": "Обновить",
   "runs.searchPlaceholder": "Найти Run по имени",

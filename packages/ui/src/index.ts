@@ -30,6 +30,6 @@ export { ProvenanceList } from "./patterns/Provenance";
 
 export * from "./types";
 export * from "./format";
-export type { VisibilityState } from "@tanstack/react-table";
+export type { SortingState, VisibilityState } from "@tanstack/react-table";
 export { createClient } from "./generated/client";
 export type { FrontedgeClientOptions, FrontedgeMeta } from "./generated/client";

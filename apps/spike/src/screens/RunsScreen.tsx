@@ -10,7 +10,7 @@ import {
 } from "@frontedge/ui";
 import { Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { Run, RunOption, RunStatus, UiConfig } from "@frontedge/ui";
+import type { Run, RunOption, RunStatus, SortingState, UiConfig } from "@frontedge/ui";
 import { useAppT } from "../i18n";
 import { RunPicker } from "../components/RunPicker";
 import { errorMessage, source, type RunsQuery } from "../data/source";
@@ -110,6 +110,21 @@ export function RunsScreen({
     (query.search ? 1 : 0) +
     (query.tag ? 1 : 0);
 
+  // Sorting is the server's: the table only reports which header was clicked.
+  const sorting: SortingState = useMemo(
+    () => [{ id: query.sort ?? "startedAt", desc: query.order !== "asc" }],
+    [query.sort, query.order],
+  );
+  const onSortingChange = (next: SortingState) => {
+    const first = next[0];
+    onQueryChange({
+      ...query,
+      sort: first?.id ?? "startedAt",
+      order: first && first.desc === false ? "asc" : "desc",
+      offset: 0,
+    });
+  };
+
   const tagOptions = useMemo(() => {
     const found = new Set<string>();
     for (const run of runChoices) {
@@ -140,7 +155,11 @@ export function RunsScreen({
       <header className="fe-runs__head">
         <div>
           <h1 className="fe-runs__title">{t("runs.title")}</h1>
-          <p className="fe-runs__subtitle">{t("runs.subtitle")}</p>
+          <p className="fe-runs__subtitle">
+            {config?.project
+              ? t("runs.subtitle", { project: config.project })
+              : t("runs.subtitleNoProject")}
+          </p>
         </div>
         <div className="fe-runs__actions">
           <label className="fe-field">
@@ -318,6 +337,8 @@ export function RunsScreen({
             resizable={config?.columnResize !== false}
             columnSizing={columnSizing}
             onColumnSizingChange={onColumnSizingChange}
+            sorting={sorting}
+            onSortingChange={onSortingChange}
           />
           {total > runs.length || offset > 0 ? (
             <div className="fe-toolbar fe-toolbar--pagination">

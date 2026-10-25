@@ -72,6 +72,7 @@ DEFAULT_CONFIG_NAMES = ("frontedge.toml", "frontedge.json")
 INIT_TOML = """\
 # Frontedge configuration. `frontedge check` validates it; `frontedge schema` prints its schema.
 
+project = "My project"
 density = "default"
 theme = "light"
 
@@ -185,6 +186,10 @@ class Provider:
     async def stream_logs(self, request: Request, run_id: str) -> AsyncIterator[LogLine]:
         for index, text in enumerate(["loading", "running", "done"]):
             yield LogLine(id=index + 1, at=datetime.now(UTC), level="info", text=text)
+
+
+# `frontedge check --provider provider:provider` checks this instance.
+provider = Provider()
 '''
 
 INIT_APP = '''\
@@ -217,9 +222,9 @@ app.include_router(
 INIT_README = """\
 # My Frontedge dashboard
 
-1. Install Frontedge (not on PyPI yet): `pip install ./python/frontedge` from a repository
-   checkout, after `pnpm build:ui`.
-2. Run the app: `uvicorn app:app --reload`.
+1. Install Frontedge and uvicorn. The package is not on PyPI yet: from a repository checkout run
+   `pnpm build:ui`, then `pip install ./python/frontedge`; add `pip install uvicorn`.
+2. Run the app from this directory: `uvicorn app:app --reload`.
 3. Open http://127.0.0.1:8000/frontedge.
 
 `provider.py` is the only file that talks to your data: replace the sample runs in `list_runs`
@@ -386,14 +391,23 @@ def _describe(config_path: Path, config: UiConfig) -> str:
 
 
 def _load_object(spec: str) -> Any:
-    """``module:attribute`` (a dotted attribute is allowed) from the current directory."""
+    """``module:attribute`` (a dotted attribute is allowed) from the current directory.
+
+    A class is instantiated, so ``provider:Provider`` works as well as ``provider:provider``.
+    """
     module_name, _, attribute = spec.partition(":")
     if not module_name or not attribute:
         raise ValueError(f"expected module:attribute, got {spec!r}")
+    import inspect
+
+    if str(Path.cwd()) not in sys.path:
+        sys.path.insert(0, str(Path.cwd()))
     module = importlib.import_module(module_name)
     target: Any = module
     for part in attribute.split("."):
         target = getattr(target, part)
+    if inspect.isclass(target):
+        target = target()
     return target
 
 

@@ -71,6 +71,20 @@ class DemoProvider:
                 runs = [run for run in runs if run.dataset == query.dataset]
             if query.tag:
                 runs = [run for run in runs if query.tag in run.tags]
+            if query.sort:
+                key = query.sort
+                field = {
+                    "startedAt": "started_at",
+                    "durationMs": "duration_ms",
+                    "gitSha": "git_sha",
+                }.get(key, key)
+
+                def value(run: Run) -> Any:
+                    return run.metrics[key] if key in run.metrics else getattr(run, field, None)
+
+                present = [run for run in runs if value(run) is not None]
+                present.sort(key=value, reverse=query.order == "desc")
+                runs = present + [run for run in runs if value(run) is None]
             total = len(runs)
             if query.offset:
                 runs = runs[query.offset :]

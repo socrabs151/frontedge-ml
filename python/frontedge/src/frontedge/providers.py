@@ -142,7 +142,6 @@ class FrontedgeProvider(Protocol):
         ...
 
 class CallableProvider:
-    """Adapter for an async function ``(request) -> Sequence[Run]``."""
     """Adapter for an async function ``(request) -> Sequence[Run]``.
 
     Details and logs come from the same list: enough to build the interface
@@ -156,7 +155,9 @@ class CallableProvider:
         return await self._fn(request)
 
     async def get_run(self, request: Request, run_id: str) -> Run | None:
-        for run in await self.list_runs(request):
+        for item in await self.list_runs(request):
+            # A function provider may return mappings: the detail path must coerce them too.
+            run = as_model(item, Run, "list_runs")
             if run.id == run_id:
                 return run
         return None

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import re
 from collections.abc import AsyncIterator, Awaitable, Callable
 from itertools import count
 from pathlib import Path
@@ -60,6 +61,23 @@ class RunPayload(Run):
 SPARKLINE_POINTS = 24
 
 
+_SORT_FIELDS = {"startedAt": "started_at", "durationMs": "duration_ms", "gitSha": "git_sha"}
+
+
+def _sort_value(run: Run, key: str) -> Any:
+    if key in run.metrics:
+        return run.metrics[key]
+    return getattr(run, _SORT_FIELDS.get(key, key), None)
+
+
+def _sorted_runs(runs: list[Run], key: str, order: str) -> list[Run]:
+    """Sort the in-memory fallback; nulls always last, strings and numbers stay homogeneous."""
+    present = [run for run in runs if _sort_value(run, key) is not None]
+    missing = [run for run in runs if _sort_value(run, key) is None]
+    present.sort(key=lambda run: _sort_value(run, key), reverse=order == "desc")
+    return present + missing
+
+
 def _downsample(points: list[Any], limit: int = SPARKLINE_POINTS) -> list[Any]:
     if len(points) <= limit:
         return points
@@ -78,9 +96,15 @@ def _run_payload(run: Run, path: str, *, sparkline: bool = False) -> RunPayload:
         if sparkline
         else run.series
     )
+    baseline_series = (
+        {name: _downsample(points) for name, points in run.baseline_series.items()}
+        if sparkline
+        else run.baseline_series
+    )
     return RunPayload(
-        **run.model_dump(exclude={"series"}),
+        **run.model_dump(exclude={"series", "baseline_series"}),
         series=series,
+        baseline_series=baseline_series,
         log_stream_url=f"{path}/api/runs/{run.id}/logs/stream",
     )
 
@@ -128,6 +152,10 @@ def _build_router(
     source = adapt_provider(runs)
     ui_config = load_config(config)
     handlers = actions or {}
+    # A handler is callable only when the configuration declares the action: an internal helper
+    # in the dict must not become a remote endpoint.
+    declared = {action.id for action in ui_config.actions}
+    callable_actions = [action.id for action in ui_config.actions if action.id in handlers]
     router = APIRouter(prefix=path)
 
     # --- Runs -------------------------------------------------------------
@@ -148,6 +176,8 @@ def _build_router(
         status: str | None = None,
         dataset: str | None = None,
         tag: str | None = None,
+        sort: str | None = None,
+        order: str = "desc",
     ) -> list[RunPayload]:
         """A list of runs.
 
@@ -162,6 +192,8 @@ def _build_router(
             status=[part for part in (status or "").split(",") if part],
             dataset=dataset,
             tag=tag,
+            sort=sort,
+            order="asc" if order == "asc" else "desc",
         )
 
         if provider_accepts_query(source):
@@ -185,6 +217,8 @@ def _build_router(
                 runs_ = [run for run in runs_ if run.dataset == query.dataset]
             if query.tag:
                 runs_ = [run for run in runs_ if query.tag in run.tags]
+            if query.sort:
+                runs_ = _sorted_runs(runs_, query.sort, query.order)
             total = len(runs_)
             if query.offset:
                 runs_ = runs_[query.offset :]
@@ -329,7 +363,13 @@ def _build_router(
         return Response(
             content=data,
             media_type="application/octet-stream",
-            headers={"Content-Disposition": f'attachment; filename="{artifact_id}"'},
+            headers={
+                "Content-Disposition": (
+                    'attachment; filename="'
+                    + (re.sub(r"[^A-Za-z0-9._-]", "_", artifact_id) or "artifact")
+                    + '"'
+                )
+            },
         )
 
     # --- Evals ------------------------------------------------------------
@@ -427,7 +467,9 @@ def _build_router(
 
     @router.get("/api/meta", tags=["frontedge"], response_model=Meta)
     async def get_meta() -> Meta:
-        return build_meta(runs=source, evals=evals, datasets=datasets, actions=list(handlers))
+        return build_meta(
+            runs=source, evals=evals, datasets=datasets, actions=callable_actions
+        )
 
     @router.get("/api/config", tags=["frontedge"], response_model=UiConfig)
     async def get_config() -> UiConfig:
@@ -444,7 +486,7 @@ def _build_router(
     ) -> ActionResult:
         """Run a project action. The library only knows the id."""
         handler = handlers.get(action_id)
-        if handler is None:
+        if handler is None or action_id not in declared:
             raise HTTPException(status_code=404, detail=f"Action is not declared: {action_id}")
         result = await handler(request, payload or {})
         if isinstance(result, ActionResult):

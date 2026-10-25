@@ -12,7 +12,8 @@ function mulberry32(seed: number) {
   };
 }
 
-const NOW = new Date("2026-10-20T18:40:00Z").getTime();
+// The mock is generated relative to the moment it loads, like a live backend.
+const NOW = Date.now();
 
 const SUFFIXES = ["lr3e-4", "bs256", "warm", "ft", "xlm-r", "s1", "lora", "quant8", "d40", "h7"];
 const OWNERS = ["socrabs", "m.ivanova", "d.kim", "svc-train"];

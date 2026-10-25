@@ -26,6 +26,8 @@ export interface RunsQuery {
   status?: string;
   dataset?: string;
   tag?: string;
+  sort?: string;
+  order?: "asc" | "desc";
 }
 
 export interface RunsPage {
@@ -107,6 +109,8 @@ export function createClient(options: FrontedgeClientOptions = {
       if (query.status) params.set("status", query.status);
       if (query.dataset) params.set("dataset", query.dataset);
       if (query.tag) params.set("tag", query.tag);
+      if (query.sort) params.set("sort", query.sort);
+      if (query.order) params.set("order", query.order);
       const search = params.toString();
       const response = await doFetch(`${basePath}/runs${search ? `?${search}` : ""}`, {
         headers: { accept: "application/json" },
@@ -166,7 +170,7 @@ export function createClient(options: FrontedgeClientOptions = {
       const total = Number(response.headers.get("X-Frontedge-Total") ?? items.length);
       return { items, total };
     },
-    getRun: (runId: string) => json<Run>(`/runs/${runId}`),
+    getRun: (runId: string) => json<Run>(`/runs/${encodeURIComponent(runId)}`),
     artifactUrl: (artifactId: string) =>
       `${basePath}/artifacts/${encodeURIComponent(artifactId)}/content`,
     listEvals: () => json<EvalSummary[]>("/evals"),
@@ -182,9 +186,10 @@ export function createClient(options: FrontedgeClientOptions = {
       send<ActionResult>(`/actions/${encodeURIComponent(actionId)}`, payload),
     meta: () => json<FrontedgeMeta>("/meta"),
     async *streamLogs(runId: string): AsyncGenerator<LogLine> {
-      const response = await doFetch(`${basePath}/runs/${runId}/logs/stream`, {
-        headers: { accept: "text/event-stream" },
-      });
+      const response = await doFetch(
+        `${basePath}/runs/${encodeURIComponent(runId)}/logs/stream`,
+        { headers: { accept: "text/event-stream" } },
+      );
       if (!response.ok || !response.body) {
         throw new Error(`frontedge: could not open the log stream (${runId})`);
       }

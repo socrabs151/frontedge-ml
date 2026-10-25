@@ -155,6 +155,7 @@ export interface MetricSpec {
   chart?: boolean;
 }
 export interface UiConfig {
+  project?: string | null;
   density?: "compact" | "default" | "comfortable" | null;
   theme?: "light" | "dark" | null;
   runColumns?: string[];

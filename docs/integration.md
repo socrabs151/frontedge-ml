@@ -147,6 +147,9 @@ class MyProvider:
             search=query.search,
             status=query.status,
             dataset=query.dataset,
+            tag=query.tag,
+            sort=query.sort,
+            order=query.order,
             offset=query.offset,
             limit=query.limit,
         )
@@ -296,6 +299,7 @@ visual editor: the format is the same.
 
 ```toml
 # frontedge.toml in the project root
+project = "squad-ru-eval"    # the name in the top bar and in the runs subtitle
 density = "default"          # compact | default | comfortable
 theme = "light"              # light | dark
 
@@ -348,6 +352,7 @@ All of the keys of `UiConfig`:
 
 | Key | Meaning |
 |---|---|
+| `project` | the installation's name: the top-bar chip and the runs subtitle; hidden when empty |
 | `density` | `compact`, `default` or `comfortable` — the row height (28/32/40 px) |
 | `theme` | `light` or `dark` |
 | `run_columns` | which columns to show in the list of runs; an empty list shows all of them |
@@ -367,6 +372,11 @@ the `metrics` dictionary.
 `Run.tags` is a free list of project labels (`production`, `nightly`): the `tags` column shows
 them as chips, the toolbar filters the list by one tag, and the value travels to the provider as
 `query.tag` when `list_runs` takes a query.
+
+Sorting is server-side too: a column header sends `query.sort` and `query.order` (`asc`/`desc`),
+and the library sorts in memory with missing values last when the provider does not take a query.
+The filters, the sorting, the page and the baseline are kept in the URL hash, so a shared link
+opens the same view.
 
 ### 5.1 Your own metrics
 

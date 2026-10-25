@@ -467,6 +467,15 @@
   display: inline-flex;
   align-items: center;
   gap: var(--fe-space-2);
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* A table cell does not clip its content, so the name itself has to shrink. */
+.fe-run-name__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .fe-run-name__dot {
@@ -477,13 +486,9 @@
   flex: none;
 }
 
-.fe-run-name__tag {
-  padding: 0 6px;
-  border-radius: var(--fe-radius-pill);
-  background: var(--fe-accent-wash);
-  color: var(--fe-accent);
-  font-size: var(--fe-text-11);
-  font-weight: var(--fe-weight-medium);
+/* The baseline row carries a reference edge, a shape rather than a colour alone. */
+.fe-table__row[aria-selected="true"] .fe-table__td:first-child {
+  box-shadow: inset 2px 0 0 var(--fe-accent);
 }
 
 /* --- Logs ----------------------------------------------------------- */

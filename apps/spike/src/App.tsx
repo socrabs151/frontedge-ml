@@ -17,7 +17,6 @@ import type {
   VisibilityState,
 } from "@frontedge/ui";
 import { I18nProvider, Segmented, TooltipProvider, useI18n } from "@frontedge/ui";
-import { DATASET_NAMES, NOW_TIME } from "./data/mock";
 import { errorMessage, source, type RunsQuery } from "./data/source";
 import { useAppT } from "./i18n";
 import { RunsScreen } from "./screens/RunsScreen";
@@ -29,18 +28,48 @@ type Theme = "light" | "dark";
 type Density = "compact" | "default" | "comfortable";
 type Route = { name: "runs" } | { name: "run"; id: string } | { name: "evals" } | { name: "datasets" };
 
-/** Routes live in the hash: a run, an eval and a dataset are linkable and survive a reload. */
-function routeFromHash(hash: string): Route {
-  const [name, id] = hash.replace(/^#\/?/, "").split("/");
-  if (name === "runs" && id) return { name: "run", id: decodeURIComponent(id) };
-  if (name === "evals") return { name: "evals" };
-  if (name === "datasets") return { name: "datasets" };
-  return { name: "runs" };
+/** Routes and the run filters live in the hash: the whole view is linkable. */
+function splitHash(hash: string): { route: Route; params: URLSearchParams } {
+  const [path = "", search = ""] = hash.replace(/^#\/?/, "").split("?");
+  const [name, id] = path.split("/");
+  let route: Route;
+  if (name === "runs" && id) route = { name: "run", id: decodeURIComponent(id) };
+  else if (name === "evals") route = { name: "evals" };
+  else if (name === "datasets") route = { name: "datasets" };
+  else route = { name: "runs" };
+  return { route, params: new URLSearchParams(search) };
 }
 
-function hashOfRoute(route: Route): string {
-  if (route.name === "run") return `#/runs/${encodeURIComponent(route.id)}`;
-  return `#/${route.name}`;
+function queryFromParams(params: URLSearchParams): RunsQuery {
+  const offset = Number(params.get("offset") ?? 0);
+  const order = params.get("order");
+  return {
+    search: params.get("search") ?? undefined,
+    status: params.get("status") ?? undefined,
+    dataset: params.get("dataset") ?? undefined,
+    tag: params.get("tag") ?? undefined,
+    sort: params.get("sort") ?? undefined,
+    order: order === "asc" ? "asc" : order === "desc" ? "desc" : undefined,
+    offset: Number.isFinite(offset) && offset > 0 ? offset : 0,
+  };
+}
+
+function paramsFromState(query: RunsQuery, baselineId?: string): URLSearchParams {
+  const params = new URLSearchParams();
+  for (const key of ["search", "status", "dataset", "tag", "sort", "order"] as const) {
+    const value = query[key];
+    if (value) params.set(key, String(value));
+  }
+  if (query.offset) params.set("offset", String(query.offset));
+  if (baselineId) params.set("baseline", baselineId);
+  return params;
+}
+
+function hashOfRoute(route: Route, params?: URLSearchParams): string {
+  const base =
+    route.name === "run" ? `#/runs/${encodeURIComponent(route.id)}` : `#/${route.name}`;
+  const search = params?.toString();
+  return search ? `${base}?${search}` : base;
 }
 
 const ROW_HEIGHT: Record<Density, number> = { compact: 28, default: 32, comfortable: 40 };
@@ -64,21 +93,33 @@ function Shell() {
   const [density, setDensity] = useState<Density>(
     () => (localStorage.getItem("fe-density") as Density | null) ?? "default",
   );
-  const [route, setRouteState] = useState<Route>(() => routeFromHash(window.location.hash));
-  const setRoute = useCallback((next: Route) => {
-    const hash = hashOfRoute(next);
-    if (window.location.hash !== hash) window.location.hash = hash;
-    setRouteState(next);
-  }, []);
-  const [query, setQuery] = useState<RunsQuery>({});
+  const initialHash = splitHash(window.location.hash);
+  const [route, setRouteState] = useState<Route>(initialHash.route);
+  const [query, setQuery] = useState<RunsQuery>(() => queryFromParams(initialHash.params));
   const [runs, setRuns] = useState<Run[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [config, setConfig] = useState<UiConfig | null>(null);
   const [runChoices, setRunChoices] = useState<RunOption[]>([]);
+  // Relative times must follow the real clock, not a date frozen in the demo data.
+  const [now, setNow] = useState(() => Date.now());
   const [capabilities, setCapabilities] = useState<FrontedgeMeta["capabilities"] | null>(null);
-  const [baselineId, setBaselineId] = useState<string | undefined>(undefined);
+  const [baselineId, setBaselineId] = useState<string | undefined>(
+    () => initialHash.params.get("baseline") ?? undefined,
+  );
+  const setRoute = useCallback(
+    (next: Route) => {
+      const params =
+        next.name === "runs" || next.name === "run"
+          ? paramsFromState(query, baselineId)
+          : undefined;
+      const hash = hashOfRoute(next, params);
+      if (window.location.hash !== hash) window.location.hash = hash;
+      setRouteState(next);
+    },
+    [baselineId, query],
+  );
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() =>
     stored<VisibilityState>("fe-columns", { gitSha: false }),
   );
@@ -86,6 +127,11 @@ function Shell() {
     stored<Record<string, number>>("fe-column-widths", {}),
   );
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("fe-sidebar") === "collapsed");
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -151,10 +197,24 @@ function Shell() {
 
   // The back button, a pasted link and a reload all arrive here.
   useEffect(() => {
-    const onHashChange = () => setRouteState(routeFromHash(window.location.hash));
+    const onHashChange = () => {
+      const parsed = splitHash(window.location.hash);
+      setRouteState(parsed.route);
+      if (parsed.route.name === "runs" || parsed.route.name === "run") {
+        setQuery(queryFromParams(parsed.params));
+        setBaselineId(parsed.params.get("baseline") ?? undefined);
+      }
+    };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
+
+  // Keep the address bar in step with the filters: a reload or a shared link restores the view.
+  useEffect(() => {
+    if (route.name !== "runs" && route.name !== "run") return;
+    const hash = hashOfRoute(route, paramsFromState(query, baselineId));
+    if (window.location.hash !== hash) window.history.replaceState(null, "", hash);
+  }, [route, query, baselineId]);
 
   // What this installation supports: the sidebar shows only the screens the server mounts.
   useEffect(() => {
@@ -211,6 +271,13 @@ function Shell() {
 
   const baseline = baselineRun ?? pageBaseline;
 
+  // The dataset filter lists what the project has, not the demo's fixture names.
+  const datasetNames = useMemo(
+    () =>
+      [...new Set(runChoices.map((run) => run.dataset).filter((name): name is string => !!name))].sort(),
+    [runChoices],
+  );
+
   return (
     <TooltipProvider>
       <div className={`shell${collapsed ? " shell--collapsed" : ""}`}>
@@ -230,10 +297,12 @@ function Shell() {
               )}
             </button>
             <span className="topbar__name">frontedge</span>
-            <span className="topbar__project">
-              <GitBranch size={12} aria-hidden />
-              squad-ru-eval
-            </span>
+            {config?.project ? (
+              <span className="topbar__project">
+                <GitBranch size={12} aria-hidden />
+                {config.project}
+              </span>
+            ) : null}
           </div>
           <div className="topbar__tools">
             <Segmented
@@ -326,8 +395,8 @@ function Shell() {
               baselineRun={baselineRun}
               onBaselineChange={setBaselineId}
               config={config}
-              datasets={DATASET_NAMES}
-              now={NOW_TIME}
+              datasets={datasetNames}
+              now={now}
               rowHeight={ROW_HEIGHT[density]}
               columnVisibility={columnVisibility}
               onColumnVisibilityChange={setColumnVisibility}

@@ -259,6 +259,9 @@ class RunsQuery(FrontedgeModel):
     status: list[str] = Field(default_factory=list)
     dataset: str | None = None
     tag: str | None = None
+    #: A column id (known field or metric) and its direction. Sent to the provider.
+    sort: str | None = None
+    order: Literal["asc", "desc"] = "desc"
 
 
 class RunsPage(FrontedgeModel):

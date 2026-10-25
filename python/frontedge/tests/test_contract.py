@@ -228,7 +228,9 @@ class TestExamplePaging:
 class TestScale:
     def test_the_list_returns_a_sparkline_not_the_full_series(self) -> None:
         points = [frontedge.MetricPoint(step=index, value=index / 100) for index in range(100)]
-        run = make_run(series={"accuracy": points})
+        run = make_run(
+            series={"accuracy": points}, baseline_series={"accuracy": points}
+        )
 
         async def series_provider(request: Any) -> list[Run]:
             return [run]
@@ -237,6 +239,7 @@ class TestScale:
         listed = client.get("/frontedge/api/runs").json()[0]
         detail = client.get("/frontedge/api/runs/run-000").json()
         assert len(listed["series"]["accuracy"]) == 24
+        assert len(listed["baselineSeries"]["accuracy"]) == 24
         assert len(detail["series"]["accuracy"]) == 100
         assert listed["series"]["accuracy"][0]["step"] == 0
         assert listed["series"]["accuracy"][-1]["step"] == 99
@@ -252,6 +255,16 @@ class TestScale:
         assert len(response.json()) == 50
         assert response.headers["x-frontedge-total"] == "10000"
         assert len(client.get("/frontedge/api/runs/options?limit=1000").json()) == 1000
+
+
+class TestFunctionProvider:
+    def test_dicts_work_for_the_detail_too(self) -> None:
+        async def provider(request: Any) -> list[Any]:
+            return [make_run().model_dump()]
+
+        response = client_for(provider).get("/frontedge/api/runs/run-000")
+        assert response.status_code == 200
+        assert response.json()["name"] == "exp-000"
 
 
 class TestTags:
@@ -492,6 +505,24 @@ class TestHttp:
         payload = client_for().get("/frontedge/api/runs?status=succeeded").json()
         assert all(run["status"] == "succeeded" for run in payload)
 
+    def test_runs_sort_by_metric_with_missing_last(self) -> None:
+        class Sorted:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [
+                    make_run(id="low", metrics={"accuracy": 0.5}),
+                    make_run(id="high", metrics={"accuracy": 0.9}),
+                    make_run(id="none", metrics={}),
+                ]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return None
+
+        client = client_for(Sorted())
+        desc = client.get("/frontedge/api/runs?sort=accuracy&order=desc&limit=3").json()
+        assert [run["id"] for run in desc] == ["high", "low", "none"]
+        asc = client.get("/frontedge/api/runs?sort=accuracy&order=asc&limit=3").json()
+        assert [run["id"] for run in asc] == ["low", "high", "none"]
+
     def test_artifact_content_requires_provider_support(self) -> None:
         response = client_for().get("/frontedge/api/artifacts/art-1/content")
         assert response.status_code == 404
@@ -515,6 +546,24 @@ class TestHttp:
         response = TestClient(app).get("/frontedge/api/artifacts/art-1/content")
         assert response.status_code == 200
         assert b"art-1" in response.content
+
+    def test_artifact_filename_is_sanitised(self) -> None:
+        class WithArtifacts:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+            async def read_artifact(self, request: Any, artifact_id: str) -> bytes:
+                return b"data"
+
+        app = FastAPI()
+        app.include_router(frontedge.mount(WithArtifacts()))
+        response = TestClient(app).get('/frontedge/api/artifacts/a%22b%0D%0AX/content')
+        header = response.headers["content-disposition"]
+        assert '"' not in header.removeprefix('attachment; filename="').removesuffix('"')
+        assert "\r" not in header and "\n" not in header
 
     def test_error_reason_reaches_the_client(self) -> None:
         failed = make_run(status=RunStatus.failed, error="CUDA out of memory", exit_code=1)
@@ -587,11 +636,27 @@ class TestConfigAndActions:
             return frontedge.ActionResult(ok=True, message="stopped")
 
         app = FastAPI()
-        app.include_router(frontedge.mount(runs_provider, actions={"stop": stop}))
+        app.include_router(
+            frontedge.mount(
+                runs_provider,
+                actions={"stop": stop},
+                config={"actions": [{"id": "stop", "label": "Stop"}]},
+            )
+        )
         response = TestClient(app).post("/frontedge/api/actions/stop", json={"runId": "run-000"})
         assert response.status_code == 200
         assert response.json()["message"] == "stopped"
         assert seen["runId"] == "run-000"
+
+    def test_an_undeclared_handler_is_not_callable(self) -> None:
+        async def internal(request: Any, payload: dict[str, Any]) -> Any:
+            return frontedge.ActionResult(ok=True)
+
+        app = FastAPI()
+        app.include_router(frontedge.mount(runs_provider, actions={"internal": internal}))
+        client = TestClient(app)
+        assert client.post("/frontedge/api/actions/internal", json={}).status_code == 404
+        assert client.get("/frontedge/api/meta").json()["capabilities"]["actions"] == []
 
     def test_unknown_action_returns_404(self) -> None:
         app = FastAPI()
@@ -723,6 +788,7 @@ class TestMetaCapabilities:
                 evals=EvalStub(),
                 datasets=DatasetStub(),
                 actions={"stop": stop},
+                config={"actions": [{"id": "stop", "label": "Stop"}]},
             )
         )
         capabilities = TestClient(app).get("/frontedge/api/meta").json()["capabilities"]
@@ -906,6 +972,16 @@ class TestInit:
         assert "frontedge.mount" in (target / "app.py").read_text(encoding="utf-8")
         for name in ("app.py", "provider.py"):
             compile((target / name).read_text(encoding="utf-8"), name, "exec")
+
+    def test_check_provider_finds_the_generated_instance(
+        self, tmp_path: Any, monkeypatch: Any
+    ) -> None:
+        from frontedge.cli import main
+
+        target = tmp_path / "dashboard"
+        assert main(["init", str(target)]) == 0
+        monkeypatch.chdir(target)
+        assert main(["check", "--provider", "provider:provider"]) == 0
 
     def test_refuses_to_overwrite_without_force(self, tmp_path: Any, capsys: Any) -> None:
         from frontedge.cli import main

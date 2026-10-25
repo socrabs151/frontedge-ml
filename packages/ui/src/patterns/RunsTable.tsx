@@ -20,7 +20,6 @@ import {
   EMPTY,
   formatAbsoluteTime,
   formatDuration,
-  formatMetric,
   formatRelativeTime,
   toTime,
 } from "../format";
@@ -55,6 +54,9 @@ export interface RunsTableProps {
   metricSpecs?: MetricSpec[];
   /** Starting widths and per-column resize locks. */
   columnSpecs?: ColumnSpec[];
+  /** Controlled sorting: when set, the table does not sort locally (the server does). */
+  sorting?: SortingState;
+  onSortingChange?: (sorting: SortingState) => void;
   /** Whether the user may resize columns at all. */
   resizable?: boolean;
   /** Widths picked by the user. Omit to keep them in the table's own state. */
@@ -101,12 +103,22 @@ export function RunsTable({
   columnIds,
   metricSpecs = [],
   columnSpecs = [],
+  sorting: controlledSorting,
+  onSortingChange,
   resizable = true,
   columnSizing,
   onColumnSizingChange,
 }: RunsTableProps) {
   const { t, lang } = useI18n();
-  const [sorting, setSorting] = useState<SortingState>([{ id: "startedAt", desc: true }]);
+  const [ownSorting, setOwnSorting] = useState<SortingState>([
+    { id: "startedAt", desc: true },
+  ]);
+  const sorting = controlledSorting ?? ownSorting;
+  const updateSorting = (updater: Updater<SortingState>) => {
+    const next = typeof updater === "function" ? updater(sorting) : updater;
+    if (onSortingChange) onSortingChange(next);
+    else setOwnSorting(next);
+  };
   const [activeRowIndex, setActiveRowIndex] = useState(0);
   const [ownSizing, setOwnSizing] = useState<ColumnSizingState>({});
   const sizing = columnSizing ?? ownSizing;
@@ -132,9 +144,9 @@ export function RunsTable({
         cell: (info) => (
           <span className="fe-run-name" title={info.getValue()}>
             <span className="fe-run-name__dot" aria-hidden />
-            <span className="fe-mono">{info.getValue()}</span>
+            <span className="fe-mono fe-run-name__text">{info.getValue()}</span>
             {info.row.original.id === baselineId ? (
-              <span className="fe-run-name__tag">{t("tag.baseline")}</span>
+              <span className="sr-only">({t("tag.baseline")})</span>
             ) : null}
           </span>
         ),
@@ -371,8 +383,9 @@ export function RunsTable({
     state: { sorting, columnVisibility, columnSizing: sizing },
     columnResizeMode: "onChange",
     enableColumnResizing: resizable,
+    manualSorting: Boolean(onSortingChange),
     onColumnSizingChange: updateSizing,
-    onSortingChange: setSorting,
+    onSortingChange: updateSorting,
     onColumnVisibilityChange: (updater) => {
       const next = typeof updater === "function" ? updater(columnVisibility) : updater;
       onColumnVisibilityChange(next);
@@ -569,10 +582,9 @@ export function RunsTable({
       </div>
       <div className="fe-table__footer">
         <span className="fe-num">{runs.length}</span> {t("footer.runs")}
-        {baselineId ? (
+        {baseline?.name ? (
           <span className="fe-table__footer-note">
-            {t("footer.deltasToBaseline")}
-            {baseline ? ` · ${formatMetric(baseline.metrics.accuracy, 3, lang)}` : ""}
+            {t("footer.deltasToBaseline", { run: baseline.name })}
           </span>
         ) : null}
       </div>

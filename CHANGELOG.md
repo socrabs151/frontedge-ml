@@ -9,8 +9,9 @@ The following are **public contracts** and change only in a major release:
 - the `x-frontedge` role vocabulary;
 - the canonical status set (`queued · running · succeeded · failed · cancelled · lost`);
 - the freshness set (`live · fresh · stale · partial`);
-- the interface configuration keys (`density`, `theme`, `run_columns`, `metrics`, `eval_tabs`,
-  `actions`, `live_refresh_seconds`, `baseline_run`, `page_size`);
+- the interface configuration keys (`project`, `density`, `theme`, `run_columns`, `columns`,
+  `column_resize`, `metrics`, `eval_tabs`, `actions`, `live_refresh_seconds`, `baseline_run`,
+  `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
 ## [Unreleased]
@@ -51,6 +52,12 @@ The following are **public contracts** and change only in a major release:
 - `eval_tabs` works: the evaluation screen has an **Examples** tab (the comparison table) and a
   **Summary** tab (the two aggregates, the delta, the changed count and the improved/worsened
   breakdown). The key was accepted and documented before, but the screen ignored it.
+- `project` names the installation: the top bar shows its chip and the runs subtitle says whose
+  runs these are. Without the key the chip is hidden and the subtitle reads "All runs".
+- The runs list sorts on the server: `sort` and `order` go to the provider, or the library sorts
+  in memory with missing values last. A column header sets both and resets paging to the first page.
+- The whole runs view is linkable: search, status, dataset, tag, sort, order, page and baseline
+  live in the hash, so a reload or a shared link restores the filters, not just the screen.
 
 ### Changed
 
@@ -79,6 +86,8 @@ The following are **public contracts** and change only in a major release:
 - `title` in `mount()` reaches the served HTML: the browser tab says what the installation is.
 - The sidebar hides the screens an installation does not mount, using the capabilities of
   `/api/meta`.
+- The baseline row in the list carries a reference edge and the footer names the baseline
+  ("deltas are relative to exp-002-warm"); the name column keeps its width for the run name.
 - The runs table resizes: `[[columns]]` sets a starting width and a per-column `resizable` lock,
   `column_resize` locks the whole table. The resizer is a keyboard-operable separator (arrows,
   Shift for a larger step, double click to reset one column). Header ticks show the column
@@ -132,6 +141,23 @@ The following are **public contracts** and change only in a major release:
 - The interface is English by default with a Russian toggle. Numbers, durations, relative times
   and byte sizes are formatted for the selected language; domain terms (Run, Dataset, Baseline,
   Eval) stay English in both.
+- Relative times follow the real clock; the demo generates its data from the server start, so
+  "2 h ago" means two hours ago instead of a fixed date.
+- The dataset filter lists the datasets the runs actually have, not the demo fixtures.
+
+### Fixed
+
+- A declared action runs only when its id is in the configuration there and then; the provider
+  callable is not a way around the allowlist. A re-read or an action removed from the file stops
+  being callable.
+- An artifact's `Content-Disposition` filename is sanitised, so a model name cannot inject a
+  header or a path.
+- `CallableProvider.get_run` coerces a mapping into a `Run` like the list does, instead of handing
+  a dict to the screen.
+- The SSE queue is bounded: a slow client can no longer grow the server's memory without limit.
+- `frontedge init` loads the generated provider from the project's directory and instantiates a
+  class provider (`provider = Provider()`), so the scaffold starts with `uvicorn app:app`.
+- The generated client encodes the run id in `get_run` and `stream_logs`.
 
 ## [0.1.0] — 2026-10-22
 

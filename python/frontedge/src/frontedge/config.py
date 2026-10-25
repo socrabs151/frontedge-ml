@@ -89,6 +89,8 @@ class UiConfig(BaseModel):
 
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True, extra="forbid")
 
+    #: What the top bar calls this installation ("squad-ru-eval").
+    project: str | None = None
     density: Literal["compact", "default", "comfortable"] | None = None
     theme: Literal["light", "dark"] | None = None
     run_columns: list[str] = Field(default_factory=list)
