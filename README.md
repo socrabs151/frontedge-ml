@@ -49,11 +49,10 @@ Frontedge is that layer, packaged.
 
 ## Quick start
 
-Not on PyPI yet. From the repository, build the interface once and install the package:
+The package is on PyPI and ships the built interface:
 
 ```bash
-pnpm install && pnpm build:ui
-pip install ./python/frontedge        # or: uv pip install -e ./python/frontedge
+pip install frontedge
 ```
 
 Then scaffold a dashboard — it runs with the sample data before you write a line:
@@ -147,7 +146,8 @@ table, declare it in `[[metrics]]` for the run screen — a card with the delta 
 its series. Filtering, search and pagination run on the server when the provider takes a
 `list_runs(request, query)` signature.
 
-For your own screens, use the components directly:
+For your own screens, install the design system (`npm i @frontedge-ml/ui react react-dom`) and use
+the components directly:
 
 ```tsx
 import "@frontedge-ml/ui/styles.css";
@@ -202,8 +202,9 @@ Design document: [docs/specs/2026-10-20-frontedge-design.md](docs/specs/2026-10-
 
 ## Status
 
-Phase 3 of 5. The screens, the design system, the Python package and the type generator work
-and are covered by gates; publication to PyPI and npm is the next step.
+0.1.0 is published on PyPI (`frontedge`) and npm (`@frontedge-ml/ui`). The screens, the design
+system, the Python package and the type generator are covered by gates; the next step is the
+provider-side scale work (pagination of examples, streaming artifacts) and run configuration.
 
 ## License
 

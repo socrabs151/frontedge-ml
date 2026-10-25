@@ -27,16 +27,22 @@ production.
 
 ## 2. Installation
 
-The package is not on PyPI yet — releases are cut by tagging the repository (Phase 4). Install
-from a checkout; the interface has to be built into the package once:
+The wheel ships the built interface, so one command is enough:
+
+```bash
+pip install frontedge
+```
+
+From a checkout (development) build the interface first and install the source package:
 
 ```bash
 pnpm install && pnpm build:ui
-pip install ./python/frontedge        # or: uv pip install -e ./python/frontedge
+pip install -e ./python/frontedge
 ```
 
 A plain `git+` install has no built interface and answers 503: the built assets are generated, not
-stored. `pnpm build:ui` needs Node 22 and pnpm.
+stored. `pnpm build:ui` needs Node 22 and pnpm. The npm design system is
+`npm i @frontedge-ml/ui react react-dom`.
 
 ### 2.1 Start a project
 

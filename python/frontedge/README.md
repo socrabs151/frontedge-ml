@@ -3,6 +3,13 @@
 The frontend layer for ML engineering: a ready-made design system and screens that mount into
 any FastAPI application.
 
+```bash
+pip install frontedge
+```
+
+The interface is inside the wheel; no Node build is needed. The design system for your own
+screens is [`@frontedge-ml/ui`](https://www.npmjs.com/package/@frontedge-ml/ui) on npm.
+
 ```python
 from fastapi import FastAPI
 import frontedge

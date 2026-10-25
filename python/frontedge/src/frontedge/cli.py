@@ -223,8 +223,7 @@ app.include_router(
 INIT_README = """\
 # My Frontedge dashboard
 
-1. Install Frontedge and uvicorn. The package is not on PyPI yet: from a repository checkout run
-   `pnpm build:ui`, then `pip install ./python/frontedge`; add `pip install uvicorn`.
+1. Install Frontedge and uvicorn: `pip install frontedge uvicorn`.
 2. Run the app from this directory: `uvicorn app:app --reload`.
 3. Open http://127.0.0.1:8000/frontedge.
 
