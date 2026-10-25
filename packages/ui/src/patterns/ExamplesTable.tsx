@@ -1,5 +1,6 @@
 import clsx from "clsx";
-import { useT } from "../i18n/I18nProvider";
+import { useI18n } from "../i18n/I18nProvider";
+import { formatMetric } from "../format";
 import type { Example } from "../types";
 
 export interface ExamplesTableProps {
@@ -14,7 +15,7 @@ export function ExamplesTable({
   direction = "maximize",
   onlyDiff = false,
 }: ExamplesTableProps) {
-  const t = useT();
+  const { t, lang } = useI18n();
   const rows = onlyDiff
     ? examples.filter((example) => example.score !== example.baselineScore)
     : examples;
@@ -67,7 +68,7 @@ export function ExamplesTable({
                     {example.output}
                   </td>
                   <td className="fe-table__td fe-table__td--num fe-num">
-                    {example.score.toFixed(2)}
+                    {formatMetric(example.score, 2, lang)}
                   </td>
                   <td
                     className={clsx(
@@ -75,7 +76,9 @@ export function ExamplesTable({
                       delta !== null && delta !== 0 && (better ? "fe-delta--better" : "fe-delta--worse"),
                     )}
                   >
-                    {delta === null ? "–" : `${delta > 0 ? "+" : "−"}${Math.abs(delta).toFixed(2)}`}
+                    {delta === null
+                      ? "–"
+                      : `${delta > 0 ? "+" : "−"}${formatMetric(Math.abs(delta), 2, lang)}`}
                   </td>
                 </tr>
               );

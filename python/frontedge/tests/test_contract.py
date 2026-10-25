@@ -151,6 +151,14 @@ class TestStaticCache:
         response = client_for().get("/frontedge/")
         assert response.headers["cache-control"] == "no-cache"
 
+    @requires_interface
+    def test_index_html_is_substituted_like_the_root(self) -> None:
+        response = client_for().get("/frontedge/index.html")
+        assert response.status_code == 200
+        assert "@@FRONTEDGE_MOUNT@@" not in response.text
+        assert "@@FRONTEDGE_TITLE@@" not in response.text
+        assert 'content="/frontedge"' in response.text
+
 
 class TestExamplePaging:
     def test_run_examples_are_paged(self) -> None:
@@ -424,6 +432,29 @@ class TestColumnSpecs:
         assert main(["check", str(file)]) == 1
         assert "duplicate column: name" in capsys.readouterr().err
 
+    def test_a_duplicate_is_named_even_when_another_key_is_wrong(
+        self, tmp_path: Any, capsys: Any
+    ) -> None:
+        from frontedge.cli import main
+
+        file = tmp_path / "frontedge.toml"
+        file.write_text(
+            'density = "tiny"\n[[actions]]\nid = "stop"\n\n[[actions]]\nid = "stop"\n',
+            encoding="utf-8",
+        )
+        assert main(["check", str(file)]) == 1
+        errors = capsys.readouterr().err
+        assert "duplicate action id: stop" in errors
+        assert "density" in errors
+
+    def test_an_unknown_column_is_a_warning(self, tmp_path: Any, capsys: Any) -> None:
+        from frontedge.cli import main
+
+        file = tmp_path / "frontedge.toml"
+        file.write_text('run_columns = ["name", "acuracy"]\n', encoding="utf-8")
+        assert main(["check", str(file)]) == 0
+        assert "unknown column id: acuracy" in capsys.readouterr().err
+
 
 class TestEvalTabs:
     """The evaluation screen's tabs are configuration, not screen code."""
@@ -523,6 +554,55 @@ class TestHttp:
         asc = client.get("/frontedge/api/runs?sort=accuracy&order=asc&limit=3").json()
         assert [run["id"] for run in asc] == ["low", "high", "none"]
 
+    def test_query_is_not_guessed_from_arity(self) -> None:
+        """A keyword-only switch is not the selection: the provider still gets the bare list."""
+
+        class KeywordOnly:
+            async def list_runs(self, request: Any, *, include_archived: bool = False) -> list[Run]:
+                return [
+                    make_run(),
+                    make_run(id="run-failed", status=RunStatus.failed),
+                ]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return None
+
+        response = client_for(KeywordOnly()).get("/frontedge/api/runs?status=failed")
+        assert response.status_code == 200
+        assert [run["id"] for run in response.json()] == ["run-failed"]
+
+    def test_query_is_detected_by_annotation_and_name(self) -> None:
+        from frontedge.models import RunsQuery
+
+        class Annotated:
+            async def list_runs(self, request: Any, selection: RunsQuery) -> list[Run]:
+                return [make_run(), make_run(id="run-running", status=RunStatus.running)]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return None
+
+        class Named:
+            async def list_runs(self, request: Any, query: Any) -> list[Run]:
+                return [make_run(id="run-query")]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return None
+
+        annotated = client_for(Annotated()).get("/frontedge/api/runs")
+        named = client_for(Named()).get("/frontedge/api/runs")
+        assert annotated.status_code == 200
+        assert named.status_code == 200
+
+    def test_runs_reject_invalid_selection(self) -> None:
+        client = client_for()
+        assert client.get("/frontedge/api/runs?sort=metrics").status_code == 422
+        assert client.get("/frontedge/api/runs?sort=accuracy").status_code == 200
+        assert client.get("/frontedge/api/runs?limit=0").status_code == 422
+        assert client.get("/frontedge/api/runs?limit=1001").status_code == 422
+        assert client.get("/frontedge/api/runs?offset=-1").status_code == 422
+        assert client.get("/frontedge/api/runs?order=sideways").status_code == 422
+        assert client.get("/frontedge/api/runs?status=exploded").status_code == 422
+
     def test_artifact_content_requires_provider_support(self) -> None:
         response = client_for().get("/frontedge/api/artifacts/art-1/content")
         assert response.status_code == 404
@@ -610,10 +690,14 @@ class TestSse:
 
 class TestConfigAndActions:
     def test_config_is_served(self) -> None:
+        async def stop(request: Any, payload: dict[str, Any]) -> Any:
+            return frontedge.ActionResult(ok=True)
+
         app = FastAPI()
         app.include_router(
             frontedge.mount(
                 runs_provider,
+                actions={"stop": stop},
                 config={
                     "density": "compact",
                     "run_columns": ["name", "status"],
@@ -664,6 +748,42 @@ class TestConfigAndActions:
         response = TestClient(app).post("/frontedge/api/actions/nope", json={})
         assert response.status_code == 404
 
+    def test_a_failing_action_is_a_502_with_the_id(self) -> None:
+        async def broken(request: Any, payload: dict[str, Any]) -> Any:
+            raise RuntimeError("boom")
+
+        app = FastAPI()
+        app.include_router(
+            frontedge.mount(
+                runs_provider,
+                actions={"stop": broken},
+                config={"actions": [{"id": "stop", "label": "Stop"}]},
+            )
+        )
+        response = TestClient(app).post("/frontedge/api/actions/stop", json={})
+        assert response.status_code == 502
+        assert "stop" in response.json()["detail"]
+
+    def test_only_callable_actions_reach_the_browser(self) -> None:
+        async def stop(request: Any, payload: dict[str, Any]) -> Any:
+            return frontedge.ActionResult(ok=True)
+
+        app = FastAPI()
+        app.include_router(
+            frontedge.mount(
+                runs_provider,
+                actions={"stop": stop},
+                config={
+                    "actions": [
+                        {"id": "stop", "label": "Stop"},
+                        {"id": "ghost", "label": "Ghost"},
+                    ]
+                },
+            )
+        )
+        config = TestClient(app).get("/frontedge/api/config").json()
+        assert [action["id"] for action in config["actions"]] == ["stop"]
+
     def test_config_from_toml_file(self, tmp_path: Any) -> None:
         file = tmp_path / "frontedge.toml"
         file.write_text(
@@ -674,8 +794,13 @@ class TestConfigAndActions:
             'placement = "runs"\n',
             encoding="utf-8",
         )
+        async def export(request: Any, payload: dict[str, Any]) -> Any:
+            return frontedge.ActionResult(ok=True)
+
         app = FastAPI()
-        app.include_router(frontedge.mount(runs_provider, config=file))
+        app.include_router(
+            frontedge.mount(runs_provider, actions={"export": export}, config=file)
+        )
         payload = TestClient(app).get("/frontedge/api/config").json()
         assert payload["actions"][0]["placement"] == "runs"
 

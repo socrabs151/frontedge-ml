@@ -5,11 +5,12 @@ from __future__ import annotations
 import functools
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable
+from datetime import date, datetime
 from itertools import count
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
 from ..config import ActionResult, UiConfig, load_config
@@ -26,6 +27,7 @@ from ..models import (
     RunOption,
     RunsPage,
     RunsQuery,
+    RunStatus,
 )
 from ..providers import (
     DatasetProvider,
@@ -62,20 +64,86 @@ SPARKLINE_POINTS = 24
 
 
 _SORT_FIELDS = {"startedAt": "started_at", "durationMs": "duration_ms", "gitSha": "git_sha"}
+_SORTABLE_COLUMNS = {
+    "name",
+    "status",
+    "dataset",
+    "gitSha",
+    "owner",
+    "startedAt",
+    "durationMs",
+}
+#: UI-only columns and containers: a column of dicts or a ribbon has no order.
+_NOT_SORTABLE = {
+    "actions",
+    "artifacts",
+    "baselineSeries",
+    "baseline_series",
+    "events",
+    "metrics",
+    "provenance",
+    "ribbon",
+    "series",
+    "stages",
+    "tags",
+}
+#: A page bigger than this is a mistake or a bypass of pagination; the UI asks for 50.
+MAX_PAGE_SIZE = 1000
+_SCALARS = (str, int, float, bool, date, datetime)
 
 
 def _sort_value(run: Run, key: str) -> Any:
-    if key in run.metrics:
-        return run.metrics[key]
-    return getattr(run, _SORT_FIELDS.get(key, key), None)
+    """A scalar to sort by, or ``None``: a dict or a list is not an order."""
+    value = (
+        run.metrics[key]
+        if key in run.metrics
+        else getattr(run, _SORT_FIELDS.get(key, key), None)
+    )
+    return value if isinstance(value, _SCALARS) else None
 
 
 def _sorted_runs(runs: list[Run], key: str, order: str) -> list[Run]:
     """Sort the in-memory fallback; nulls always last, strings and numbers stay homogeneous."""
     present = [run for run in runs if _sort_value(run, key) is not None]
     missing = [run for run in runs if _sort_value(run, key) is None]
-    present.sort(key=lambda run: _sort_value(run, key), reverse=order == "desc")
+
+    def sort_key(run: Run) -> tuple[int, Any]:
+        value = _sort_value(run, key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return (0, float(value))
+        return (1, str(value))
+
+    present.sort(key=sort_key, reverse=order == "desc")
     return present + missing
+
+
+def _check_query(
+    ui_config: UiConfig,
+    *,
+    limit: int | None,
+    statuses: list[str],
+    sort: str | None,
+) -> None:
+    """A wrong selection is a client error, not a 500 from a provider or a silent no-op."""
+    if limit is not None and not 1 <= limit <= MAX_PAGE_SIZE:
+        raise HTTPException(
+            status_code=422, detail=f"limit must be between 1 and {MAX_PAGE_SIZE}"
+        )
+    known_statuses = {item.value for item in RunStatus}
+    unknown = [status for status in statuses if status not in known_statuses]
+    if unknown:
+        raise HTTPException(
+            status_code=422, detail=f"Unknown run status: {', '.join(unknown)}"
+        )
+    if sort is None:
+        return
+    if sort in _NOT_SORTABLE:
+        raise HTTPException(status_code=422, detail=f"Column is not sortable: {sort}")
+    declared = {metric.id for metric in ui_config.metrics} | set(ui_config.run_columns)
+    # Without a declared column set the table shows every metric a run returns, so the
+    # provider may sort by a metric name the configuration has never heard of.
+    if declared and sort not in _SORTABLE_COLUMNS | declared:
+        raise HTTPException(status_code=422, detail=f"Unknown sort key: {sort}")
 
 
 def _downsample(points: list[Any], limit: int = SPARKLINE_POINTS) -> list[Any]:
@@ -156,6 +224,10 @@ def _build_router(
     # in the dict must not become a remote endpoint.
     declared = {action.id for action in ui_config.actions}
     callable_actions = [action.id for action in ui_config.actions if action.id in handlers]
+    # The browser must not draw a button for an action the server cannot run.
+    served_config = ui_config.model_copy(
+        update={"actions": [action for action in ui_config.actions if action.id in handlers]}
+    )
     router = APIRouter(prefix=path)
 
     # --- Runs -------------------------------------------------------------
@@ -170,14 +242,14 @@ def _build_router(
     async def list_runs(
         request: Request,
         response: Response,
-        limit: int | None = None,
-        offset: int = 0,
+        limit: int | None = Query(default=None, ge=1, le=MAX_PAGE_SIZE),
+        offset: int = Query(default=0, ge=0),
         search: str | None = None,
         status: str | None = None,
         dataset: str | None = None,
         tag: str | None = None,
         sort: str | None = None,
-        order: str = "desc",
+        order: Literal["asc", "desc"] = "desc",
     ) -> list[RunPayload]:
         """A list of runs.
 
@@ -185,15 +257,17 @@ def _build_router(
         to its side; otherwise the library applies it and returns the total count
         in the ``X-Frontedge-Total`` header.
         """
+        statuses = [part for part in (status or "").split(",") if part]
+        _check_query(ui_config, limit=limit, statuses=statuses, sort=sort)
         query = RunsQuery(
             limit=limit,
-            offset=max(0, offset),
+            offset=offset,
             search=search,
-            status=[part for part in (status or "").split(",") if part],
+            status=statuses,
             dataset=dataset,
             tag=tag,
             sort=sort,
-            order="asc" if order == "asc" else "desc",
+            order=order,
         )
 
         if provider_accepts_query(source):
@@ -295,7 +369,12 @@ def _build_router(
             raise HTTPException(status_code=404, detail="Run not found")
         items = as_models(await source.list_examples(request, run_id), Example, "list_examples")
         if changed:
-            items = [example for example in items if example.score != example.baseline_score]
+            items = [
+                example
+                for example in items
+                if example.baseline_score is not None
+                and example.score != example.baseline_score
+            ]
         response.headers["X-Frontedge-Total"] = str(len(items))
         page = items[max(0, offset) :]
         return page[: max(0, limit)] if limit is not None else page
@@ -473,8 +552,8 @@ def _build_router(
 
     @router.get("/api/config", tags=["frontedge"], response_model=UiConfig)
     async def get_config() -> UiConfig:
-        """Interface configuration: columns, tabs, declared actions."""
-        return ui_config
+        """Interface configuration: columns, tabs and the actions that have a handler."""
+        return served_config
 
     @router.post(
         "/api/actions/{action_id}",
@@ -488,7 +567,14 @@ def _build_router(
         handler = handlers.get(action_id)
         if handler is None or action_id not in declared:
             raise HTTPException(status_code=404, detail=f"Action is not declared: {action_id}")
-        result = await handler(request, payload or {})
+        try:
+            result = await handler(request, payload or {})
+        except HTTPException:
+            raise
+        except Exception as error:  # noqa: BLE001 - the project's handler is a black box
+            raise HTTPException(
+                status_code=502, detail=f"Action {action_id} failed: {error}"
+            ) from error
         if isinstance(result, ActionResult):
             return result
         return ActionResult(data=result if isinstance(result, dict) else {})

@@ -165,6 +165,12 @@ app.include_router(frontedge.mount(MyProvider()))
 
 `stream_logs` is optional: without it the log stream stays empty. `read_artifact` is optional too.
 
+The query parameter is recognised by the name `query` (or `selection`), by the `RunsQuery`
+annotation, or as a positional second argument — a keyword-only switch such as
+`list_runs(request, *, include_archived=False)` is not mistaken for the selection. `sort` must
+be a built-in column or a metric declared in `[[metrics]]`; `limit` is capped at 1000, and an
+unknown status, sort key or order is a 422 instead of an empty list or a 500.
+
 The total is returned in the `X-Frontedge-Total` header of `GET /api/runs`, and the same header
 carries the count for the paged examples endpoints.
 
@@ -453,8 +459,9 @@ its `message` is shown under the header.
 - `payload` — what the interface puts into the request: for `run` it is `{"runId": "..."}`, for
   `runs` it is the `runId` of the selected row.
 
-An action that has no handler answers 404 when it is called, and a button that is not in the
-configuration is not shown at all.
+An action that is declared but has no handler is not shown at all: the server sends only the
+actions it can run, and a direct call answers 404. A handler that raises is a 502 whose detail
+names the action, so the button reports a failure instead of a blank 500.
 
 ## 7. Your own screens on our components
 
@@ -496,6 +503,38 @@ and the fonts: the package does not load them itself, add `@fontsource-variable/
 The types come from the Python models: `frontedge gen --out src/generated` creates `types.ts` and
 `client.ts`, which you can import instead of hand-written types. Pass `--base-path` if the
 interface is mounted under another prefix.
+
+### Calling the API from another origin
+
+The built interface is same-origin, but a separate app (a Vite dev server, another domain)
+must be allowed by the host. The total count travels in `X-Frontedge-Total`, so it has to be
+exposed explicitly:
+
+```python
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-Frontedge-Total"],
+)
+```
+
+`createClient` forwards the host's cookies and headers to every call, including the log stream:
+
+```ts
+const api = createClient({
+  basePath: "http://127.0.0.1:8000/frontedge/api",
+  credentials: "include",
+  headers: { "x-csrf-token": csrfToken },
+});
+```
+
+A project action is a `POST`, so the preflight must allow it. With a cookie session add CSRF
+protection on the host side — the library does not invent one.
 
 ## 8. Troubleshooting
 

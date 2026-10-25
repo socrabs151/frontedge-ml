@@ -27,6 +27,15 @@ jobs:
       - run: uv sync --all-packages
       - run: pnpm typecheck
       - run: pnpm check:contrast
+      - run: node apps/spike/scripts/lang-audit.mjs --no-browser
+      - name: The tag matches both package versions
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          py=$(python -c "import tomllib;print(tomllib.load(open('python/frontedge/pyproject.toml','rb'))['project']['version'])")
+          js=$(node -p "require('./packages/ui/package.json').version")
+          echo "tag=$tag python=$py npm=$js"
+          test "$tag" = "$py" && test "$tag" = "$js"
       - run: pnpm build:ui
       - run: uv run --package frontedge pytest python/frontedge/tests -q
       - run: uv run --package frontedge frontedge gen --out packages/ui/src/generated

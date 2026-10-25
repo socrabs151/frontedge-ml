@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Frontend layer for ML engineering: mount ready-made screens into any FastAPI app"
 readme = "README.md"
 requires-python = ">=3.11"
+authors = [{ name = "socrabs151" }]
+keywords = ["ml", "mlops", "fastapi", "experiments", "dashboard", "runs", "evaluation"]
 license = { text = "MIT" }
 license-files = ["LICENSE"]
 classifiers = [
@@ -21,6 +23,13 @@ dependencies = [
     "fastapi>=0.115",
     "pydantic>=2.9",
 ]
+
+[project.urls]
+Homepage = "https://github.com/socrabs151/frontedge-ml"
+Repository = "https://github.com/socrabs151/frontedge-ml"
+Issues = "https://github.com/socrabs151/frontedge-ml/issues"
+Changelog = "https://github.com/socrabs151/frontedge-ml/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/socrabs151/frontedge-ml/blob/main/docs/integration.md"
 
 [project.scripts]
 frontedge = "frontedge.cli:main"

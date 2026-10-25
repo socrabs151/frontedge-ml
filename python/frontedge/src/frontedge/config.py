@@ -108,7 +108,7 @@ class UiConfig(BaseModel):
     #: Default run for comparison (baseline).
     baseline_run: str | None = None
     #: How many runs to request at a time (server-side pagination).
-    page_size: int = Field(default=50, ge=1)
+    page_size: int = Field(default=50, ge=1, le=1000)
 
     def actions_for(self, placement: Placement) -> list[ActionSpec]:
         return [action for action in self.actions if action.placement == placement]

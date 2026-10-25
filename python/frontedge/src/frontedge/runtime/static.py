@@ -34,7 +34,8 @@ def static_router(mount: str = "/frontedge", title: str = "Frontedge") -> APIRou
     @router.get("/{path:path}", include_in_schema=False)
     def serve(path: str) -> Response:
         root = static_root()
-        if path:
+        # `index.html` is the document, not an asset: it needs the same substitutions as `/`.
+        if path and path != _INDEX:
             candidate = (root / path).resolve()
             try:
                 candidate.relative_to(root.resolve())
@@ -63,7 +64,7 @@ def static_router(mount: str = "/frontedge", title: str = "Frontedge") -> APIRou
             )
         html = (
             index.read_text(encoding="utf-8")
-            .replace(_MOUNT_PLACEHOLDER, mount)
+            .replace(_MOUNT_PLACEHOLDER, escape(mount))
             .replace(_TITLE_PLACEHOLDER, escape(title))
         )
         return Response(html, media_type="text/html", headers={"Cache-Control": "no-cache"})

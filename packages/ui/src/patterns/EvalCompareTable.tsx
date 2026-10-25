@@ -1,5 +1,6 @@
 import clsx from "clsx";
-import { useT } from "../i18n/I18nProvider";
+import { useI18n, type Lang } from "../i18n/I18nProvider";
+import { formatMetric } from "../format";
 import { describeDelta } from "./MetricCell";
 import type { EvalComparison, MetricDirection } from "../types";
 
@@ -9,17 +10,18 @@ export function formatScore(
   value: number | null | undefined,
   format: DeltaFormat,
   reference?: number | null,
+  lang: Lang = "en",
 ): string {
   if (value === null || value === undefined) return "–";
   if (format === "percent") {
     const percent = value * (Math.abs(value) <= 1.5 ? 100 : 1);
-    return `${percent.toFixed(1)}%`;
+    return `${formatMetric(percent, 1, lang)}%`;
   }
   if (format === "relative") {
     if (reference === null || reference === undefined || reference === 0) return "–";
-    return `×${(value / reference).toFixed(3)}`;
+    return `×${formatMetric(value / reference, 3, lang)}`;
   }
-  return value.toFixed(3);
+  return formatMetric(value, 3, lang);
 }
 
 export interface EvalCompareTableProps {
@@ -41,7 +43,7 @@ export function EvalCompareTable({
   onlyDiff = false,
   format = "value",
 }: EvalCompareTableProps) {
-  const t = useT();
+  const { t, lang } = useI18n();
   const direction: MetricDirection = comparison.direction;
   const rows = onlyDiff
     ? comparison.examples.filter((example) => example.changed)
@@ -136,10 +138,10 @@ export function EvalCompareTable({
                     {example.output}
                   </td>
                   <td className="fe-table__td fe-table__td--num fe-num">
-                    {formatScore(reference, format, reference)}
+                    {formatScore(reference, format, reference, lang)}
                   </td>
                   <td className="fe-table__td fe-table__td--num fe-num">
-                    {formatScore(comparisonScore, format, reference)}
+                    {formatScore(comparisonScore, format, reference, lang)}
                   </td>
                   <td
                     className={clsx(
@@ -149,7 +151,7 @@ export function EvalCompareTable({
                   >
                     {delta === null
                       ? "–"
-                      : `${delta > 0 ? "+" : delta < 0 ? "−" : "±"}${Math.abs(delta).toFixed(3)}`}
+                      : `${delta > 0 ? "+" : delta < 0 ? "−" : "±"}${formatMetric(Math.abs(delta), 3, lang)}`}
                     {meta?.word ? (
                       <span className="fe-eval__word">{t(`delta.${meta.word}`)}</span>
                     ) : null}
@@ -172,14 +174,14 @@ export function EvalCompareTable({
                 })}
               </td>
               <td className="fe-table__td fe-table__td--num fe-num">
-                {comparison.referenceAggregate.toFixed(3)}
+                {formatMetric(comparison.referenceAggregate, 3, lang)}
               </td>
               <td className="fe-table__td fe-table__td--num fe-num">
-                {comparison.comparisonAggregate.toFixed(3)}
+                {formatMetric(comparison.comparisonAggregate, 3, lang)}
               </td>
               <td className="fe-table__td fe-table__td--num fe-num fe-eval__delta">
                 {aggregateDelta > 0 ? "+" : aggregateDelta < 0 ? "−" : "±"}
-                {Math.abs(aggregateDelta).toFixed(3)}
+                {formatMetric(Math.abs(aggregateDelta), 3, lang)}
                 {aggregateMeta.word ? (
                   <span className="fe-eval__word">{t(`delta.${aggregateMeta.word}`)}</span>
                 ) : null}

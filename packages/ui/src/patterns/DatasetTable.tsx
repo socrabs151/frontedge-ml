@@ -1,4 +1,5 @@
-import { useT } from "../i18n/I18nProvider";
+import { useI18n } from "../i18n/I18nProvider";
+import { formatMetric } from "../format";
 import type { ExampleResult } from "../types";
 
 export interface DatasetTableProps {
@@ -8,7 +9,7 @@ export interface DatasetTableProps {
 
 /** Dataset examples: input, answer and score. Adjacent rows compare at a glance, like any table. */
 export function DatasetTable({ examples, scoreLabel }: DatasetTableProps) {
-  const t = useT();
+  const { t, lang } = useI18n();
   return (
     <div className="fe-table fe-table--dataset">
       <div
@@ -47,7 +48,7 @@ export function DatasetTable({ examples, scoreLabel }: DatasetTableProps) {
                 <td className="fe-table__td fe-table__td--num fe-num">
                   {example.referenceScore === null || example.referenceScore === undefined
                     ? "–"
-                    : example.referenceScore.toFixed(3)}
+                    : formatMetric(example.referenceScore, 3, lang)}
                 </td>
               </tr>
             ))}

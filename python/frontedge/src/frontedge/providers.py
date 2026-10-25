@@ -22,6 +22,7 @@ from .models import (
     Example,
     LogLine,
     Run,
+    RunsQuery,
 )
 
 __all__ = [
@@ -224,16 +225,37 @@ class _ProviderAdapter:
 
 
 def _accepts_query(target: Any) -> bool:
-    """Whether the function accepts a second argument — the selection."""
+    """Whether the function takes the selection, ``list_runs(request, query)``.
+
+    Arity alone is wrong: ``list_runs(request, *, include_archived=False)`` has two
+    parameters and would be called with a ``RunsQuery`` it never expected. A query
+    parameter is recognised by name, by its ``RunsQuery`` annotation, or as the
+    second positional argument of a two-argument function (the historical shape).
+    """
     import inspect
 
     if target is None:
         return False
     try:
-        parameters = inspect.signature(target).parameters
+        parameters = list(inspect.signature(target).parameters.values())
     except (TypeError, ValueError):  # pragma: no cover
         return False
-    return len(parameters) >= 2
+    if len(parameters) < 2:
+        return False
+    second = parameters[1]
+    if second.kind in (second.VAR_POSITIONAL, second.VAR_KEYWORD):
+        return False
+    if second.kind is second.KEYWORD_ONLY:
+        # The adapter passes the query positionally; a keyword-only switch is not the query.
+        return False
+    if second.name in {"query", "selection"}:
+        return True
+    annotation = second.annotation
+    if annotation is RunsQuery:
+        return True
+    if isinstance(annotation, str) and "RunsQuery" in annotation:
+        return True
+    return True
 
 
 def provider_accepts_query(provider: Any) -> bool:

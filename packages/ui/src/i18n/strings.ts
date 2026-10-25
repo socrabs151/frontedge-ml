@@ -19,6 +19,9 @@ export const en = {
   "delta.worse": "worse",
   "delta.toBaseline": "to {baseline}",
 
+  "column.name": "Run",
+  "column.dataset": "Dataset",
+  "column.git": "Git",
   "column.status": "Status",
   "column.stages": "Stages",
   "column.started": "Started",
@@ -90,6 +93,9 @@ export const ru: Dictionary = {
   "delta.worse": "хуже",
   "delta.toBaseline": "к {baseline}",
 
+  "column.name": "Run",
+  "column.dataset": "Dataset",
+  "column.git": "Git",
   "column.status": "Статус",
   "column.stages": "Ход",
   "column.started": "Начат",

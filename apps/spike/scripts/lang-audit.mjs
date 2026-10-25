@@ -106,6 +106,8 @@ for (const dictionary of dictionaries) {
 
 const ATTRIBUTE = /(?:aria-label|ariaLabel|title|placeholder|alt)="([^"]*[A-Za-z]{2,}[^"]*)"/;
 const TEXT_NODE = />\s*([A-Za-z][^<>{}]{2,}?)\s*<\//;
+// A column header is visible even when it is a prop: `header: "Dataset"` skips the text-node rule.
+const VISIBLE_PROP = /\bheader:\s*"([^"]*[A-Za-z]{2,}[^"]*)"/;
 const BARE_LINE = /^[A-Za-z][A-Za-z ]{1,40}$/;
 const NOT_A_LITERAL = [
   /^[a-z][a-zA-Z0-9]*(\.[a-zA-Z0-9]+)+$/,
@@ -144,8 +146,10 @@ for (const dir of ["packages/ui/src", "apps/spike/src"]) {
           sourceLines.slice(index + 1).find((candidate) => candidate.trim() !== "") ?? "";
         if (next.trim().startsWith("<")) bare = line.trim();
       }
+      const visibleProp = line.match(VISIBLE_PROP);
       if (attribute) candidates.push(attribute[1]);
       if (textNode) candidates.push(textNode[1]);
+      if (visibleProp) candidates.push(visibleProp[1]);
       if (bare) candidates.push(bare);
       for (const value of candidates) {
         const skip =

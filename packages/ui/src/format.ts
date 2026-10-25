@@ -26,9 +26,20 @@ export function formatMetric(
   const fixed = value.toFixed(digits);
   // Exponential only when the fixed form would show zero: a real value must not read as 0.
   if (abs !== 0 && Number(fixed) === 0) {
-    return value.toExponential(2);
+    const [mantissa, exponent] = value.toExponential(2).split("e");
+    const local = Number(mantissa).toLocaleString(localeOf(lang), {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      useGrouping: false,
+    });
+    return `${local}e${exponent}`;
   }
-  return fixed;
+  // The decimal separator belongs to the language: 0.880 in English, 0,880 in Russian.
+  return value.toLocaleString(localeOf(lang), {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+    useGrouping: false,
+  });
 }
 
 export function formatDelta(value: number, digits = 3, lang: Lang = "en"): string {
@@ -82,5 +93,11 @@ export function formatBytes(bytes: number, lang: Lang = "en"): string {
     value /= 1024;
     unitIndex += 1;
   }
-  return `${value.toFixed(value < 10 ? 1 : 0)} ${units[unitIndex]}`;
+  const digits = value < 10 ? 1 : 0;
+  const local = value.toLocaleString(localeOf(lang), {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+    useGrouping: false,
+  });
+  return `${local} ${units[unitIndex]}`;
 }

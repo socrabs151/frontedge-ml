@@ -139,7 +139,7 @@ export function RunsTable({
     const fixed: Record<string, ColumnDef<Run, unknown>> = {
       name: columnHelper.accessor("name", {
         id: "name",
-        header: "Run",
+        header: () => t("column.name"),
         size: 126,
         cell: (info) => (
           <span className="fe-run-name" title={info.getValue()}>
@@ -190,7 +190,7 @@ export function RunsTable({
 
       dataset: columnHelper.accessor("dataset", {
         id: "dataset",
-        header: "Dataset",
+        header: () => t("column.dataset"),
         size: 110,
         cell: (info) => {
           const value = info.getValue();
@@ -204,7 +204,7 @@ export function RunsTable({
 
       gitSha: columnHelper.accessor("gitSha", {
         id: "gitSha",
-        header: "Git",
+        header: () => t("column.git"),
         size: 70,
         cell: (info) => {
           const value = info.getValue();

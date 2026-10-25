@@ -14,6 +14,7 @@ import {
 } from "@frontedge/ui";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
+import { formatMetric, useI18n } from "@frontedge/ui";
 import type { Example, LogLine, Run, UiConfig } from "@frontedge/ui";
 import { useAppT } from "../i18n";
 import { Pager } from "../components/Pager";
@@ -36,6 +37,7 @@ export function RunDetailScreen({
   onBack: () => void;
 }) {
   const t = useAppT();
+  const { lang } = useI18n();
   const [run, setRun] = useState<Run | null>(null);
   const [examples, setExamples] = useState<Example[]>([]);
   const [examplesTotal, setExamplesTotal] = useState(0);
@@ -278,7 +280,7 @@ export function RunDetailScreen({
               <span className="fe-artifacts__name fe-mono">{artifact.name}</span>
               <span className="fe-artifacts__kind">{artifact.kind}</span>
               <span className="fe-artifacts__size fe-num">
-                {(artifact.sizeBytes / 1_000_000).toFixed(1)} MB
+                {formatMetric(artifact.sizeBytes / 1_000_000, 1, lang)} MB
               </span>
               {canReadArtifacts ? (
                 <a

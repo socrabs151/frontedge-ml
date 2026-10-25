@@ -13,6 +13,7 @@ import asyncio
 import importlib
 import json
 import sys
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -307,6 +308,64 @@ def _config_path(requested: str | None) -> Path:
     )
 
 
+#: The columns the built-in table knows. Any other id is a metric column from the data.
+KNOWN_COLUMNS = {
+    "actions",
+    "dataset",
+    "durationMs",
+    "gitSha",
+    "name",
+    "ribbon",
+    "startedAt",
+    "status",
+    "tags",
+}
+
+
+def _raw_config(path: Path) -> dict[str, Any]:
+    """The file as data, before validation: a duplicate is reported even when a key is wrong."""
+    try:
+        raw = path.read_bytes()
+        data = json.loads(raw) if path.suffix == ".json" else tomllib.loads(raw.decode("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _duplicate_problems(path: Path) -> list[dict[str, str]]:
+    problems: list[dict[str, str]] = []
+    data = _raw_config(path)
+    for key, label in (
+        ("actions", "action id"),
+        ("columns", "column"),
+        ("metrics", "metric id"),
+        ("eval_tabs", "tab"),
+    ):
+        items = data.get(key)
+        if not isinstance(items, list):
+            continue
+        seen: set[str] = set()
+        for index, item in enumerate(items):
+            value = item.get("id") if isinstance(item, dict) else item
+            if not isinstance(value, str) or not value:
+                continue
+            if value in seen:
+                field = f"{key}.{index}.id" if isinstance(item, dict) else f"{key}.{index}"
+                problems.append({"field": field, "message": f"duplicate {label}: {value}"})
+            seen.add(value)
+    items = data.get("run_columns")
+    if isinstance(items, list):
+        seen = set()
+        for index, value in enumerate(items):
+            if isinstance(value, str) and value in seen:
+                problems.append(
+                    {"field": f"run_columns.{index}", "message": f"duplicate column: {value}"}
+                )
+            if isinstance(value, str):
+                seen.add(value)
+    return problems
+
+
 def _config_problems(path: Path) -> list[dict[str, str]]:
     """Validate the file and return problems as {field, message} pairs."""
     try:
@@ -315,10 +374,17 @@ def _config_problems(path: Path) -> list[dict[str, str]]:
         return [{"field": "", "message": str(error)}]
     except (ValueError, ValidationError) as error:
         if isinstance(error, ValidationError):
-            return [
+            found = [
                 {"field": ".".join(str(part) for part in item["loc"]), "message": item["msg"]}
                 for item in error.errors()
             ]
+            known = {(item["field"], item["message"]) for item in found}
+            found.extend(
+                item
+                for item in _duplicate_problems(path)
+                if (item["field"], item["message"]) not in known
+            )
+            return found
         return [{"field": "", "message": str(error)}]
 
     problems: list[dict[str, str]] = []
@@ -368,6 +434,24 @@ def _config_problems(path: Path) -> list[dict[str, str]]:
             )
         seen_metrics.add(metric.id)
     return problems
+
+
+def _config_warnings(config: UiConfig) -> list[dict[str, str]]:
+    """Suspicious but legal values: an unknown column id may be a metric from the data."""
+    known = KNOWN_COLUMNS | {metric.id for metric in config.metrics}
+    warnings: list[dict[str, str]] = []
+    for index, column in enumerate(config.run_columns):
+        if column not in known:
+            warnings.append(
+                {
+                    "field": f"run_columns.{index}",
+                    "message": (
+                        f"unknown column id: {column} (it is built from the run's metrics; "
+                        "check the spelling or declare it in [[metrics]])"
+                    ),
+                }
+            )
+    return warnings
 
 
 def _describe(config_path: Path, config: UiConfig) -> str:
@@ -568,16 +652,24 @@ def _check(args: argparse.Namespace) -> int:
         return 1
 
     config = load_config_file(path)
+    warnings = _config_warnings(config)
     if args.json:
         print(
             json.dumps(
-                {"ok": True, "path": str(path), "config": config.model_dump(mode="json")},
+                {
+                    "ok": True,
+                    "path": str(path),
+                    "config": config.model_dump(mode="json"),
+                    "warnings": warnings,
+                },
                 indent=2,
                 ensure_ascii=False,
             )
         )
     else:
         print(_describe(path, config))
+        for warning in warnings:
+            print(f"warning {warning['field']}: {warning['message']}", file=sys.stderr)
     return 0
 
 

@@ -14,7 +14,7 @@ The following are **public contracts** and change only in a major release:
   `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
-## [Unreleased]
+## [0.1.0] — 2026-10-25
 
 ### Added
 
@@ -58,6 +58,19 @@ The following are **public contracts** and change only in a major release:
   in memory with missing values last. A column header sets both and resets paging to the first page.
 - The whole runs view is linkable: search, status, dataset, tag, sort, order, page and baseline
   live in the hash, so a reload or a shared link restores the filters, not just the screen.
+- Python package `frontedge`: domain model (runs, stages, metrics, artifacts, provenance,
+  evals, datasets), provider protocol, mounts ready-made screens into any FastAPI app, SSE log
+  streaming, SPA serving with runtime mount path.
+- Interface configuration in TOML or JSON: column sets, tabs and declared actions.
+- Project actions: handlers declared in code, invoked by id, results shown to the user.
+- TypeScript type generator: pydantic models to `types.ts` and a typed client, pure Python.
+- npm package `@frontedge/ui`: tokens, primitives and ML patterns, published as ESM and CJS
+  with type declarations.
+- Screens: runs list, run detail, eval diff, dataset explorer.
+- Quality gates: token contrast against WCAG 2.2, axe audit, keyboard pass, Python contract
+  tests, generated-type drift check.
+- The release workflow builds the wheel, checks that the tag matches both package versions and
+  runs the language audit before publishing.
 
 ### Changed
 
@@ -158,19 +171,21 @@ The following are **public contracts** and change only in a major release:
 - `frontedge init` loads the generated provider from the project's directory and instantiates a
   class provider (`provider = Provider()`), so the scaffold starts with `uvicorn app:app`.
 - The generated client encodes the run id in `get_run` and `stream_logs`.
-
-## [0.1.0] — 2026-10-22
-
-### Added
-
-- Python package `frontedge`: domain model (runs, stages, metrics, artifacts, provenance,
-  evals, datasets), provider protocol, mounts ready-made screens into any FastAPI app, SSE log
-  streaming, SPA serving with runtime mount path.
-- Interface configuration in TOML or JSON: column sets, tabs and declared actions.
-- Project actions: handlers declared in code, invoked by id, results shown to the user.
-- TypeScript type generator: pydantic models to `types.ts` and a typed client, pure Python.
-- npm package `@frontedge/ui`: tokens, primitives and ML patterns, published as ESM and CJS
-  with type declarations.
-- Screens: runs list, run detail, eval diff, dataset explorer.
-- Quality gates: token contrast against WCAG 2.2, axe audit, keyboard pass, Python contract
-  tests, generated-type drift check.
+- A provider's second parameter is no longer assumed to be the selection: a keyword-only switch
+  (`list_runs(request, *, include_archived=False)`) keeps the list on the fallback path instead
+  of receiving a `RunsQuery` it never expected.
+- The runs query is validated: an unknown status or sort key and a `limit` outside 1–1000 are
+  422 instead of an empty list, a silent fallback or a 500 from comparing dicts.
+- `/frontedge/index.html` goes through the same mount/title substitution as `/`, so a proxy that
+  rewrites the root to the file does not serve raw placeholders.
+- An action handler that raises is a 502 that names the action, and an action declared without
+  a handler is no longer served to the browser as a button that cannot work.
+- `frontedge check` names duplicate ids even when another key fails validation, and warns about
+  a column id that is neither built-in nor declared as a metric.
+- The generated client takes `credentials` and `headers`, so a cookie session, a CSRF token or
+  an API key reaches every call including the log stream; `docs/integration.md` shows the CORS
+  setup a separate origin needs.
+- `changed=true` with no baseline no longer counts every example as changed.
+- The Russian interface formats numbers with a comma decimal separator, and the three column
+  headers that were hardcoded English now go through the dictionary; the language audit also
+  catches a literal `header: "..."`.

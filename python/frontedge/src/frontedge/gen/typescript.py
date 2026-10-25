@@ -161,6 +161,10 @@ import type {{
 export interface FrontedgeClientOptions {{
   basePath?: string;
   fetch?: typeof globalThis.fetch;
+  /** Cookies or HTTP auth for a host that serves the API behind a session. */
+  credentials?: RequestCredentials;
+  /** Headers for every request, e.g. a CSRF token or an API key. */
+  headers?: Record<string, string>;
 }}
 
 export interface RunsQuery {{
@@ -210,6 +214,16 @@ export function createClient(options: FrontedgeClientOptions = {{
 }}) {{
   const basePath = options.basePath ?? "{base_path}";
   const doFetch = options.fetch ?? globalThis.fetch.bind(globalThis);
+  // One place for the host's credentials and headers: every call, including the SSE stream.
+  const request = (input: RequestInfo | URL, init: RequestInit = {{}}): Promise<Response> =>
+    doFetch(input, {{
+      credentials: options.credentials,
+      ...init,
+      headers: {{
+        ...(options.headers ?? {{}}),
+        ...(init.headers as Record<string, string> | undefined),
+      }},
+    }});
 
   // The server explains a provider mistake in `detail`; show that instead of a bare status.
   async function failure(response: Response, path: string): Promise<Error> {{
@@ -223,7 +237,7 @@ export function createClient(options: FrontedgeClientOptions = {{
   }}
 
   async function json<T>(path: string): Promise<T> {{
-    const response = await doFetch(`${{basePath}}${{path}}`, {{
+    const response = await request(`${{basePath}}${{path}}`, {{
       headers: {{ accept: "application/json" }},
     }});
     if (!response.ok) {{
@@ -233,7 +247,7 @@ export function createClient(options: FrontedgeClientOptions = {{
   }}
 
   async function send<T>(path: string, payload: unknown): Promise<T> {{
-    const response = await doFetch(`${{basePath}}${{path}}`, {{
+    const response = await request(`${{basePath}}${{path}}`, {{
       method: "POST",
       headers: {{ accept: "application/json", "content-type": "application/json" }},
       body: JSON.stringify(payload),
@@ -256,7 +270,7 @@ export function createClient(options: FrontedgeClientOptions = {{
       if (query.sort) params.set("sort", query.sort);
       if (query.order) params.set("order", query.order);
       const search = params.toString();
-      const response = await doFetch(`${{basePath}}/runs${{search ? `?${{search}}` : ""}}`, {{
+      const response = await request(`${{basePath}}/runs${{search ? `?${{search}}` : ""}}`, {{
         headers: {{ accept: "application/json" }},
       }});
       if (!response.ok) {{
@@ -283,7 +297,7 @@ export function createClient(options: FrontedgeClientOptions = {{
       if (query.changed) params.set("changed", "true");
       const search = params.toString();
       const path = `/runs/${{encodeURIComponent(runId)}}/examples${{search ? `?${{search}}` : ""}}`;
-      const response = await doFetch(`${{basePath}}${{path}}`, {{
+      const response = await request(`${{basePath}}${{path}}`, {{
         headers: {{ accept: "application/json" }},
       }});
       if (!response.ok) {{
@@ -304,7 +318,7 @@ export function createClient(options: FrontedgeClientOptions = {{
       const search = params.toString();
       const path =
         `/datasets/${{encodeURIComponent(datasetId)}}/examples${{search ? `?${{search}}` : ""}}`;
-      const response = await doFetch(`${{basePath}}${{path}}`, {{
+      const response = await request(`${{basePath}}${{path}}`, {{
         headers: {{ accept: "application/json" }},
       }});
       if (!response.ok) {{
@@ -330,7 +344,7 @@ export function createClient(options: FrontedgeClientOptions = {{
       send<ActionResult>(`/actions/${{encodeURIComponent(actionId)}}`, payload),
     meta: () => json<FrontedgeMeta>("/meta"),
     async *streamLogs(runId: string): AsyncGenerator<LogLine> {{
-      const response = await doFetch(
+      const response = await request(
         `${{basePath}}/runs/${{encodeURIComponent(runId)}}/logs/stream`,
         {{ headers: {{ accept: "text/event-stream" }} }},
       );

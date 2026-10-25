@@ -121,7 +121,9 @@ frontedge gen --out src/generated
 ```
 
 The package re-exports the generated types and a typed client (`createClient`, with
-`basePath` defaulting to `/frontedge/api`).
+`basePath` defaulting to `/frontedge/api`). Its `credentials` and `headers` options cover a
+cookie session, a CSRF token or an API key; a separate origin needs CORS on the host — see
+`docs/integration.md` §7 for the `CORSMiddleware` setup.
 
 ## Notes
 
