@@ -22,6 +22,9 @@ The following are **public contracts** and change only in a major release:
   query)` and `list_dataset_examples(request, dataset_id, query)` take `ExamplesQuery` and return
   `ExamplesPage` / `DatasetExamplesPage` with the total, so a page no longer materialises the
   corpus. A provider without the query keeps the in-memory fallback.
+- Multi-run comparison: a **Compare** mode in the runs list selects 2–4 runs (Space or Enter
+  toggles a row), `#/compare?runs=…` is linkable, the metrics are overlaid on a shared axis with
+  the run names in the legend, and the config matrix marks every parameter that differs.
 - `Run.params`: a JSON object with the run configuration. The run detail has a **Config** tab;
   with a baseline it becomes a diff where every row says `changed`, `added` or `removed`, and
   nested objects render as JSON.

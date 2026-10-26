@@ -58,6 +58,13 @@ export const en = {
   "config.empty": "No parameters reported",
   "config.emptyHint": "The provider can fill Run.params with the run configuration.",
 
+  "compare.select": "Select for comparison",
+  "compare.selected": "selected for comparison",
+  "compare.differs": "differs",
+  "compare.change": "Change",
+  "compare.noDifferences": "No differences",
+  "compare.chartLabel": "{label} across {runs}",
+
   "menu.columns": "Columns",
   "menu.hidden": "hidden",
   "menu.resetWidths": "Reset column widths",
@@ -143,6 +150,13 @@ export const ru: Dictionary = {
   "config.removed": "убран",
   "config.empty": "Параметры не переданы",
   "config.emptyHint": "Провайдер может заполнить Run.params конфигурацией прогона.",
+
+  "compare.select": "Выбрать для сравнения",
+  "compare.selected": "выбрано для сравнения",
+  "compare.differs": "различается",
+  "compare.change": "Изменение",
+  "compare.noDifferences": "Различий нет",
+  "compare.chartLabel": "{label} для {runs}",
 
   "menu.columns": "Колонки",
   "menu.hidden": "скрыто",

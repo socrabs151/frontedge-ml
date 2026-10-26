@@ -436,7 +436,8 @@
   background: var(--fe-surface-hover);
 }
 
-.fe-table__row[aria-selected="true"] .fe-table__td {
+.fe-table__row[aria-selected="true"] .fe-table__td,
+.fe-table__row--baseline .fe-table__td {
   background: var(--fe-surface-selected);
 }
 
@@ -487,8 +488,25 @@
 }
 
 /* The baseline row carries a reference edge, a shape rather than a colour alone. */
-.fe-table__row[aria-selected="true"] .fe-table__td:first-child {
+.fe-table__row--baseline .fe-table__td:first-child {
   box-shadow: inset 2px 0 0 var(--fe-accent);
+}
+
+.fe-compare-check {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--fe-border-input);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--fe-accent-text);
+}
+
+.fe-compare-check--on {
+  background: var(--fe-accent);
+  border-color: var(--fe-accent);
 }
 
 /* --- Config --------------------------------------------------------- */
@@ -707,6 +725,22 @@
   color: var(--fe-text-muted);
   font-family: var(--fe-font-mono);
   font-size: var(--fe-text-11);
+}
+
+.fe-chart__title {
+  margin-right: var(--fe-space-1);
+  color: var(--fe-text-primary);
+  font-weight: var(--fe-weight-medium);
+}
+
+.fe-chart__value {
+  color: var(--fe-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.fe-chart__tip-name {
+  margin-right: auto;
+  color: var(--fe-text-tertiary);
 }
 
 .fe-chart__tip-row {

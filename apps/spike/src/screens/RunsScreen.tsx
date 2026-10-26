@@ -8,7 +8,7 @@ import {
   type ColumnOption,
   type VisibilityState,
 } from "@frontedge-ml/ui";
-import { Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
+import { GitCompare, Inbox, RefreshCw, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Run, RunOption, RunStatus, SortingState, UiConfig } from "@frontedge-ml/ui";
 import { useAppT } from "../i18n";
@@ -63,6 +63,7 @@ export interface RunsScreenProps {
   /** The runs the baseline picker offers: the whole project, not just the page. */
   runChoices: RunOption[];
   onOpenRun: (run: Run) => void;
+  onCompare: (ids: string[]) => void;
 }
 
 export function RunsScreen({
@@ -87,7 +88,16 @@ export function RunsScreen({
   onColumnSizingChange,
   runChoices,
   onOpenRun,
+  onCompare,
 }: RunsScreenProps) {
+  const [comparing, setComparing] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const toggleCompare = (run: Run) => {
+    setSelected((previous) => {
+      if (previous.includes(run.id)) return previous.filter((id) => id !== run.id);
+      return previous.length >= 4 ? previous : [...previous, run.id];
+    });
+  };
   const t = useAppT();
   const [search, setSearch] = useState(query.search ?? "");
   const pageSize = config?.pageSize ?? 50;
@@ -174,6 +184,17 @@ export function RunsScreen({
             />
           </label>
           <Button
+            variant={comparing ? "secondary" : "ghost"}
+            size="sm"
+            icon={<GitCompare size={13} aria-hidden />}
+            onClick={() => {
+              setComparing((value) => !value);
+              setSelected([]);
+            }}
+          >
+            {t("compare.action")}
+          </Button>
+          <Button
             variant="ghost"
             size="sm"
             icon={<RefreshCw size={13} aria-hidden />}
@@ -192,6 +213,33 @@ export function RunsScreen({
           </Button>
         </div>
       </header>
+
+      {comparing ? (
+        <div className="fe-comparebar">
+          <span className="fe-note fe-note--inline">{t("compare.select")}</span>
+          <span className="fe-note fe-note--inline">{t("compare.limit")}</span>
+          <div className="fe-toolbar__spacer" />
+          <span className="fe-num">{t("compare.selectedCount", { count: selected.length })}</span>
+          <Button
+            size="sm"
+            variant="primary"
+            disabled={selected.length < 2}
+            onClick={() => onCompare(selected)}
+          >
+            {t("compare.action")}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setComparing(false);
+              setSelected([]);
+            }}
+          >
+            {t("compare.cancel")}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="fe-toolbar">
         <Search
@@ -339,6 +387,9 @@ export function RunsScreen({
             onColumnSizingChange={onColumnSizingChange}
             sorting={sorting}
             onSortingChange={onSortingChange}
+            comparing={comparing}
+            selectedIds={selected}
+            onToggleCompare={toggleCompare}
           />
           {total > runs.length || offset > 0 ? (
             <div className="fe-toolbar fe-toolbar--pagination">

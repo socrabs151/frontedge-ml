@@ -11,7 +11,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronsUpDown } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import clsx from "clsx";
 import { StatusBadge } from "../components/StatusBadge";
@@ -62,6 +62,10 @@ export interface RunsTableProps {
   /** Widths picked by the user. Omit to keep them in the table's own state. */
   columnSizing?: ColumnSizingState;
   onColumnSizingChange?: (sizing: ColumnSizingState) => void;
+  /** Compare mode: a click or Enter toggles the run instead of opening it. */
+  comparing?: boolean;
+  selectedIds?: string[];
+  onToggleCompare?: (run: Run) => void;
 }
 
 const KNOWN_COLUMNS = [
@@ -108,6 +112,9 @@ export function RunsTable({
   resizable = true,
   columnSizing,
   onColumnSizingChange,
+  comparing = false,
+  selectedIds = [],
+  onToggleCompare,
 }: RunsTableProps) {
   const { t, lang } = useI18n();
   const [ownSorting, setOwnSorting] = useState<SortingState>([
@@ -143,6 +150,24 @@ export function RunsTable({
         size: 126,
         cell: (info) => (
           <span className="fe-run-name" title={info.getValue()}>
+            {comparing ? (
+              <>
+                <span
+                  className={clsx(
+                    "fe-compare-check",
+                    selectedIds.includes(info.row.original.id) && "fe-compare-check--on",
+                  )}
+                  aria-hidden
+                >
+                  {selectedIds.includes(info.row.original.id) ? (
+                    <Check size={11} strokeWidth={3} />
+                  ) : null}
+                </span>
+                {selectedIds.includes(info.row.original.id) ? (
+                  <span className="sr-only">{t("compare.selected")}</span>
+                ) : null}
+              </>
+            ) : null}
             <span className="fe-run-name__dot" aria-hidden />
             <span className="fe-mono fe-run-name__text">{info.getValue()}</span>
             {info.row.original.id === baselineId ? (
@@ -370,11 +395,13 @@ export function RunsTable({
     baselineId,
     columnIds,
     columnSpecs,
+    comparing,
     lang,
     metricSpecs,
     now,
     resizable,
     rowActions,
+    selectedIds,
   ]);
 
   const table = useReactTable({
@@ -436,10 +463,14 @@ export function RunsTable({
         focusRow(index - 10);
         break;
       case "Enter":
-      case " ":
+      case " ": {
         event.preventDefault();
-        onOpenRun(rows[index]?.original as Run);
+        const run = rows[index]?.original;
+        if (!run) break;
+        if (comparing && onToggleCompare) onToggleCompare(run);
+        else onOpenRun(run);
         break;
+      }
       default:
         break;
     }
@@ -547,12 +578,20 @@ export function RunsTable({
                 <tr
                   key={row.id}
                   data-row-index={virtualRow.index}
-                  className="fe-table__row"
+                  className={clsx(
+                    "fe-table__row",
+                    run.id === baselineId && "fe-table__row--baseline",
+                  )}
                   tabIndex={virtualRow.index === activeRowIndex ? 0 : -1}
-                  aria-selected={run.id === baselineId}
+                  aria-selected={
+                    comparing ? selectedIds.includes(run.id) : undefined
+                  }
                   title={run.error ?? undefined}
                   onFocus={() => setActiveRowIndex(virtualRow.index)}
-                  onClick={() => onOpenRun(run)}
+                  onClick={() => {
+                    if (comparing && onToggleCompare) onToggleCompare(run);
+                    else onOpenRun(run);
+                  }}
                   onKeyDown={(event) => onRowKeyDown(event, virtualRow.index)}
                 >
                   {row.getVisibleCells().map((cell) => (

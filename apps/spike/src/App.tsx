@@ -20,13 +20,19 @@ import { I18nProvider, Segmented, TooltipProvider, useI18n } from "@frontedge-ml
 import { errorMessage, source, type RunsQuery } from "./data/source";
 import { useAppT } from "./i18n";
 import { RunsScreen } from "./screens/RunsScreen";
+import { CompareScreen } from "./screens/CompareScreen";
 import { RunDetailScreen } from "./screens/RunDetailScreen";
 import { EvalDiffScreen } from "./screens/EvalDiffScreen";
 import { DatasetScreen } from "./screens/DatasetScreen";
 
 type Theme = "light" | "dark";
 type Density = "compact" | "default" | "comfortable";
-type Route = { name: "runs" } | { name: "run"; id: string } | { name: "evals" } | { name: "datasets" };
+type Route =
+  | { name: "runs" }
+  | { name: "run"; id: string }
+  | { name: "compare"; ids: string[] }
+  | { name: "evals" }
+  | { name: "datasets" };
 
 /** Routes and the run filters live in the hash: the whole view is linkable. */
 function splitHash(hash: string): { route: Route; params: URLSearchParams } {
@@ -34,7 +40,12 @@ function splitHash(hash: string): { route: Route; params: URLSearchParams } {
   const [name, id] = path.split("/");
   let route: Route;
   if (name === "runs" && id) route = { name: "run", id: decodeURIComponent(id) };
-  else if (name === "evals") route = { name: "evals" };
+  else if (name === "compare") {
+    route = {
+      name: "compare",
+      ids: (new URLSearchParams(search).get("runs") ?? "").split(",").filter(Boolean),
+    };
+  } else if (name === "evals") route = { name: "evals" };
   else if (name === "datasets") route = { name: "datasets" };
   else route = { name: "runs" };
   return { route, params: new URLSearchParams(search) };
@@ -66,6 +77,9 @@ function paramsFromState(query: RunsQuery, baselineId?: string): URLSearchParams
 }
 
 function hashOfRoute(route: Route, params?: URLSearchParams): string {
+  if (route.name === "compare") {
+    return `#/compare?runs=${route.ids.map(encodeURIComponent).join(",")}`;
+  }
   const base =
     route.name === "run" ? `#/runs/${encodeURIComponent(route.id)}` : `#/${route.name}`;
   const search = params?.toString();
@@ -340,8 +354,16 @@ function Shell() {
             <p className="sidebar__title">{t("nav.experiments")}</p>
             <button
               type="button"
-              className={`sidebar__item${route.name === "runs" ? " sidebar__item--active" : ""}`}
-              aria-current={route.name === "runs" ? "page" : undefined}
+              className={`sidebar__item${
+                route.name === "runs" || route.name === "run" || route.name === "compare"
+                  ? " sidebar__item--active"
+                  : ""
+              }`}
+              aria-current={
+                route.name === "runs" || route.name === "run" || route.name === "compare"
+                  ? "page"
+                  : undefined
+              }
               onClick={() => setRoute({ name: "runs" })}
               title={t("nav.runs")}
             >
@@ -404,6 +426,13 @@ function Shell() {
               onColumnSizingChange={setColumnSizing}
               runChoices={runChoices}
               onOpenRun={(run) => setRoute({ name: "run", id: run.id })}
+              onCompare={(ids) => setRoute({ name: "compare", ids })}
+            />
+          ) : route.name === "compare" ? (
+            <CompareScreen
+              ids={route.ids}
+              config={config}
+              onBack={() => setRoute({ name: "runs" })}
             />
           ) : route.name === "evals" ? (
             <EvalDiffScreen runChoices={runChoices} baselineId={baseline?.id} config={config} />

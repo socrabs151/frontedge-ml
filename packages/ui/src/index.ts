@@ -27,6 +27,16 @@ export {
 export { DatasetTable, type DatasetTableProps } from "./patterns/DatasetTable";
 export { ColumnsMenu, type ColumnOption } from "./patterns/ColumnsMenu";
 export { ConfigTable, formatParam, type ConfigTableProps } from "./patterns/ConfigTable";
+export {
+  ConfigMatrix,
+  type ConfigMatrixProps,
+  type ConfigMatrixRun,
+} from "./patterns/ConfigMatrix";
+export {
+  MetricCompareChart,
+  type CompareSeries,
+  type MetricCompareChartProps,
+} from "./patterns/MetricCompareChart";
 export { ProvenanceList } from "./patterns/Provenance";
 
 export * from "./types";

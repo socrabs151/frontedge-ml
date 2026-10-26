@@ -41,7 +41,7 @@ function has(object: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(object, key);
 }
 
-function equal(left: unknown, right: unknown): boolean {
+export function equalParam(left: unknown, right: unknown): boolean {
   return stableJson(left) === stableJson(right);
 }
 
@@ -100,7 +100,7 @@ export function ConfigTable({ params, baseline, baselineName }: ConfigTableProps
             if (withBaseline) {
               if (!there) flag = "added";
               else if (!here) flag = "removed";
-              else if (!equal(values[key], reference[key])) flag = "changed";
+              else if (!equalParam(values[key], reference[key])) flag = "changed";
             }
             return (
               <tr key={key}>

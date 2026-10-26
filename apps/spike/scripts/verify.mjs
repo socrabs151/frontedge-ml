@@ -238,6 +238,25 @@ await shoot("05-run-examples-1440");
 await page.getByRole("tab", { name: /Logs/ }).click();
 await shoot("06-run-logs-1440");
 
+// compare two runs
+await page.goto(`${BASE}/#/runs`, { waitUntil: "networkidle" });
+await page.waitForSelector(".fe-table__row");
+await page.getByRole("button", { name: /^Compare$/ }).click();
+await page.locator(".fe-table__row").nth(0).click();
+await page.locator(".fe-table__row").nth(1).click();
+await page.locator(".fe-comparebar").getByRole("button", { name: /^Compare$/ }).click();
+await page.waitForSelector(".fe-compare");
+await page.waitForSelector(".fe-compare__chips");
+await shoot("08-compare-1440");
+seriousTotal += await audit("compare");
+const compareHash = await page.evaluate(() => location.hash);
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForSelector(".fe-compare__chips");
+if ((await page.evaluate(() => location.hash)) !== compareHash) {
+  layoutProblems += 1;
+  console.log("layout: the compare link did not survive a reload");
+}
+
 // 1280
 await page.setViewportSize({ width: 1280, height: 800 });
 await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
