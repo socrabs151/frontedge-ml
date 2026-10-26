@@ -204,6 +204,81 @@ class TestExamplePaging:
         assert [example["id"] for example in response.json()] == ["ex-1"]
         assert response.headers["x-frontedge-total"] == "1"
 
+    def test_a_query_provider_pages_run_examples(self) -> None:
+        seen: dict[str, Any] = {}
+
+        class Paged:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+            async def list_examples(
+                self, request: Any, run_id: str, query: frontedge.ExamplesQuery
+            ) -> frontedge.ExamplesPage:
+                seen["query"] = query
+                return frontedge.ExamplesPage(items=[make_example(id="ex-9")], total=999)
+
+        response = client_for(Paged()).get(
+            "/frontedge/api/runs/run-000/examples?offset=40&limit=5&changed=true"
+        )
+        assert response.status_code == 200
+        assert [example["id"] for example in response.json()] == ["ex-9"]
+        assert response.headers["x-frontedge-total"] == "999"
+        assert seen["query"].offset == 40
+        assert seen["query"].limit == 5
+        assert seen["query"].changed is True
+
+    def test_dataset_examples_query_provider_and_metadata_detail(self) -> None:
+        seen: dict[str, Any] = {}
+
+        class Datasets:
+            async def list_datasets(self, request: Any) -> list[Any]:
+                return []
+
+            async def get_dataset(self, request: Any, dataset_id: str) -> Any:
+                return frontedge.DatasetDetail(
+                    id=dataset_id,
+                    name="demo",
+                    version="v1",
+                    examples_count=20_000,
+                    tags=[],
+                    datasheet=[],
+                    examples=[
+                        frontedge.ExampleResult(
+                            id="ex-0", input="a", output="b", changed=False
+                        )
+                    ],
+                )
+
+            async def list_dataset_examples(
+                self, request: Any, dataset_id: str, query: frontedge.ExamplesQuery
+            ) -> frontedge.DatasetExamplesPage:
+                seen["query"] = query
+                return frontedge.DatasetExamplesPage(
+                    items=[
+                        frontedge.ExampleResult(
+                            id="ex-1", input="alpha", output="a", changed=False
+                        )
+                    ],
+                    total=20_000,
+                )
+
+        client = client_for(datasets=Datasets())
+        detail = client.get("/frontedge/api/datasets/d1").json()
+        assert detail["examples"] == []
+        assert detail["examplesCount"] == 20_000
+
+        response = client.get(
+            "/frontedge/api/datasets/d1/examples?offset=100&limit=20&search=alpha"
+        )
+        assert [example["id"] for example in response.json()] == ["ex-1"]
+        assert response.headers["x-frontedge-total"] == "20000"
+        assert seen["query"].offset == 100
+        assert seen["query"].limit == 20
+        assert seen["query"].search == "alpha"
+
     def test_dataset_examples_are_paged_and_searchable(self) -> None:
         rows = [
             frontedge.ExampleResult(id="ex-0", input="alpha", output="a", changed=False),

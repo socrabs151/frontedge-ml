@@ -20,6 +20,7 @@ from .models import (
     EvalComparison,
     EvalSummary,
     Example,
+    ExamplesQuery,
     LogLine,
     Run,
     RunsQuery,
@@ -195,6 +196,9 @@ class _ProviderAdapter:
         self.has_logs = callable(getattr(provider, "stream_logs", None))
         self.has_artifacts = callable(getattr(provider, "read_artifact", None))
         self.has_examples = callable(getattr(provider, "list_examples", None))
+        self.has_examples_query = _accepts_query_at(
+            getattr(provider, "list_examples", None), 2, ExamplesQuery
+        )
 
     async def list_runs(self, request: Request, query: Any = None) -> Any:
         if self.supports_query:
@@ -217,20 +221,23 @@ class _ProviderAdapter:
             return None
         return await reader(request, artifact_id)
 
-    async def list_examples(self, request: Request, run_id: str) -> Sequence[Example]:
+    async def list_examples(
+        self, request: Request, run_id: str, query: Any = None
+    ) -> Any:
         lister = getattr(self._provider, "list_examples", None)
         if lister is None:
             return []
+        if self.has_examples_query:
+            return await lister(request, run_id, query)
         return await lister(request, run_id)
 
 
-def _accepts_query(target: Any) -> bool:
-    """Whether the function takes the selection, ``list_runs(request, query)``.
+def _accepts_query_at(target: Any, position: int, query_model: Any) -> bool:
+    """Whether a method takes the selection at ``position`` (positional, not a switch).
 
-    Arity alone is wrong: ``list_runs(request, *, include_archived=False)`` has two
-    parameters and would be called with a ``RunsQuery`` it never expected. A query
-    parameter is recognised by name, by its ``RunsQuery`` annotation, or as the
-    second positional argument of a two-argument function (the historical shape).
+    Arity alone is wrong: ``list_runs(request, *, include_archived=False)`` would be
+    called with a query it never expected. The argument is recognised by its name, by
+    the query annotation, or as an extra positional argument (the historical shape).
     """
     import inspect
 
@@ -240,22 +247,45 @@ def _accepts_query(target: Any) -> bool:
         parameters = list(inspect.signature(target).parameters.values())
     except (TypeError, ValueError):  # pragma: no cover
         return False
-    if len(parameters) < 2:
+    if len(parameters) <= position:
         return False
-    second = parameters[1]
-    if second.kind in (second.VAR_POSITIONAL, second.VAR_KEYWORD):
+    argument = parameters[position]
+    if argument.kind in (argument.VAR_POSITIONAL, argument.VAR_KEYWORD):
         return False
-    if second.kind is second.KEYWORD_ONLY:
-        # The adapter passes the query positionally; a keyword-only switch is not the query.
+    if argument.kind is argument.KEYWORD_ONLY:
+        # The adapter passes the query positionally; a keyword-only switch is not it.
         return False
-    if second.name in {"query", "selection"}:
+    if argument.name in {"query", "selection"}:
         return True
-    annotation = second.annotation
-    if annotation is RunsQuery:
+    annotation = argument.annotation
+    if annotation is query_model:
         return True
-    if isinstance(annotation, str) and "RunsQuery" in annotation:
+    if isinstance(annotation, str) and query_model.__name__ in annotation:
         return True
     return True
+
+
+def _accepts_query(target: Any) -> bool:
+    """Whether the function takes the selection, ``list_runs(request, query)``."""
+    return _accepts_query_at(target, 1, RunsQuery)
+
+
+def provider_accepts_examples_query(provider: Any) -> bool:
+    """Whether ``list_examples`` takes ``ExamplesQuery`` and pages itself."""
+    if isinstance(provider, _ProviderAdapter):
+        return provider.has_examples_query
+    return _accepts_query_at(getattr(provider, "list_examples", None), 2, ExamplesQuery)
+
+
+def provider_has_dataset_examples(provider: Any) -> bool:
+    """Whether a dataset provider serves examples through its own paged method."""
+    return callable(getattr(provider, "list_dataset_examples", None))
+
+
+def provider_accepts_dataset_examples_query(provider: Any) -> bool:
+    return _accepts_query_at(
+        getattr(provider, "list_dataset_examples", None), 2, ExamplesQuery
+    )
 
 
 def provider_accepts_query(provider: Any) -> bool:

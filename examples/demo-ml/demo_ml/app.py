@@ -18,10 +18,13 @@ import frontedge
 from frontedge.config import ActionResult
 from frontedge.models import (
     DatasetDetail,
+    DatasetExamplesPage,
     DatasetInfo,
     EvalComparison,
     EvalSummary,
     Example,
+    ExamplesPage,
+    ExamplesQuery,
     LogLine,
     Run,
     RunsPage,
@@ -108,9 +111,23 @@ class DemoProvider:
             return None
         return f"Demo artifact {artifact_id}\n".encode("utf-8")
 
-    async def list_examples(self, request: Request, run_id: str) -> list[Example]:
+    async def list_examples(
+        self, request: Request, run_id: str, query: ExamplesQuery
+    ) -> ExamplesPage:
         """The examples of a run — the same slice for every run in the demo."""
-        return [Example.model_validate(item) for item in make_examples(24)]
+        items = [Example.model_validate(item) for item in make_examples(24)]
+        if query.changed:
+            items = [
+                example
+                for example in items
+                if example.baseline_score is not None
+                and example.score != example.baseline_score
+            ]
+        total = len(items)
+        page = items[query.offset :]
+        if query.limit is not None:
+            page = page[: query.limit]
+        return ExamplesPage(items=page, total=total)
 
 
 class DemoEvalProvider:
@@ -151,7 +168,29 @@ class DemoDatasetProvider:
         return make_datasets()
 
     async def get_dataset(self, request: Request, dataset_id: str) -> DatasetDetail | None:
-        return make_dataset_detail(dataset_id)
+        detail = make_dataset_detail(dataset_id)
+        # Examples live on their own paged endpoint: the detail stays metadata-sized.
+        return detail.model_copy(update={"examples": []}) if detail is not None else None
+
+    async def list_dataset_examples(
+        self, request: Request, dataset_id: str, query: ExamplesQuery
+    ) -> DatasetExamplesPage:
+        detail = make_dataset_detail(dataset_id)
+        if detail is None:
+            return DatasetExamplesPage(items=[], total=0)
+        items = detail.examples
+        if query.search:
+            needle = query.search.strip().lower()
+            items = [
+                example
+                for example in items
+                if needle in example.input.lower() or needle in example.output.lower()
+            ]
+        total = len(items)
+        page = items[query.offset :]
+        if query.limit is not None:
+            page = page[: query.limit]
+        return DatasetExamplesPage(items=page, total=total)
 
 
 # --- Project actions -----------------------------------------------------

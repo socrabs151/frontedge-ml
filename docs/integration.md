@@ -184,6 +184,37 @@ The list carries a **24-point sparkline** per series (the table draws a 24-pixel
 endpoint carries the full series for the charts. The provider still returns full series: the
 server downsamples them on the way out, so a page of 50 runs does not ship 50 × 60 points.
 
+### Paging examples
+
+Run examples and dataset examples have their own endpoints, and both page. A provider can take the
+page query and return the total, so the library never materialises the corpus:
+
+```python
+from frontedge.models import DatasetExamplesPage, ExamplesPage, ExamplesQuery
+
+class MyProvider:
+    async def list_examples(
+        self, request: Request, run_id: str, query: ExamplesQuery
+    ) -> ExamplesPage:
+        total, rows = await my_repository.fetch_examples(
+            run_id, offset=query.offset, limit=query.limit, changed=query.changed
+        )
+        return ExamplesPage(items=rows, total=total)
+
+class MyDatasets:
+    async def list_dataset_examples(
+        self, request: Request, dataset_id: str, query: ExamplesQuery
+    ) -> DatasetExamplesPage:
+        total, rows = await my_repository.fetch_dataset_examples(
+            dataset_id, offset=query.offset, limit=query.limit, search=query.search
+        )
+        return DatasetExamplesPage(items=rows, total=total)
+```
+
+Without the third argument, the library pages the returned sequence in memory — fine for small
+fixtures. `GET /api/datasets/{id}` is metadata only: examples come from
+`/api/datasets/{id}/examples`, so the detail response cannot grow with the dataset.
+
 ### Check the provider before the server starts
 
 ```bash

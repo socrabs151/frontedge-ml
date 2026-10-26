@@ -226,6 +226,29 @@ class ExampleResult(FrontedgeModel):
     changed: bool
 
 
+class ExamplesQuery(FrontedgeModel):
+    """A page of examples; a provider may apply it instead of the library."""
+
+    offset: int = 0
+    limit: int | None = None
+    changed: bool = False
+    search: str | None = None
+
+
+class ExamplesPage(FrontedgeModel):
+    """A page of run examples with the total count — when the provider pages itself."""
+
+    items: list[Example]
+    total: int
+
+
+class DatasetExamplesPage(FrontedgeModel):
+    """A page of dataset examples with the filtered total."""
+
+    items: list[ExampleResult]
+    total: int
+
+
 class EvalComparison(FrontedgeModel):
     """Comparison of two runs on one eval: examples as rows."""
 
@@ -285,4 +308,5 @@ class DatasetInfo(FrontedgeModel):
 
 
 class DatasetDetail(DatasetInfo):
-    examples: list[ExampleResult]
+    #: Optional for a provider that serves examples through its own paged method.
+    examples: list[ExampleResult] = Field(default_factory=list)

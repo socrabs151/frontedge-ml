@@ -8,7 +8,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import date, datetime
 from itertools import count
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
@@ -17,11 +17,14 @@ from ..config import ActionResult, UiConfig, load_config
 from ..meta import Meta, build_meta
 from ..models import (
     DatasetDetail,
+    DatasetExamplesPage,
     DatasetInfo,
     EvalComparison,
     EvalSummary,
     Example,
     ExampleResult,
+    ExamplesPage,
+    ExamplesQuery,
     LogLine,
     Run,
     RunOption,
@@ -38,7 +41,10 @@ from ..providers import (
     as_model,
     as_model_or_none,
     as_models,
+    provider_accepts_dataset_examples_query,
+    provider_accepts_examples_query,
     provider_accepts_query,
+    provider_has_dataset_examples,
     provider_has_examples,
     provider_has_logs,
     provider_reads_artifacts,
@@ -357,8 +363,8 @@ def _build_router(
         request: Request,
         response: Response,
         run_id: str,
-        offset: int = 0,
-        limit: int | None = None,
+        offset: int = Query(default=0, ge=0),
+        limit: int | None = Query(default=None, ge=1, le=MAX_PAGE_SIZE),
         changed: bool = False,
     ) -> list[Example]:
         """The examples of a run, a page at a time; the total is in X-Frontedge-Total."""
@@ -367,17 +373,31 @@ def _build_router(
         run = as_model_or_none(await source.get_run(request, run_id), Run, "get_run")
         if run is None:
             raise HTTPException(status_code=404, detail="Run not found")
-        items = as_models(await source.list_examples(request, run_id), Example, "list_examples")
-        if changed:
-            items = [
-                example
-                for example in items
-                if example.baseline_score is not None
-                and example.score != example.baseline_score
-            ]
-        response.headers["X-Frontedge-Total"] = str(len(items))
-        page = items[max(0, offset) :]
-        return page[: max(0, limit)] if limit is not None else page
+        query = ExamplesQuery(offset=offset, limit=limit, changed=changed)
+        if provider_accepts_examples_query(source):
+            result = await cast(Any, source).list_examples(request, run_id, query)
+            if isinstance(result, ExamplesPage):
+                items = as_models(result.items, Example, "list_examples")
+                total = result.total
+            else:
+                items = as_models(result, Example, "list_examples")
+                total = len(items)
+        else:
+            items = as_models(
+                await source.list_examples(request, run_id), Example, "list_examples"
+            )
+            if changed:
+                items = [
+                    example
+                    for example in items
+                    if example.baseline_score is not None
+                    and example.score != example.baseline_score
+                ]
+            total = len(items)
+            page = items[offset:]
+            items = page[:limit] if limit is not None else page
+        response.headers["X-Frontedge-Total"] = str(total)
+        return items
 
     @router.get(
         "/api/runs/{run_id}/logs/stream",
@@ -506,7 +526,8 @@ def _build_router(
         )
         if result is None:
             raise HTTPException(status_code=404, detail="Dataset not found")
-        return result
+        # The examples have their own paged endpoint: a detail response stays metadata-sized.
+        return result.model_copy(update={"examples": []})
 
     @router.get(
         "/api/datasets/{dataset_id}/examples",
@@ -518,19 +539,41 @@ def _build_router(
         request: Request,
         response: Response,
         dataset_id: str,
-        offset: int = 0,
-        limit: int | None = None,
+        offset: int = Query(default=0, ge=0),
+        limit: int | None = Query(default=None, ge=1, le=MAX_PAGE_SIZE),
         search: str | None = None,
     ) -> list[ExampleResult]:
         """A page of the dataset examples; X-Frontedge-Total carries the filtered total."""
         if datasets is None:
             return []
+        query = ExamplesQuery(offset=offset, limit=limit, search=search)
+        provider = cast(Any, datasets)
+        if provider_has_dataset_examples(datasets) and provider_accepts_dataset_examples_query(
+            datasets
+        ):
+            result = await provider.list_dataset_examples(request, dataset_id, query)
+            if isinstance(result, DatasetExamplesPage):
+                items = as_models(result.items, ExampleResult, "list_dataset_examples")
+                total = result.total
+            else:
+                items = as_models(result, ExampleResult, "list_dataset_examples")
+                total = len(items)
+            response.headers["X-Frontedge-Total"] = str(total)
+            return items
+
         detail = as_model_or_none(
             await datasets.get_dataset(request, dataset_id), DatasetDetail, "get_dataset"
         )
         if detail is None:
             raise HTTPException(status_code=404, detail="Dataset not found")
-        items = as_models(detail.examples, ExampleResult, "get_dataset")
+        if provider_has_dataset_examples(datasets):
+            items = as_models(
+                await provider.list_dataset_examples(request, dataset_id),
+                ExampleResult,
+                "list_dataset_examples",
+            )
+        else:
+            items = as_models(detail.examples, ExampleResult, "get_dataset")
         if search:
             needle = search.strip().lower()
             items = [
@@ -539,8 +582,8 @@ def _build_router(
                 if needle in example.input.lower() or needle in example.output.lower()
             ]
         response.headers["X-Frontedge-Total"] = str(len(items))
-        page = items[max(0, offset) :]
-        return page[: max(0, limit)] if limit is not None else page
+        page = items[offset:]
+        return page[:limit] if limit is not None else page
 
     # --- Metadata and interface -------------------------------------------
 

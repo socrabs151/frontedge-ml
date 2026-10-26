@@ -133,7 +133,7 @@ export interface DatasetDetail {
   tags: string[];
   datasheet: ProvenanceEntry[];
   provenance?: ProvenanceEntry[];
-  examples: ExampleResult[];
+  examples?: ExampleResult[];
 }
 export interface ActionSpec {
   id: string;

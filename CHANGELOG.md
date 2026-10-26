@@ -14,6 +14,21 @@ The following are **public contracts** and change only in a major release:
   `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
+## [Unreleased]
+
+### Added
+
+- Provider-side paging for run examples and dataset examples: `list_examples(request, run_id,
+  query)` and `list_dataset_examples(request, dataset_id, query)` take `ExamplesQuery` and return
+  `ExamplesPage` / `DatasetExamplesPage` with the total, so a page no longer materialises the
+  corpus. A provider without the query keeps the in-memory fallback.
+
+### Changed
+
+- `GET /api/datasets/{id}` is metadata only: the examples live on `/api/datasets/{id}/examples`.
+  The detail response no longer carries the full example list, and `DatasetDetail.examples`
+  defaults to empty.
+
 ## [0.1.1] — 2026-10-25
 
 ### Changed
