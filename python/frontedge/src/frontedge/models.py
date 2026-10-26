@@ -160,6 +160,8 @@ class Run(FrontedgeModel):
     #: Free labels of the project ("production", "nightly"): filtered by, shown as chips.
     tags: list[str] = Field(default_factory=list)
     seed: int | None = None
+    #: The run configuration (learning rate, batch size, ...): JSON values, shown in Config.
+    params: dict[str, Any] = Field(default_factory=dict)
     error: str | None = Field(default=None, json_schema_extra=role("text"))
     exit_code: int | None = None
     metrics: dict[str, float] = Field(json_schema_extra=role("metric"))

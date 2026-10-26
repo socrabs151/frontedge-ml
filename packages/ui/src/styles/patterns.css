@@ -491,6 +491,62 @@
   box-shadow: inset 2px 0 0 var(--fe-accent);
 }
 
+/* --- Config --------------------------------------------------------- */
+
+.fe-config {
+  overflow: auto;
+}
+
+.fe-config__table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.fe-config__table th {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--fe-border);
+  color: var(--fe-text-tertiary);
+  font-size: var(--fe-text-12);
+  font-weight: var(--fe-weight-medium);
+  text-align: left;
+  vertical-align: bottom;
+}
+
+.fe-config__table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--fe-border);
+  color: var(--fe-text-secondary);
+  font-size: var(--fe-text-13);
+  vertical-align: top;
+}
+
+.fe-config__param {
+  white-space: nowrap;
+}
+
+.fe-config__value {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.fe-config__flag {
+  font-size: var(--fe-text-11);
+  font-weight: var(--fe-weight-medium);
+}
+
+.fe-config__flag--changed {
+  color: var(--fe-accent);
+}
+
+.fe-config__flag--added {
+  color: var(--fe-data-series-1);
+}
+
+.fe-config__flag--removed {
+  color: var(--fe-data-series-2);
+}
+
 /* --- Logs ----------------------------------------------------------- */
 
 .fe-logs {

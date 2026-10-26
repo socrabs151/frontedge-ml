@@ -22,6 +22,9 @@ The following are **public contracts** and change only in a major release:
   query)` and `list_dataset_examples(request, dataset_id, query)` take `ExamplesQuery` and return
   `ExamplesPage` / `DatasetExamplesPage` with the total, so a page no longer materialises the
   corpus. A provider without the query keeps the in-memory fallback.
+- `Run.params`: a JSON object with the run configuration. The run detail has a **Config** tab;
+  with a baseline it becomes a diff where every row says `changed`, `added` or `removed`, and
+  nested objects render as JSON.
 - Artifact streaming: `stream_artifact(request, artifact_id, start, end)` and
   `artifact_meta(request, artifact_id)` let the content endpoint send a 206 `Range`, a `HEAD`,
   `ETag` / `If-None-Match` and `Last-Modified` / `If-Modified-Since` without buffering the file.

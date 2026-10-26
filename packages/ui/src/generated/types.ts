@@ -44,6 +44,7 @@ export interface Run {
   owner?: string;
   tags?: string[];
   seed?: number | null;
+  params?: Record<string, unknown>;
   error?: string | null;
   exitCode?: number | null;
   metrics: Record<string, number>;

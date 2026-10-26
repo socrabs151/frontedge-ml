@@ -83,7 +83,7 @@ const dictionaries = [
  */
 const SAME_VALUE_ALLOWED = new Set([
   "Accuracy", "Baseline", "CSV", "Datasheet", "Dataset", "Example", "F1", "Git", "Loss",
-  "Provenance", "Reference", "Run", "Runs", "Score", "Seed", "Tokens", "Eval", "Evals",
+  "Config", "Provenance", "Reference", "Run", "Runs", "Score", "Seed", "Tokens", "Eval", "Evals",
   "Datasets", "EN", "RU", "id", "text", "live", "baseline", "mock", "API",
   "reference", "run", "Examples", "Artifacts", "Eval diff", "Evaluation",
 ]);

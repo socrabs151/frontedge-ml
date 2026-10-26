@@ -124,6 +124,11 @@ reach the client as `error` and `exitCode`.
 `dataset`, `git_sha`, `owner`, `started_at` and `duration_ms` may be omitted: they default to an
 empty value and the interface shows an en dash — a queued run has no time yet.
 
+`Run.params` is optional: a JSON object with the configuration (learning rate, batch size,
+optimizer, a nested scheduler, and so on). The run detail has a **Config** tab; with a baseline
+selected the tab is a diff and every row says `changed`, `added` or `removed` next to the two
+values. The values are project data — the library shows what the provider sends.
+
 `Stage.name` is a plain string: `prepare`, `train`, `eval` and `publish` are the canonical names,
 but a project keeps `tokenize`, `embed` or `deploy`. Only the status set is closed. `kind` of an artifact and `level` of a log line are plain strings, so a project
 keeps its own kinds (`model`, `config`) and levels (`debug`, `trace`); an unknown log level is

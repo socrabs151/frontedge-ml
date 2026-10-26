@@ -166,6 +166,20 @@ def make_runs(count: int = 200) -> list[Run]:
                 owner=OWNERS[index % len(OWNERS)],
                 tags=tags,
                 seed=1000 + index * 7,
+                params={
+                    "learning_rate": [3e-4, 1e-4, 5e-5, 2e-4][index % 4],
+                    "batch_size": [128, 256, 512][index % 3],
+                    "epochs": [4, 8, 12][index % 3],
+                    "optimizer": ["adamw", "adafactor", "sgd"][index % 3],
+                    "warmup_steps": 500 + (index % 5) * 250,
+                    "weight_decay": round(0.01 + (index % 4) * 0.01, 2),
+                    "dropout": round(0.05 + (index % 3) * 0.05, 2),
+                    "fp16": index % 2 == 0,
+                    "scheduler": {
+                        "name": "cosine",
+                        "min_lr": 1e-6,
+                    },
+                },
                 metrics={
                     "accuracy": round(accuracy, 4),
                     "loss": round(loss, 4),

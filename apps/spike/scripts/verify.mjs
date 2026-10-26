@@ -229,6 +229,10 @@ seriousTotal += await audit("run detail dark");
 
 // detail tabs
 await page.getByRole("button", { name: /light theme/i }).click();
+await page.getByRole("tab", { name: /Config/ }).click();
+await page.waitForSelector(".fe-config__table");
+await shoot("05a-run-config-1440");
+seriousTotal += await audit("run config light");
 await page.getByRole("tab", { name: /Examples/ }).click();
 await shoot("05-run-examples-1440");
 await page.getByRole("tab", { name: /Logs/ }).click();

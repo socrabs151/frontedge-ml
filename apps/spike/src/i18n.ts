@@ -44,6 +44,7 @@ const en = {
 
   "detail.back": "Runs",
   "detail.metrics": "Metrics",
+  "detail.config": "Config",
   "detail.examples": "Examples",
   "detail.logs": "Logs",
   "detail.artifacts": "Artifacts",
@@ -142,6 +143,7 @@ const ru: Record<AppStringKey, string> = {
 
   "detail.back": "Runs",
   "detail.metrics": "Метрики",
+  "detail.config": "Config",
   "detail.examples": "Examples",
   "detail.logs": "Логи",
   "detail.artifacts": "Artifacts",

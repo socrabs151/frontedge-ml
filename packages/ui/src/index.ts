@@ -26,6 +26,7 @@ export {
 } from "./patterns/EvalCompareTable";
 export { DatasetTable, type DatasetTableProps } from "./patterns/DatasetTable";
 export { ColumnsMenu, type ColumnOption } from "./patterns/ColumnsMenu";
+export { ConfigTable, formatParam, type ConfigTableProps } from "./patterns/ConfigTable";
 export { ProvenanceList } from "./patterns/Provenance";
 
 export * from "./types";

@@ -1,5 +1,6 @@
 import {
   Button,
+  ConfigTable,
   EMPTY,
   EmptyState,
   ExamplesTable,
@@ -225,6 +226,17 @@ export function RunDetailScreen({
 
           <p className="fe-note">{t("detail.seedsNote")}</p>
         </div>
+      ),
+    },
+    {
+      value: "config",
+      label: t("detail.config"),
+      content: (
+        <ConfigTable
+          params={run.params ?? {}}
+          baseline={baseline?.params}
+          baselineName={baseline?.name}
+        />
       ),
     },
     {

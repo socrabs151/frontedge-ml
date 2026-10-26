@@ -607,6 +607,29 @@ class TestHttp:
         assert len(response.json()) == 1
         assert response.headers["X-Frontedge-Total"] == "1"
 
+    def test_run_params_reach_the_client(self) -> None:
+        run = make_run(
+            params={
+                "learning_rate": 1e-4,
+                "batch_size": 256,
+                "fp16": True,
+                "scheduler": {"name": "cosine"},
+            }
+        )
+
+        class Params:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [run]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return run
+
+        client = client_for(Params())
+        detail = client.get("/frontedge/api/runs/run-000").json()
+        assert detail["params"]["batch_size"] == 256
+        assert detail["params"]["scheduler"] == {"name": "cosine"}
+        assert client.get("/frontedge/api/runs").json()[0]["params"]["fp16"] is True
+
     def test_runs_filter_by_status(self) -> None:
         payload = client_for().get("/frontedge/api/runs?status=succeeded").json()
         assert all(run["status"] == "succeeded" for run in payload)
