@@ -202,7 +202,7 @@ uv run --package frontedge frontedge check examples/demo-ml/frontedge.toml
 
 ## Статус
 
-0.1.0 опубликован на PyPI (`frontedge`) и npm (`@frontedge-ml/ui`). Экраны, дизайн-система,
+Пакеты опубликованы на PyPI (`frontedge`) и npm (`@frontedge-ml/ui`). Экраны, дизайн-система,
 Python-пакет и генератор типов закрыты гейтами; следующий шаг — масштаб на стороне провайдера
 (пагинация примеров, стриминг артефактов) и конфигурация прогона.
 

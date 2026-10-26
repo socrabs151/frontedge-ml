@@ -1,7 +1,9 @@
 name: Release
 
-# Publish on a tag: git tag v0.1.0 && git push origin v0.1.0
-# Required repository secrets: PYPI_API_TOKEN, NPM_TOKEN.
+# Publish on a tag: git tag v0.1.1 && git push origin v0.1.1
+# Both registries authenticate through Trusted Publishing (OIDC), with no long-lived tokens:
+#   npm  — package Settings → Trusted Publisher (GitHub Actions, release.yml, npm publish);
+#   PyPI — project → Publishing → GitHub (release.yml).
 
 on:
   push:
@@ -44,6 +46,9 @@ jobs:
   publish-npm:
     needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -52,17 +57,21 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
           cache: pnpm
+      # Trusted publishing needs npm 11.5.1+; Node 22 still bundles npm 10.
+      - run: npm install -g npm@latest
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @frontedge-ml/ui build
-      - run: pnpm --filter @frontedge-ml/ui publish --access public --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish to npm
+        run: npm publish --access public
+        working-directory: packages/ui
 
   publish-pypi:
     needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -82,6 +91,4 @@ jobs:
       - name: Build the wheel
         run: uv build --package frontedge
       - name: Publish to PyPI
-        run: uv publish dist/*.whl dist/*.tar.gz
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: uv publish dist/*.whl dist/*.tar.gz --trusted-publishing always

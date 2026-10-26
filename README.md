@@ -202,9 +202,9 @@ Design document: [docs/specs/2026-10-20-frontedge-design.md](docs/specs/2026-10-
 
 ## Status
 
-0.1.0 is published on PyPI (`frontedge`) and npm (`@frontedge-ml/ui`). The screens, the design
-system, the Python package and the type generator are covered by gates; the next step is the
-provider-side scale work (pagination of examples, streaming artifacts) and run configuration.
+The packages are published on PyPI (`frontedge`) and npm (`@frontedge-ml/ui`). The screens, the
+design system, the Python package and the type generator are covered by gates; the next step is
+the provider-side scale work (pagination of examples, streaming artifacts) and run configuration.
 
 ## License
 

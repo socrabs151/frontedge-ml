@@ -14,6 +14,15 @@ The following are **public contracts** and change only in a major release:
   `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
+## [0.1.1] — 2026-10-25
+
+### Changed
+
+- The install instructions point at PyPI and npm now that the packages are published; a source
+  checkout stays the development path.
+- Releases publish through Trusted Publishing (OIDC): npm adds provenance automatically and
+  neither registry needs a long-lived token in the repository.
+
 ## [0.1.0] — 2026-10-25
 
 ### Added
