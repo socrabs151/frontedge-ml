@@ -720,6 +720,106 @@ class TestHttp:
         assert '"' not in header.removeprefix('attachment; filename="').removesuffix('"')
         assert "\r" not in header and "\n" not in header
 
+    def test_bytes_artifact_supports_ranges_and_revalidation(self) -> None:
+        class WithArtifacts:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+            async def read_artifact(self, request: Any, artifact_id: str) -> bytes:
+                return b"0123456789"
+
+        app = FastAPI()
+        app.include_router(frontedge.mount(WithArtifacts()))
+        client = TestClient(app)
+        path = "/frontedge/api/artifacts/art-1/content"
+
+        full = client.get(path)
+        assert full.status_code == 200
+        assert full.content == b"0123456789"
+        assert full.headers["accept-ranges"] == "bytes"
+        assert full.headers["content-length"] == "10"
+        assert full.headers["etag"].startswith('"')
+
+        part = client.get(path, headers={"Range": "bytes=2-5"})
+        assert part.status_code == 206
+        assert part.content == b"2345"
+        assert part.headers["content-range"] == "bytes 2-5/10"
+        assert part.headers["content-length"] == "4"
+
+        assert client.get(path, headers={"Range": "bytes=-3"}).content == b"789"
+        assert client.get(path, headers={"Range": "bytes=8-"}).content == b"89"
+
+        beyond = client.get(path, headers={"Range": "bytes=20-"})
+        assert beyond.status_code == 416
+        assert beyond.headers["content-range"] == "bytes */10"
+
+        cached = client.get(path, headers={"If-None-Match": full.headers["etag"]})
+        assert cached.status_code == 304
+
+        head = client.head(path)
+        assert head.status_code == 200
+        assert head.content == b""
+        assert head.headers["content-length"] == "10"
+
+    def test_streamed_artifact_gets_the_range_and_the_meta(self) -> None:
+        seen: dict[str, Any] = {}
+
+        class Streaming:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return make_run()
+
+            async def artifact_meta(
+                self, request: Any, artifact_id: str
+            ) -> frontedge.ArtifactMeta | None:
+                if artifact_id != "art-1":
+                    return None
+                return frontedge.ArtifactMeta(
+                    size=10,
+                    filename="model.bin",
+                    media_type="text/plain",
+                    etag="v1",
+                    last_modified=datetime(2026, 1, 1, tzinfo=UTC),
+                )
+
+            async def stream_artifact(
+                self,
+                request: Any,
+                artifact_id: str,
+                start: int = 0,
+                end: int | None = None,
+            ) -> Any:
+                seen["range"] = (start, end)
+
+                async def chunks() -> Any:
+                    yield b"0123456789"[start:end]
+
+                return chunks()
+
+        app = FastAPI()
+        app.include_router(frontedge.mount(Streaming()))
+        client = TestClient(app)
+        path = "/frontedge/api/artifacts/art-1/content"
+
+        response = client.get(path, headers={"Range": "bytes=2-5"})
+        assert response.status_code == 206
+        assert response.content == b"2345"
+        assert seen["range"] == (2, 6)
+        assert response.headers["etag"] == '"v1"'
+        assert response.headers["content-type"].startswith("text/plain")
+        assert "model.bin" in response.headers["content-disposition"]
+        assert response.headers["last-modified"].endswith("GMT")
+
+        full = client.get(path)
+        assert full.status_code == 200
+        assert full.content == b"0123456789"
+        assert seen["range"] == (0, 10)
+
     def test_error_reason_reaches_the_client(self) -> None:
         failed = make_run(status=RunStatus.failed, error="CUDA out of memory", exit_code=1)
 

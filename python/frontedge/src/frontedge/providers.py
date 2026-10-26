@@ -15,6 +15,7 @@ from fastapi import Request
 from pydantic import BaseModel, ValidationError
 
 from .models import (
+    ArtifactMeta,
     DatasetDetail,
     DatasetInfo,
     EvalComparison,
@@ -194,7 +195,14 @@ class _ProviderAdapter:
         self._provider = provider
         self.supports_query = _accepts_query(getattr(provider, "list_runs", None))
         self.has_logs = callable(getattr(provider, "stream_logs", None))
-        self.has_artifacts = callable(getattr(provider, "read_artifact", None))
+        self.has_artifact_meta = callable(getattr(provider, "artifact_meta", None))
+        self.has_artifact_stream = callable(getattr(provider, "stream_artifact", None))
+        self.has_artifact_range = _accepts_artifact_range(
+            getattr(provider, "stream_artifact", None)
+        )
+        self.has_artifacts = (
+            callable(getattr(provider, "read_artifact", None)) or self.has_artifact_stream
+        )
         self.has_examples = callable(getattr(provider, "list_examples", None))
         self.has_examples_query = _accepts_query_at(
             getattr(provider, "list_examples", None), 2, ExamplesQuery
@@ -220,6 +228,24 @@ class _ProviderAdapter:
         if reader is None:
             return None
         return await reader(request, artifact_id)
+
+    async def artifact_meta(
+        self, request: Request, artifact_id: str
+    ) -> ArtifactMeta | None:
+        meta = getattr(self._provider, "artifact_meta", None)
+        if meta is None:
+            return None
+        return await meta(request, artifact_id)
+
+    def stream_artifact(
+        self, request: Request, artifact_id: str, start: int = 0, end: int | None = None
+    ) -> Any:
+        stream = getattr(self._provider, "stream_artifact", None)
+        if stream is None:
+            return None
+        if self.has_artifact_range:
+            return stream(request, artifact_id, start, end)
+        return stream(request, artifact_id)
 
     async def list_examples(
         self, request: Request, run_id: str, query: Any = None
@@ -295,13 +321,55 @@ def provider_accepts_query(provider: Any) -> bool:
     return _accepts_query(getattr(provider, "list_runs", None))
 
 
+def _accepts_artifact_range(target: Any) -> bool:
+    """Whether ``stream_artifact`` takes ``(start, end)`` after the artifact id."""
+    import inspect
+
+    if target is None:
+        return False
+    try:
+        parameters = list(inspect.signature(target).parameters.values())
+    except (TypeError, ValueError):  # pragma: no cover
+        return False
+    if len(parameters) < 4:
+        return False
+    forbidden = (
+        inspect.Parameter.KEYWORD_ONLY,
+        inspect.Parameter.VAR_POSITIONAL,
+        inspect.Parameter.VAR_KEYWORD,
+    )
+    return all(parameter.kind not in forbidden for parameter in parameters[2:4])
+
+
 def provider_reads_artifacts(provider: Any) -> bool:
-    """Whether the provider can serve artifact content."""
+    """Whether the provider can serve artifact content (bytes or a stream)."""
     if isinstance(provider, CallableProvider):
         return False
     if isinstance(provider, _ProviderAdapter):
         return provider.has_artifacts
-    return callable(getattr(provider, "read_artifact", None))
+    return callable(getattr(provider, "read_artifact", None)) or callable(
+        getattr(provider, "stream_artifact", None)
+    )
+
+
+def provider_has_artifact_meta(provider: Any) -> bool:
+    if isinstance(provider, _ProviderAdapter):
+        return provider.has_artifact_meta
+    return callable(getattr(provider, "artifact_meta", None))
+
+
+def provider_streams_artifact(provider: Any) -> bool:
+    if isinstance(provider, CallableProvider):
+        return False
+    if isinstance(provider, _ProviderAdapter):
+        return provider.has_artifact_stream
+    return callable(getattr(provider, "stream_artifact", None))
+
+
+def provider_streams_artifact_ranges(provider: Any) -> bool:
+    if isinstance(provider, _ProviderAdapter):
+        return provider.has_artifact_range
+    return _accepts_artifact_range(getattr(provider, "stream_artifact", None))
 
 
 def provider_has_examples(provider: Any) -> bool:

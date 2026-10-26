@@ -10,6 +10,7 @@
 from .config import ActionResult, ActionSpec, ColumnSpec, MetricSpec, UiConfig, load_config
 from .models import (
     Artifact,
+    ArtifactMeta,
     DatasetDetail,
     DatasetExamplesPage,
     DatasetInfo,
@@ -46,6 +47,7 @@ __all__ = [
     "ActionResult",
     "ActionSpec",
     "Artifact",
+    "ArtifactMeta",
     "CallableProvider",
     "ColumnSpec",
     "DatasetDetail",

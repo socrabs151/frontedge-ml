@@ -126,6 +126,16 @@ class Artifact(FrontedgeModel):
     content_url: str | None = None
 
 
+class ArtifactMeta(FrontedgeModel):
+    """What a range or conditional request needs to know before the bytes are read."""
+
+    size: int
+    filename: str | None = None
+    media_type: str = "application/octet-stream"
+    etag: str | None = None
+    last_modified: datetime | None = None
+
+
 class ProvenanceEntry(FrontedgeModel):
     label: str
     value: str

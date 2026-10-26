@@ -11,12 +11,12 @@ from collections.abc import AsyncIterator, Sequence
 from pathlib import Path
 from typing import Any
 
+import frontedge
 import uvicorn
 from fastapi import FastAPI, Request
-
-import frontedge
 from frontedge.config import ActionResult
 from frontedge.models import (
+    ArtifactMeta,
     DatasetDetail,
     DatasetExamplesPage,
     DatasetInfo,
@@ -105,11 +105,43 @@ class DemoProvider:
             yield LogLine.model_validate(line)
             await asyncio.sleep(0.15)
 
+    def _artifact(self, artifact_id: str) -> Any:
+        for run in self.repository.runs:
+            for artifact in run.artifacts:
+                if artifact.id == artifact_id:
+                    return artifact
+        return None
+
+    async def artifact_meta(
+        self, request: Request, artifact_id: str
+    ) -> ArtifactMeta | None:
+        artifact = self._artifact(artifact_id)
+        if artifact is None:
+            return None
+        data = f"Demo artifact {artifact_id}\n".encode()
+        media_type = {
+            "report": "text/html; charset=utf-8",
+            "log": "text/plain; charset=utf-8",
+        }.get(artifact.kind, "application/octet-stream")
+        return ArtifactMeta(
+            size=len(data),
+            filename=artifact.name,
+            media_type=media_type,
+            etag=f"{artifact.id}-{len(data)}",
+            last_modified=artifact.created_at,
+        )
+
+    async def stream_artifact(
+        self, request: Request, artifact_id: str, start: int = 0, end: int | None = None
+    ) -> AsyncIterator[bytes]:
+        data = f"Demo artifact {artifact_id}\n".encode()
+        yield data[start:end]
+
     async def read_artifact(self, request: Request, artifact_id: str) -> bytes | None:
         """Artifact content — in the demo it is a text stub."""
         if not artifact_id:
             return None
-        return f"Demo artifact {artifact_id}\n".encode("utf-8")
+        return f"Demo artifact {artifact_id}\n".encode()
 
     async def list_examples(
         self, request: Request, run_id: str, query: ExamplesQuery

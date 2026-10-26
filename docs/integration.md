@@ -113,6 +113,8 @@ app.include_router(frontedge.mount(my_runs_provider))
 | `get_run(request, run_id)` | yes | — |
 | `stream_logs(request, run_id)` | no | the "Logs" tab stays empty |
 | `read_artifact(request, artifact_id)` | no | `GET /api/artifacts/{id}/content` answers 404 |
+| `artifact_meta(request, artifact_id)` | no | no size, ETag or Last-Modified: ranges and 304 are unavailable |
+| `stream_artifact(request, artifact_id, start, end)` | no | the artifact is read into memory through `read_artifact` |
 | `list_examples(request, run_id)` | no | the Examples tab of a run stays empty |
 | `list_runs(request, query)` | no | the library filters and paginates the list itself |
 
@@ -214,6 +216,39 @@ class MyDatasets:
 Without the third argument, the library pages the returned sequence in memory — fine for small
 fixtures. `GET /api/datasets/{id}` is metadata only: examples come from
 `/api/datasets/{id}/examples`, so the detail response cannot grow with the dataset.
+
+### Artifacts: streams, ranges and revalidation
+
+`read_artifact(request, artifact_id) -> bytes | None` stays the simple path: the server slices the
+bytes for a `Range` request and derives an ETag. A large artifact must not sit in memory, so a
+provider may add two methods:
+
+```python
+from frontedge.models import ArtifactMeta
+
+async def artifact_meta(self, request, artifact_id) -> ArtifactMeta | None:
+    row = await my_repository.artifact(artifact_id)
+    if row is None:
+        return None
+    return ArtifactMeta(
+        size=row.size,
+        filename=row.name,
+        media_type="application/octet-stream",
+        etag=row.sha256,
+        last_modified=row.created_at,
+    )
+
+async def stream_artifact(self, request, artifact_id, start=0, end=None):
+    # end is exclusive; start/end come from the HTTP Range header
+    async for chunk in my_storage.read(artifact_id, start, end):
+        yield chunk
+```
+
+With `artifact_meta`, `GET /api/artifacts/{id}/content` answers `HEAD`, `Range` (206 with
+`Content-Range`), `If-None-Match` / `If-Modified-Since` (304) and advertises `Accept-Ranges`. The
+filename from the meta goes into `Content-Disposition`. Without meta a stream is still served,
+but ranges are not advertised; without `stream_artifact` the bytes fallback supports ranges in
+memory.
 
 ### Check the provider before the server starts
 

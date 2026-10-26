@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import functools
+import hashlib
+import inspect
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable
-from datetime import date, datetime
+from datetime import UTC, date, datetime
+from email.utils import format_datetime, parsedate_to_datetime
 from itertools import count
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -16,6 +19,7 @@ from fastapi.responses import StreamingResponse
 from ..config import ActionResult, UiConfig, load_config
 from ..meta import Meta, build_meta
 from ..models import (
+    ArtifactMeta,
     DatasetDetail,
     DatasetExamplesPage,
     DatasetInfo,
@@ -44,10 +48,13 @@ from ..providers import (
     provider_accepts_dataset_examples_query,
     provider_accepts_examples_query,
     provider_accepts_query,
+    provider_has_artifact_meta,
     provider_has_dataset_examples,
     provider_has_examples,
     provider_has_logs,
     provider_reads_artifacts,
+    provider_streams_artifact,
+    provider_streams_artifact_ranges,
 )
 from ..runtime.sse import sse_response
 from ..runtime.static import static_router
@@ -150,6 +157,95 @@ def _check_query(
     # provider may sort by a metric name the configuration has never heard of.
     if declared and sort not in _SORTABLE_COLUMNS | declared:
         raise HTTPException(status_code=422, detail=f"Unknown sort key: {sort}")
+
+
+def _etag_value(value: str) -> str:
+    value = value.strip()
+    if value.startswith("W/"):
+        return value
+    return value if value.startswith('"') else f'"{value}"'
+
+
+def _etag_matches(header: str | None, etag: str | None) -> bool:
+    if not header or not etag:
+        return False
+    target = etag.removeprefix("W/")
+    for candidate in header.split(","):
+        candidate = candidate.strip()
+        if candidate == "*":
+            return True
+        if candidate.removeprefix("W/") == target:
+            return True
+    return False
+
+
+def _as_utc(value: datetime) -> datetime:
+    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+
+def _not_modified(
+    request: Request, etag: str | None, last_modified: datetime | None
+) -> bool:
+    if "if-none-match" in request.headers:
+        return _etag_matches(request.headers.get("if-none-match"), etag)
+    since = request.headers.get("if-modified-since")
+    if not since or last_modified is None:
+        return False
+    try:
+        parsed = parsedate_to_datetime(since)
+    except (TypeError, ValueError):
+        return False
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return _as_utc(last_modified).replace(microsecond=0) <= parsed
+
+
+def _if_range_matches(
+    header: str | None, etag: str | None, last_modified: datetime | None
+) -> bool:
+    if not header:
+        return True
+    value = header.strip()
+    if value.startswith('"') or value.startswith("W/"):
+        return _etag_matches(value, etag)
+    if last_modified is None:
+        return False
+    try:
+        since = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return False
+    if since.tzinfo is None:
+        since = since.replace(tzinfo=UTC)
+    return _as_utc(last_modified).replace(microsecond=0) <= since
+
+
+def _parse_range(header: str, size: int) -> tuple[int, int] | None:
+    """An inclusive ``(start, end)``; ``None`` means "serve the whole file"."""
+    if not header.startswith("bytes="):
+        return None
+    spec = header[6:].strip()
+    if not spec or "," in spec:
+        return None
+    if size <= 0:
+        raise ValueError("empty file")
+    first, separator, last = spec.partition("-")
+    if not separator:
+        raise ValueError("malformed range")
+    if not first:
+        suffix = int(last)
+        if suffix <= 0:
+            raise ValueError("empty suffix")
+        return max(0, size - suffix), size - 1
+    start = int(first)
+    end = size - 1 if not last else min(int(last), size - 1)
+    if start < 0 or start >= size or end < start:
+        raise ValueError("unsatisfiable range")
+    return start, end
+
+
+def _content_disposition(filename: str) -> str:
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", filename) or "artifact"
+    return f'attachment; filename="{safe}"'
 
 
 def _downsample(points: list[Any], limit: int = SPARKLINE_POINTS) -> list[Any]:
@@ -430,6 +526,118 @@ def _build_router(
 
     # --- Artifacts --------------------------------------------------------
 
+    async def _open_artifact_stream(
+        provider: Any,
+        request: Request,
+        artifact_id: str,
+        start: int,
+        end: int | None,
+    ) -> AsyncIterator[bytes]:
+        if provider_streams_artifact_ranges(source):
+            stream = provider.stream_artifact(request, artifact_id, start, end)
+        else:
+            stream = provider.stream_artifact(request, artifact_id)
+        if inspect.isawaitable(stream):
+            stream = await stream
+        if stream is None:
+            raise HTTPException(status_code=404, detail="Artifact not found")
+        return stream
+
+    async def _artifact_response(request: Request, artifact_id: str) -> Response:
+        """Bytes or a stream; ranges and revalidation when the provider knows the size."""
+        if not provider_reads_artifacts(source):
+            raise HTTPException(
+                status_code=404, detail="Provider does not serve artifact content"
+            )
+        provider = cast(Any, source)
+        meta: ArtifactMeta | None = None
+        if provider_has_artifact_meta(source):
+            meta = as_model_or_none(
+                await provider.artifact_meta(request, artifact_id),
+                ArtifactMeta,
+                "artifact_meta",
+            )
+        streamer = provider_streams_artifact(source)
+        data: bytes | None = None
+        if not streamer:
+            raw = await provider.read_artifact(request, artifact_id)
+            if raw is None:
+                raise HTTPException(status_code=404, detail="Artifact not found")
+            if not isinstance(raw, (bytes, bytearray)):
+                raise ProviderError(
+                    f"read_artifact returned {type(raw).__name__}, expected bytes"
+                )
+            data = bytes(raw)
+
+        size = len(data) if data is not None else (meta.size if meta is not None else None)
+        media_type = meta.media_type if meta is not None else "application/octet-stream"
+        filename = meta.filename if meta is not None and meta.filename else artifact_id
+        etag = _etag_value(meta.etag) if meta is not None and meta.etag else None
+        if etag is None and data is not None:
+            etag = f'"{hashlib.sha1(data).hexdigest()}"'
+        last_modified = meta.last_modified if meta is not None else None
+
+        headers = {
+            "Content-Disposition": _content_disposition(filename),
+            "Cache-Control": "private, no-cache",
+        }
+        if etag:
+            headers["ETag"] = etag
+        if last_modified is not None:
+            headers["Last-Modified"] = format_datetime(_as_utc(last_modified), usegmt=True)
+        if size is not None:
+            headers["Accept-Ranges"] = "bytes"
+
+        if _not_modified(request, etag, last_modified):
+            return Response(status_code=304, headers=headers)
+        if request.method == "HEAD":
+            if size is not None:
+                headers["Content-Length"] = str(size)
+            return Response(status_code=200, headers=headers, media_type=media_type)
+
+        range_header = request.headers.get("range")
+        can_range = data is not None or (
+            streamer and provider_streams_artifact_ranges(source)
+        )
+        byte_range: tuple[int, int] | None = None
+        if range_header and size is not None and can_range:
+            if _if_range_matches(request.headers.get("if-range"), etag, last_modified):
+                try:
+                    byte_range = _parse_range(range_header, size)
+                except ValueError:
+                    headers["Content-Range"] = f"bytes */{size}"
+                    return Response(status_code=416, headers=headers)
+            else:
+                byte_range = None
+
+        if byte_range is not None:
+            start, end = byte_range
+            headers["Content-Range"] = f"bytes {start}-{end}/{size}"
+            headers["Content-Length"] = str(end - start + 1)
+            if streamer:
+                stream = await _open_artifact_stream(
+                    provider, request, artifact_id, start, end + 1
+                )
+                return StreamingResponse(
+                    stream, status_code=206, headers=headers, media_type=media_type
+                )
+            assert data is not None  # the bytes branch is the only non-stream source
+            return Response(
+                data[start : end + 1],
+                status_code=206,
+                headers=headers,
+                media_type=media_type,
+            )
+
+        if size is not None:
+            headers["Content-Length"] = str(size)
+        if streamer:
+            stream = await _open_artifact_stream(
+                provider, request, artifact_id, 0, size
+            )
+            return StreamingResponse(stream, headers=headers, media_type=media_type)
+        return Response(data, headers=headers, media_type=media_type)
+
     @router.get(
         "/api/artifacts/{artifact_id}/content",
         tags=["frontedge"],
@@ -447,29 +655,16 @@ def _build_router(
     )
     @_provider_errors
     async def artifact_content(request: Request, artifact_id: str) -> Response:
-        """Artifact content — if the provider can serve it."""
-        if not provider_reads_artifacts(source):
-            raise HTTPException(
-                status_code=404, detail="Provider does not serve artifact content"
-            )
-        data = await source.read_artifact(request, artifact_id)
-        if data is None:
-            raise HTTPException(status_code=404, detail="Artifact not found")
-        if not isinstance(data, (bytes, bytearray)):
-            raise ProviderError(
-                f"read_artifact returned {type(data).__name__}, expected bytes"
-            )
-        return Response(
-            content=data,
-            media_type="application/octet-stream",
-            headers={
-                "Content-Disposition": (
-                    'attachment; filename="'
-                    + (re.sub(r"[^A-Za-z0-9._-]", "_", artifact_id) or "artifact")
-                    + '"'
-                )
-            },
-        )
+        """Artifact content — bytes or a stream, with ranges and revalidation."""
+        return await _artifact_response(request, artifact_id)
+
+    @router.head(
+        "/api/artifacts/{artifact_id}/content",
+        include_in_schema=False,
+    )
+    @_provider_errors
+    async def artifact_head(request: Request, artifact_id: str) -> Response:
+        return await _artifact_response(request, artifact_id)
 
     # --- Evals ------------------------------------------------------------
 
