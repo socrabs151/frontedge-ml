@@ -167,7 +167,8 @@ const checks = [
   {
     name: "run detail",
     open: async (page) => {
-      await page.locator(".fe-run-name").nth(3).click();
+      await page.locator(".fe-table__row").nth(3).focus();
+      await page.keyboard.press("Enter");
       await page.waitForSelector(".fe-detail__head");
     },
   },
