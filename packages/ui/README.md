@@ -11,8 +11,8 @@ npm i @frontedge-ml/ui react react-dom
 
 - **Tokens** — colour, typography, density (28/32/40 px rows), radii, motion. Light theme by
   default, dark theme by attribute. Series colours are identical in both themes.
-- **Primitives** — button, status badge, search, tabs, tooltip, segmented control, sparkline,
-  empty and loading states.
+- **Primitives** — button, status badge, freshness badge, search, tabs, tooltip, segmented control,
+  sparkline, empty and loading states.
 - **ML patterns** — run ribbon, stage timeline, runs table with virtualisation, metric cell with
   a baseline delta, metric chart, log stream, eval comparison table, dataset table, examples
   table, column menu, provenance list.

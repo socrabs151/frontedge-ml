@@ -124,7 +124,6 @@ const en = {
   "datasets.examples": "examples",
   "datasets.tags": "Tags",
 
-  "freshness.live": "live",
 } as const;
 
 export type AppStringKey = keyof typeof en;
@@ -249,7 +248,6 @@ const ru: Record<AppStringKey, string> = {
   "datasets.examples": "Example",
   "datasets.tags": "Теги",
 
-  "freshness.live": "онлайн",
 };
 
 const dictionaries = {

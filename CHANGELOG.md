@@ -29,6 +29,12 @@ The following are **public contracts** and change only in a major release:
   synthetic 1 000-row comparison through the real screen (locally ~1.2 s) and is a CI check.
 - The demo gives failed, lost and cancelled runs a real error and exit code, so failure triage is
   visible instead of an empty reason.
+- Freshness is visible: the run header shows a dot + word for `live`, `fresh`, `stale` and
+  `partial`, and the runs table offers a `freshness` column with the same badge. The live pulse
+  respects `prefers-reduced-motion`.
+- The eval comparison (eval, reference, comparison, filter, number format and tab) and the dataset
+  screen (dataset, tab, open example, search and page) live in the URL hash: a link restores the
+  view after a reload, and the back button updates the screen.
 
 ### Fixed
 

@@ -481,9 +481,9 @@ All of the keys of `UiConfig`:
 | `baseline_run` | the run pinned as the baseline for the deltas |
 | `page_size` | how many runs to request at a time (server-side pagination) |
 
-The available run columns are `name`, `status`, `ribbon`, `dataset`, `tags`, `gitSha`, `startedAt`,
-`durationMs`, `accuracy` and `loss` — plus any metric name of your own data, which is built from
-the `metrics` dictionary.
+The available run columns are `name`, `status`, `freshness`, `ribbon`, `dataset`, `tags`, `gitSha`,
+`startedAt`, `durationMs`, `accuracy` and `loss` — plus any metric name of your own data, which is
+built from the `metrics` dictionary.
 
 `Run.tags` is a free list of project labels (`production`, `nightly`): the `tags` column shows
 them as chips, the toolbar filters the list by one tag, and the value travels to the provider as

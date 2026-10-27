@@ -323,6 +323,7 @@ KNOWN_COLUMNS = {
     "actions",
     "dataset",
     "durationMs",
+    "freshness",
     "gitSha",
     "name",
     "ribbon",

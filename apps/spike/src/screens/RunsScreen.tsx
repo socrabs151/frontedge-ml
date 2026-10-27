@@ -30,6 +30,7 @@ const STATUS_FILTERS: Array<{
 const COLUMN_OPTIONS: ColumnOption[] = [
   { id: "name", label: "Run" },
   { id: "status", label: "Status" },
+  { id: "freshness", label: "Freshness" },
   { id: "ribbon", label: "Stages" },
   { id: "dataset", label: "Dataset" },
   { id: "gitSha", label: "Git" },

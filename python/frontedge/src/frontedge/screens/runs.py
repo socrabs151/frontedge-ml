@@ -80,6 +80,7 @@ _SORT_FIELDS = {"startedAt": "started_at", "durationMs": "duration_ms", "gitSha"
 _SORTABLE_COLUMNS = {
     "name",
     "status",
+    "freshness",
     "dataset",
     "gitSha",
     "owner",

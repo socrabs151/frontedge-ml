@@ -250,6 +250,33 @@ await page.waitForSelector(".fe-example-detail");
 await shoot("10-dataset-example-1440");
 seriousTotal += await audit("dataset example");
 
+// dataset deep link: the dataset and the open example survive a reload
+await page.goto(`${BASE}/#/datasets?dataset=wiki-2024-qa&example=ex-005`, {
+  waitUntil: "domcontentloaded",
+});
+await page.waitForSelector(".fe-example-detail");
+await page
+  .locator(".fe-example-detail__title")
+  .filter({ hasText: "ex-005" })
+  .waitFor({ timeout: 10000 });
+await page.waitForFunction(() => location.hash.includes("example=ex-005"));
+const datasetLink = await page.evaluate(() => location.hash);
+const linkedExample = await page.locator(".fe-example-detail__title").textContent();
+if (!linkedExample?.includes("ex-005")) {
+  layoutProblems += 1;
+  console.log("layout: the dataset example link did not open ex-005");
+}
+await page.reload({ waitUntil: "domcontentloaded" });
+await page
+  .locator(".fe-example-detail__title")
+  .filter({ hasText: "ex-005" })
+  .waitFor({ timeout: 10000 });
+await page.waitForFunction(() => location.hash.includes("example=ex-005"));
+if ((await page.evaluate(() => location.hash)) !== datasetLink) {
+  layoutProblems += 1;
+  console.log("layout: the dataset link did not survive a reload");
+}
+
 // eval evidence: filters and the delta sort
 await page.goto(`${BASE}/#/evals`, { waitUntil: "domcontentloaded" });
 await page.waitForSelector(".fe-table--eval");
@@ -267,6 +294,40 @@ if (ariaSort !== "ascending" && ariaSort !== "descending") {
 }
 await shoot("09a-evals-improved-1440");
 seriousTotal += await audit("evals improved");
+
+// eval deep link: the comparison and the filter survive a reload
+await page.goto(
+  `${BASE}/#/evals?eval=eval-squad-exact&reference=run-002&comparison=run-000&filter=changed`,
+  { waitUntil: "domcontentloaded" },
+);
+await page.waitForSelector(".fe-table--eval");
+const changedChecked = () =>
+  page.evaluate(() => {
+    const radio = [...document.querySelectorAll('[role="radio"]')].find(
+      (node) => node.textContent?.trim() === "Changed",
+    );
+    return radio?.getAttribute("aria-checked") === "true";
+  });
+const waitForChanged = () =>
+  page.waitForFunction(() => {
+    const radio = [...document.querySelectorAll('[role="radio"]')].find(
+      (node) => node.textContent?.trim() === "Changed",
+    );
+    return radio?.getAttribute("aria-checked") === "true";
+  });
+await waitForChanged();
+const evalLink = await page.evaluate(() => location.hash);
+if (!(await changedChecked())) {
+  layoutProblems += 1;
+  console.log("layout: the eval link did not restore the Changed filter");
+}
+await page.reload({ waitUntil: "domcontentloaded" });
+await page.waitForSelector(".fe-table--eval");
+await waitForChanged();
+if ((await page.evaluate(() => location.hash)) !== evalLink) {
+  layoutProblems += 1;
+  console.log("layout: the eval link did not survive a reload");
+}
 
 // compare two runs
 await page.goto(`${BASE}/#/runs`, { waitUntil: "networkidle" });

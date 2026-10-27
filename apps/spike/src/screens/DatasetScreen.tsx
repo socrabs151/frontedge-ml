@@ -15,23 +15,70 @@ import type { DatasetDetail, DatasetInfo, ExampleResult } from "@frontedge-ml/ui
 import { useAppT } from "../i18n";
 import { Pager } from "../components/Pager";
 import { errorMessage, source } from "../data/source";
+import { onHashChange, readHashParams, writeHashParams } from "../hash";
 
 const EXAMPLE_PAGE = 20;
+const TABS = ["examples", "datasheet", "provenance"];
 
 export function DatasetScreen() {
   const t = useAppT();
   const { lang } = useI18n();
   const locale = lang === "ru" ? "ru-RU" : "en-US";
+  const initial = readHashParams();
   const [datasets, setDatasets] = useState<DatasetInfo[] | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => initial.get("dataset"),
+  );
   const [detail, setDetail] = useState<DatasetDetail | null>(null);
   const [examples, setExamples] = useState<ExampleResult[]>([]);
   const [examplesTotal, setExamplesTotal] = useState(0);
-  const [examplesOffset, setExamplesOffset] = useState(0);
+  const [examplesOffset, setExamplesOffset] = useState(() => {
+    const value = Number(initial.get("offset") ?? 0);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  });
   const [selectedExample, setSelectedExample] = useState<ExampleResult | null>(null);
+  const [linkedExample, setLinkedExample] = useState<string | null>(
+    () => initial.get("example"),
+  );
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState("examples");
-  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState(() => {
+    const value = initial.get("tab");
+    return value && TABS.includes(value) ? value : "examples";
+  });
+  const [search, setSearch] = useState(() => initial.get("search") ?? "");
+
+  useEffect(() => {
+    if (!linkedExample) return;
+    const found = examples.find((example) => example.id === linkedExample);
+    if (found) setSelectedExample(found);
+  }, [examples, linkedExample]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedId) params.set("dataset", selectedId);
+    if (tab !== "examples") params.set("tab", tab);
+    if (search) params.set("search", search);
+    if (examplesOffset) params.set("offset", String(examplesOffset));
+    if (selectedExample) params.set("example", selectedExample.id);
+    writeHashParams("/datasets", params);
+  }, [examplesOffset, search, selectedExample, selectedId, tab]);
+
+  useEffect(
+    () =>
+      onHashChange(() => {
+        const params = readHashParams();
+        const nextDataset = params.get("dataset");
+        if (nextDataset) setSelectedId(nextDataset);
+        const nextTab = params.get("tab");
+        if (nextTab && TABS.includes(nextTab)) setTab(nextTab);
+        setSearch(params.get("search") ?? "");
+        const offset = Number(params.get("offset") ?? 0);
+        setExamplesOffset(Number.isFinite(offset) && offset > 0 ? offset : 0);
+        setLinkedExample(params.get("example"));
+        setSelectedExample(null);
+      }),
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -131,6 +178,7 @@ export function DatasetScreen() {
                 setSearch(event.target.value);
                 setExamplesOffset(0);
                 setSelectedExample(null);
+                setLinkedExample(null);
               }}
             />
           </div>
@@ -141,7 +189,10 @@ export function DatasetScreen() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setSelectedExample(null)}
+                  onClick={() => {
+                    setSelectedExample(null);
+                    setLinkedExample(null);
+                  }}
                 >
                   {t("datasets.close")}
                 </Button>
@@ -175,7 +226,10 @@ export function DatasetScreen() {
               <DatasetTable
                 examples={examples}
                 selectedId={selectedExample?.id}
-                onSelect={setSelectedExample}
+                onSelect={(example) => {
+                  setSelectedExample(example);
+                  setLinkedExample(example.id);
+                }}
               />
               <Pager
                 offset={examplesOffset}
@@ -184,6 +238,7 @@ export function DatasetScreen() {
                 onChange={(offset) => {
                   setExamplesOffset(offset);
                   setSelectedExample(null);
+                  setLinkedExample(null);
                 }}
               />
             </>
@@ -225,6 +280,7 @@ export function DatasetScreen() {
                 setSelectedId(dataset.id);
                 setExamplesOffset(0);
                 setSelectedExample(null);
+                setLinkedExample(null);
               }}
             >
               <span className="fe-datasets__name">{dataset.name}</span>

@@ -14,8 +14,11 @@ import type { EvalComparison, EvalSummary, RunOption, UiConfig } from "@frontedg
 import { useAppT } from "../i18n";
 import { RunPicker } from "../components/RunPicker";
 import { errorMessage, source } from "../data/source";
+import { onHashChange, readHashParams, writeHashParams } from "../hash";
 
 type EvalTab = "examples" | "summary";
+const FILTERS: EvalFilter[] = ["all", "changed", "improved", "worsened"];
+const FORMATS: DeltaFormat[] = ["value", "percent", "relative"];
 
 export function EvalDiffScreen({
   runChoices,
@@ -28,15 +31,29 @@ export function EvalDiffScreen({
   config: UiConfig | null;
 }) {
   const t = useAppT();
+  const initial = readHashParams();
   const [evals, setEvals] = useState<EvalSummary[] | null>(null);
-  const [evalId, setEvalId] = useState("");
-  const [reference, setReference] = useState(baselineId ?? "");
-  const [comparisonRun, setComparisonRun] = useState("");
+  const [evalId, setEvalId] = useState(() => initial.get("eval") ?? "");
+  const [reference, setReference] = useState(
+    () => initial.get("reference") ?? baselineId ?? "",
+  );
+  const [comparisonRun, setComparisonRun] = useState(
+    () => initial.get("comparison") ?? "",
+  );
   const [comparison, setComparison] = useState<EvalComparison | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<EvalFilter>("all");
-  const [format, setFormat] = useState<DeltaFormat>("value");
-  const [tab, setTab] = useState<EvalTab>("examples");
+  const [filter, setFilter] = useState<EvalFilter>(() => {
+    const value = initial.get("filter") as EvalFilter | null;
+    return value && FILTERS.includes(value) ? value : "all";
+  });
+  const [format, setFormat] = useState<DeltaFormat>(() => {
+    const value = initial.get("format") as DeltaFormat | null;
+    return value && FORMATS.includes(value) ? value : "value";
+  });
+  const [tab, setTab] = useState<EvalTab>(() => {
+    const value = initial.get("tab");
+    return value === "summary" ? "summary" : "examples";
+  });
   const formatOptions: Array<{ value: DeltaFormat; label: string; title: string }> = [
     { value: "value", label: "0.73", title: t("evals.formatValue") },
     { value: "percent", label: "73%", title: t("evals.formatPercent") },
@@ -93,6 +110,37 @@ export function EvalDiffScreen({
       ? config.evalTabs
       : ["examples", "summary"];
   const activeTab: EvalTab = configuredTabs.includes(tab) ? tab : configuredTabs[0]!;
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (evalId) params.set("eval", evalId);
+    if (reference) params.set("reference", reference);
+    if (comparisonRun) params.set("comparison", comparisonRun);
+    if (tab !== "examples") params.set("tab", tab);
+    if (filter !== "all") params.set("filter", filter);
+    if (format !== "value") params.set("format", format);
+    writeHashParams("/evals", params);
+  }, [comparisonRun, evalId, filter, format, reference, tab]);
+
+  useEffect(
+    () =>
+      onHashChange(() => {
+        const params = readHashParams();
+        const nextEval = params.get("eval");
+        if (nextEval) setEvalId(nextEval);
+        const nextReference = params.get("reference");
+        if (nextReference) setReference(nextReference);
+        const nextComparison = params.get("comparison");
+        if (nextComparison) setComparisonRun(nextComparison);
+        const nextFilter = params.get("filter") as EvalFilter | null;
+        if (nextFilter && FILTERS.includes(nextFilter)) setFilter(nextFilter);
+        const nextFormat = params.get("format") as DeltaFormat | null;
+        if (nextFormat && FORMATS.includes(nextFormat)) setFormat(nextFormat);
+        const nextTab = params.get("tab");
+        if (nextTab === "examples" || nextTab === "summary") setTab(nextTab);
+      }),
+    [],
+  );
 
   const examplesContent = (current: EvalComparison) => {
     const direction = current.direction;

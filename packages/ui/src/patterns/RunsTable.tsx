@@ -15,6 +15,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, Check, ChevronsUpDown } from "lucide-react";
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
+import { FreshnessBadge } from "../components/FreshnessBadge";
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n/I18nProvider";
 import {
@@ -82,6 +83,7 @@ export interface RunsTableProps {
 const KNOWN_COLUMNS = [
   "name",
   "status",
+  "freshness",
   "ribbon",
   "dataset",
   "tags",
@@ -96,6 +98,7 @@ const KNOWN_COLUMNS = [
 const TEXT_COLUMNS = new Set([
   "name",
   "status",
+  "freshness",
   "ribbon",
   "dataset",
   "tags",
@@ -198,6 +201,13 @@ export function RunsTable({
         header: () => t("column.status"),
         size: 120,
         cell: (info) => <StatusBadge status={info.getValue()} />,
+      }) as ColumnDef<Run, unknown>,
+
+      freshness: columnHelper.accessor("freshness", {
+        id: "freshness",
+        header: () => t("column.freshness"),
+        size: 96,
+        cell: (info) => <FreshnessBadge value={info.getValue() ?? "fresh"} />,
       }) as ColumnDef<Run, unknown>,
 
       ribbon: columnHelper.display({

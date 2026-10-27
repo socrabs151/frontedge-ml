@@ -4,6 +4,7 @@ import {
   EMPTY,
   EmptyState,
   ExamplesTable,
+  FreshnessBadge,
   LoadingRows,
   LogStream,
   MetricCard,
@@ -329,12 +330,7 @@ export function RunDetailScreen({
         <div className="fe-detail__title">
           <h1 className="fe-mono">{run.name}</h1>
           <StatusBadge status={run.status} />
-          {run.freshness === "live" ? (
-            <span className="fe-freshness fe-freshness--live">
-              <span className="fe-freshness__dot" aria-hidden />
-              {t("freshness.live")}
-            </span>
-          ) : null}
+          <FreshnessBadge value={run.freshness ?? "fresh"} />
         </div>
         <div className="fe-detail__actions">
           {runActions.map((action) => (

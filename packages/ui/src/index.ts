@@ -1,6 +1,7 @@
 export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./components/Button";
 export { Tooltip, TooltipProvider } from "./components/Tooltip";
 export { StatusBadge, statusMeta } from "./components/StatusBadge";
+export { FreshnessBadge } from "./components/FreshnessBadge";
 export { Segmented, type SegmentedOption } from "./components/Segmented";
 export { Tabs, type TabItem } from "./components/Tabs";
 export { Sparkline } from "./components/Sparkline";

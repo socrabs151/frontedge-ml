@@ -9,7 +9,7 @@ theme = "light"
 eval_tabs = ["examples", "summary"]
 
 # Which columns to show in the run list. An empty list — show all.
-run_columns = ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss", "bleu"]
+run_columns = ["name", "status", "freshness", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss", "bleu"]
 
 # Starting widths and resize locks. The user may resize any column unless resizable = false;
 # column_resize = false would lock the whole table.

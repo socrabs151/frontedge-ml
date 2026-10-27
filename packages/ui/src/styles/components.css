@@ -217,7 +217,12 @@
   animation: fe-pulse 1.8s var(--fe-ease-inout) infinite;
 }
 
-.fe-freshness--stale .fe-freshness__dot {
+.fe-freshness--fresh .fe-freshness__dot {
+  background: var(--fe-status-success);
+}
+
+.fe-freshness--stale .fe-freshness__dot,
+.fe-freshness--partial .fe-freshness__dot {
   background: var(--fe-status-warning);
 }
 
@@ -228,6 +233,12 @@
   }
   50% {
     opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fe-freshness--live .fe-freshness__dot {
+    animation: none;
   }
 }
 
