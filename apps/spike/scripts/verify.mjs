@@ -120,13 +120,13 @@ async function checkColumnReset() {
 let seriousTotal = 0;
 /** A run is linkable: the hash changes on open and the same link survives a reload. */
 async function checkDeepLink() {
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
   await page.waitForSelector(".fe-table__row");
   await page.locator(".fe-run-name").first().click();
   await page.waitForSelector(".fe-detail__head", { timeout: 15000 });
   const opened = await page.evaluate(() => location.hash);
 
-  await page.reload({ waitUntil: "networkidle" });
+  await page.reload({ waitUntil: "domcontentloaded" });
   const survived = (await page.locator(".fe-detail__head").count()) === 1;
   const afterReload = await page.evaluate(() => location.hash);
 
@@ -141,7 +141,7 @@ async function checkDeepLink() {
 
 /** The run pickers search through the compact endpoint; axe visits the open panel too. */
 async function checkPicker() {
-  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
   await page.waitForSelector(".fe-table__row");
   const trigger = page.locator(".fe-runpicker__trigger").first();
   await trigger.click();
@@ -201,7 +201,7 @@ async function auditStates() {
 
 let layoutProblems = 0;
 
-await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
 await page.waitForSelector(".fe-table__row");
 await shoot("01-runs-light-1440");
 seriousTotal += await audit("runs light");
@@ -238,8 +238,26 @@ await shoot("05-run-examples-1440");
 await page.getByRole("tab", { name: /Logs/ }).click();
 await shoot("06-run-logs-1440");
 
+// eval evidence: filters and the delta sort
+await page.goto(`${BASE}/#/evals`, { waitUntil: "domcontentloaded" });
+await page.waitForSelector(".fe-table--eval");
+await shoot("09-evals-1440");
+seriousTotal += await audit("evals");
+await page.getByRole("radio", { name: "Improved" }).focus();
+await page.keyboard.press("Space");
+const sortButton = page.getByRole("button", { name: /Sort by delta/ });
+await sortButton.focus();
+await page.keyboard.press("Enter");
+const ariaSort = await page.locator("th[aria-sort]").first().getAttribute("aria-sort");
+if (ariaSort !== "ascending" && ariaSort !== "descending") {
+  layoutProblems += 1;
+  console.log("layout: the eval delta sort did not expose aria-sort");
+}
+await shoot("09a-evals-improved-1440");
+seriousTotal += await audit("evals improved");
+
 // compare two runs
-await page.goto(`${BASE}/#/runs`, { waitUntil: "networkidle" });
+await page.goto(`${BASE}/#/runs`, { waitUntil: "domcontentloaded" });
 await page.waitForSelector(".fe-table__row");
 await page.getByRole("button", { name: /^Compare$/ }).click();
 await page.locator(".fe-table__row").nth(0).click();
@@ -250,7 +268,7 @@ await page.waitForSelector(".fe-compare__chips");
 await shoot("08-compare-1440");
 seriousTotal += await audit("compare");
 const compareHash = await page.evaluate(() => location.hash);
-await page.reload({ waitUntil: "networkidle" });
+await page.reload({ waitUntil: "domcontentloaded" });
 await page.waitForSelector(".fe-compare__chips");
 if ((await page.evaluate(() => location.hash)) !== compareHash) {
   layoutProblems += 1;
@@ -259,7 +277,7 @@ if ((await page.evaluate(() => location.hash)) !== compareHash) {
 
 // 1280
 await page.setViewportSize({ width: 1280, height: 800 });
-await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
 await page.waitForSelector(".fe-table__row");
 await shoot("07-runs-light-1280");
 

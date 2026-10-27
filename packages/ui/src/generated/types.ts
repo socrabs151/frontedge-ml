@@ -77,6 +77,8 @@ export interface ExampleResult {
   input: string;
   output: string;
   expected?: string | null;
+  referenceOutput?: string | null;
+  comparisonOutput?: string | null;
   referenceScore?: number | null;
   comparisonScore?: number | null;
   changed: boolean;
@@ -199,6 +201,8 @@ export const frontedgeRoles = {
   "ExampleResult.input": "text",
   "ExampleResult.output": "text",
   "ExampleResult.expected": "text",
+  "ExampleResult.referenceOutput": "text",
+  "ExampleResult.comparisonOutput": "text",
   "ExampleResult.referenceScore": "metric",
   "ExampleResult.comparisonScore": "metric",
   "LogLine.text": "text",

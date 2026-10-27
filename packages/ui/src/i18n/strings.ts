@@ -29,7 +29,10 @@ export const en = {
   "column.actions": "Actions",
   "column.tags": "Tags",
   "column.input": "Input",
+  "column.inputs": "Inputs",
   "column.output": "Output",
+  "column.outputs": "Outputs",
+  "column.expected": "Expected",
   "column.answer": "Answer",
   "column.example": "Example",
   "column.id": "id",
@@ -65,6 +68,10 @@ export const en = {
   "compare.noDifferences": "No differences",
   "compare.chartLabel": "{label} across {runs}",
 
+  "eval.tableLabel": "Eval comparison",
+  "eval.sortByDelta": "Sort by delta",
+  "eval.emptyValue": "(empty)",
+
   "menu.columns": "Columns",
   "menu.hidden": "hidden",
   "menu.resetWidths": "Reset column widths",
@@ -80,6 +87,7 @@ export const en = {
   "aggregate.examplesChanged": "{count} examples, {changed} changed",
 
   "empty.noDifferences": "No differences — every example scored the same as the reference.",
+  "empty.noRows": "No examples match this filter.",
   "loading.default": "Loading",
   "search.default": "Search",
   "search.clear": "Clear the search",
@@ -122,7 +130,10 @@ export const ru: Dictionary = {
   "column.actions": "Действия",
   "column.tags": "Теги",
   "column.input": "Вход",
+  "column.inputs": "Входы",
   "column.output": "Выход",
+  "column.outputs": "Выходы",
+  "column.expected": "Ожидаемый ответ",
   "column.answer": "Ответ",
   "column.example": "Example",
   "column.id": "id",
@@ -158,6 +169,10 @@ export const ru: Dictionary = {
   "compare.noDifferences": "Различий нет",
   "compare.chartLabel": "{label} для {runs}",
 
+  "eval.tableLabel": "Сравнение Eval",
+  "eval.sortByDelta": "Сортировать по дельте",
+  "eval.emptyValue": "(пусто)",
+
   "menu.columns": "Колонки",
   "menu.hidden": "скрыто",
   "menu.resetWidths": "Сбросить ширины колонок",
@@ -173,6 +188,7 @@ export const ru: Dictionary = {
   "aggregate.examplesChanged": "{count} Example, изменено {changed}",
 
   "empty.noDifferences": "Различий нет — все Example оценены так же, как в Baseline.",
+  "empty.noRows": "Нет примеров по этому фильтру.",
   "loading.default": "Загрузка",
   "search.default": "Поиск",
   "search.clear": "Очистить поиск",

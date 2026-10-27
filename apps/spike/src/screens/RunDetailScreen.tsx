@@ -255,7 +255,7 @@ export function RunDetailScreen({
                   setExamplesOffset(0);
                 }}
               />
-              {t("evals.onlyDiff")}
+              {t("detail.onlyDiff")}
             </label>
             <span className="fe-note fe-note--inline">{t("detail.scoreNote")}</span>
           </div>

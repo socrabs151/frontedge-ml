@@ -6,6 +6,7 @@ import {
   Segmented,
   Tabs,
   type DeltaFormat,
+  type EvalFilter,
 } from "@frontedge-ml/ui";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -33,7 +34,7 @@ export function EvalDiffScreen({
   const [comparisonRun, setComparisonRun] = useState("");
   const [comparison, setComparison] = useState<EvalComparison | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [onlyDiff, setOnlyDiff] = useState(false);
+  const [filter, setFilter] = useState<EvalFilter>("all");
   const [format, setFormat] = useState<DeltaFormat>("value");
   const [tab, setTab] = useState<EvalTab>("examples");
   const formatOptions: Array<{ value: DeltaFormat; label: string; title: string }> = [
@@ -93,53 +94,75 @@ export function EvalDiffScreen({
       : ["examples", "summary"];
   const activeTab: EvalTab = configuredTabs.includes(tab) ? tab : configuredTabs[0]!;
 
-  const examplesContent = (current: EvalComparison) => (
-    <>
-      <div className="fe-toolbar">
-        <label className="fe-checkline">
-          <input
-            type="checkbox"
-            checked={onlyDiff}
-            onChange={(event) => setOnlyDiff(event.target.checked)}
-          />
-          {t("evals.onlyDiff")}
-        </label>
-        <div className="fe-toolbar__spacer" />
-        <Segmented
-          ariaLabel={t("evals.numberFormat")}
-          value={format}
-          onChange={setFormat}
-          options={formatOptions}
-        />
-      </div>
+  const examplesContent = (current: EvalComparison) => {
+    const direction = current.direction;
+    const filterOptions: Array<{ value: EvalFilter; label: string }> = [
+      { value: "all", label: t("evals.filterAll") },
+      { value: "changed", label: t("evals.filterChanged") },
+      ...(direction === "none"
+        ? []
+        : [
+            { value: "improved" as const, label: t("evals.filterImproved") },
+            { value: "worsened" as const, label: t("evals.filterWorsened") },
+          ]),
+    ];
+    const activeFilter: EvalFilter =
+      direction === "none" && (filter === "improved" || filter === "worsened")
+        ? "all"
+        : filter;
 
-      <EvalCompareTable comparison={current} onlyDiff={onlyDiff} format={format} />
-      <p className="fe-note">
-        {t("evals.aggregateNote", {
-          aggregate:
-            current.aggregate === "fraction" ? t("aggregate.accuracy") : t("aggregate.mean"),
-        })}{" "}
-        {current.direction === "maximize"
-          ? t("evals.directionMax")
-          : current.direction === "minimize"
-            ? t("evals.directionMin")
-            : ""}
-      </p>
-    </>
-  );
+    return (
+      <>
+        <div className="fe-toolbar">
+          <Segmented
+            ariaLabel={t("evals.filter")}
+            value={activeFilter}
+            onChange={(next) => setFilter(next)}
+            options={filterOptions}
+          />
+          <div className="fe-toolbar__spacer" />
+          <Segmented
+            ariaLabel={t("evals.numberFormat")}
+            value={format}
+            onChange={setFormat}
+            options={formatOptions}
+          />
+        </div>
+
+        <EvalCompareTable comparison={current} filter={activeFilter} format={format} />
+        <p className="fe-note">
+          {t("evals.aggregateNote", {
+            aggregate:
+              current.aggregate === "fraction" ? t("aggregate.accuracy") : t("aggregate.mean"),
+          })}{" "}
+          {current.direction === "maximize"
+            ? t("evals.directionMax")
+            : current.direction === "minimize"
+              ? t("evals.directionMin")
+              : ""}
+        </p>
+      </>
+    );
+  };
 
   const summaryContent = (current: EvalComparison) => {
     const direction = current.direction;
     let improved = 0;
     let worsened = 0;
     let unchanged = 0;
+    let notComparable = 0;
     for (const example of current.examples) {
       const before = example.referenceScore;
       const after = example.comparisonScore;
-      if (before == null || after == null || before === after) {
+      if (before == null || after == null) {
+        notComparable += 1;
+        continue;
+      }
+      if (before === after) {
         unchanged += 1;
         continue;
       }
+      if (direction === "none") continue;
       const better = direction === "minimize" ? after < before : after > before;
       if (better) improved += 1;
       else worsened += 1;
@@ -172,6 +195,11 @@ export function EvalDiffScreen({
             ? t("evals.summary.noDirection", { unchanged })
             : t("evals.summary.breakdown", { improved, worsened, unchanged })}
         </p>
+        {notComparable > 0 ? (
+          <p className="fe-note">
+            {t("evals.summary.notComparable", { count: notComparable })}
+          </p>
+        ) : null}
       </div>
     );
   };

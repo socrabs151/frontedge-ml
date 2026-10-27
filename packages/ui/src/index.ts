@@ -23,6 +23,7 @@ export {
   formatScore,
   type DeltaFormat,
   type EvalCompareTableProps,
+  type EvalFilter,
 } from "./patterns/EvalCompareTable";
 export { DatasetTable, type DatasetTableProps } from "./patterns/DatasetTable";
 export { ColumnsMenu, type ColumnOption } from "./patterns/ColumnsMenu";

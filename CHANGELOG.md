@@ -25,6 +25,12 @@ The following are **public contracts** and change only in a major release:
 - Multi-run comparison: a **Compare** mode in the runs list selects 2–4 runs (Space or Enter
   toggles a row), `#/compare?runs=…` is linkable, the metrics are overlaid on a shared axis with
   the run names in the legend, and the config matrix marks every parameter that differs.
+- Eval evidence: the comparison rows carry `expected`, `reference_output` and `comparison_output`
+  (with `output` as the compatibility fallback), so the table shows the gold answer and both run
+  answers instead of only scores. The examples filter is All / Changed / Improved / Worsened
+  (improved/worsened follow the metric direction and are hidden when it is `none`), and the delta
+  column sorts by the number with nulls last. A null value is an en dash, an empty string is a word,
+  and long evidence is a native disclosure.
 - `Run.params`: a JSON object with the run configuration. The run detail has a **Config** tab;
   with a baseline it becomes a diff where every row says `changed`, `added` or `removed`, and
   nested objects render as JSON.

@@ -607,6 +607,65 @@ class TestHttp:
         assert len(response.json()) == 1
         assert response.headers["X-Frontedge-Total"] == "1"
 
+    def test_eval_comparison_carries_evidence(self) -> None:
+        comparison = frontedge.EvalComparison(
+            eval_id="e1",
+            name="demo",
+            dataset="d1",
+            scorer="exact",
+            metric="accuracy",
+            direction=frontedge.MetricDirection.maximize,
+            aggregate="mean",
+            reference_run="r1",
+            comparison_run="r2",
+            reference_name="run one",
+            comparison_name="run two",
+            examples=[
+                frontedge.ExampleResult(
+                    id="ex-0",
+                    input="question",
+                    output="old",
+                    expected="gold",
+                    reference_output="reference answer",
+                    comparison_output="comparison answer",
+                    reference_score=0.4,
+                    comparison_score=0.8,
+                    changed=True,
+                ),
+                frontedge.ExampleResult(
+                    id="ex-1",
+                    input="question 2",
+                    output="same",
+                    reference_score=0.5,
+                    comparison_score=0.5,
+                    changed=False,
+                ),
+            ],
+            reference_aggregate=0.45,
+            comparison_aggregate=0.65,
+            changed=1,
+        )
+
+        class Evals:
+            async def list_evals(self, request: Any) -> list[Any]:
+                return []
+
+            async def compare_evals(
+                self, request: Any, eval_id: str, reference: str, comparison_run: str
+            ) -> frontedge.EvalComparison:
+                return comparison
+
+        payload = client_for(evals=Evals()).get(
+            "/frontedge/api/evals/e1/compare?reference=r1&comparison=r2"
+        )
+        assert payload.status_code == 200, payload.text
+        rows = payload.json()["examples"]
+        assert rows[0]["referenceOutput"] == "reference answer"
+        assert rows[0]["comparisonOutput"] == "comparison answer"
+        assert rows[0]["expected"] == "gold"
+        assert rows[1].get("referenceOutput") is None
+        assert rows[1].get("expected") is None
+
     def test_run_params_reach_the_client(self) -> None:
         run = make_run(
             params={

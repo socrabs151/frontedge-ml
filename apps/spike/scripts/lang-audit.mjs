@@ -194,7 +194,7 @@ if (!process.argv.includes("--no-browser")) {
   const page = await context.newPage();
 
   for (const check of checks) {
-    await page.goto(`${base}/`, { waitUntil: "networkidle" });
+    await page.goto(`${base}/`, { waitUntil: "domcontentloaded" });
     await page.waitForSelector(".fe-table__row");
     await check.open(page);
     await page.waitForTimeout(400);
@@ -205,7 +205,7 @@ if (!process.argv.includes("--no-browser")) {
     }
   }
 
-  await page.goto(`${base}/`, { waitUntil: "networkidle" });
+  await page.goto(`${base}/`, { waitUntil: "domcontentloaded" });
   await page.getByRole("radiogroup", { name: "Language" }).getByText("RU", { exact: true }).click();
   await page.waitForTimeout(300);
   const ruText = await page.locator("body").innerText();

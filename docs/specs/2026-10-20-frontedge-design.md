@@ -563,11 +563,16 @@ on an example → input, output, expectation, score, the link with the run.
 
 The comparison of two runs over one eval. The rules from §3.2 (W&B Eval Tables, Run Comparer):
 
-- **examples — rows**, aligned by id; the columns are grouped by roles: Input · Output · Scores;
+- **examples — rows**, aligned by id; the columns are grouped by roles: Inputs (input, expected) ·
+  Outputs (reference run, comparison run) · Scores (both values, delta), the reference on the left;
 - **the baseline run is on the left and pinned**; a delta = the value of the run − the value of the baseline;
 - the direction of the metric (`maximize` / `minimize`) is set by the owner: the word "better/worse"
   is derived from it, not from the colour;
-- **"differences only"** — a filter on the rows; the changed examples are marked with an arrow, not with a colour;
+- **the filter** is All / Changed / Improved / Worsened; improved and worsened follow the direction
+  and disappear when it is `none`; the changed examples are marked with an arrow, not with a colour;
+- **the delta column sorts** by the numeric delta (ascending/descending, nulls last);
+- a missing expected or output is an en dash, an empty string is a word — the evidence is never a
+  blank cell;
 - **the number format is switched**: value · percentage · multiplier relative to the baseline
   (a percentage near zero lies, a multiplier does not);
 - **the row of aggregates** sticks to the bottom of the table: the fraction of correct ones (for exact_match) or the mean

@@ -276,7 +276,6 @@ def make_examples(count: int = 32) -> list[dict[str, Any]]:
                 "id": f"ex-{index:03d}",
                 "input": INPUTS[index % len(INPUTS)],
                 "output": OUTPUTS[index % len(OUTPUTS)],
-                "expected": "—",
                 "score": score,
                 "baselineScore": round(min(1.0, max(0.0, score + (random_.random() - 0.62) * 0.3)), 2),
             }
@@ -408,6 +407,10 @@ def _score(eval_id: str, run_id: str, example_id: str) -> float:
     return round(0.45 + value * 0.5, 3)
 
 
+def _degraded(text: str) -> str:
+    return f"{text.rstrip('.')} (incomplete)."
+
+
 def make_comparison(
     eval_id: str,
     reference_run: str,
@@ -428,15 +431,30 @@ def make_comparison(
         comparison_score = _score(eval_id, comparison_run, example_id)
         reference_total += reference_score
         comparison_total += comparison_score
-        is_changed = reference_score != comparison_score
+        expected = OUTPUTS[index % len(OUTPUTS)]
+        # The reference is the good answer; a worse comparison gets a visibly incomplete one,
+        # so the evidence columns differ and the row is not just a number.
+        if reference_score >= comparison_score:
+            reference_output = expected
+            comparison_output = (
+                expected if reference_score == comparison_score else _degraded(expected)
+            )
+        else:
+            reference_output = _degraded(expected)
+            comparison_output = expected
+        is_changed = (
+            reference_score != comparison_score or reference_output != comparison_output
+        )
         if is_changed:
             changed += 1
         examples.append(
             ExampleResult(
                 id=example_id,
                 input=INPUTS[index % len(INPUTS)],
-                output=OUTPUTS[index % len(OUTPUTS)],
-                expected="—",
+                output=comparison_output,
+                expected=expected,
+                reference_output=reference_output,
+                comparison_output=comparison_output,
                 reference_score=reference_score,
                 comparison_score=comparison_score,
                 changed=is_changed,
@@ -498,7 +516,6 @@ def make_dataset_detail(dataset_id: str) -> DatasetDetail | None:
             id=f"ex-{index:03d}",
             input=INPUTS[index % len(INPUTS)],
             output=OUTPUTS[index % len(OUTPUTS)],
-            expected="—",
             reference_score=round(_hash_value(dataset_id, f"ex-{index:03d}") * 0.5 + 0.45, 3),
             comparison_score=None,
             changed=False,

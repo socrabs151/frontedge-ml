@@ -231,8 +231,12 @@ class ExampleResult(FrontedgeModel):
 
     id: str = Field(json_schema_extra=role("id"))
     input: str = Field(json_schema_extra=role("text"))
+    #: The comparison run's answer. Kept for providers that predate the two explicit fields.
     output: str = Field(json_schema_extra=role("text"))
     expected: str | None = Field(default=None, json_schema_extra=role("text"))
+    #: Comparison-only evidence; dataset rows leave them empty.
+    reference_output: str | None = Field(default=None, json_schema_extra=role("text"))
+    comparison_output: str | None = Field(default=None, json_schema_extra=role("text"))
     reference_score: float | None = Field(default=None, json_schema_extra=role("metric"))
     comparison_score: float | None = Field(default=None, json_schema_extra=role("metric"))
     changed: bool

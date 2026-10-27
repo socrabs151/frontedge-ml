@@ -15,7 +15,7 @@ const BASE = process.env.FE_BASE_URL ?? "http://localhost:5173";
 const problems = [];
 const wait = (ms) => page.waitForTimeout(ms);
 
-await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
 await page.waitForSelector(".fe-table__row");
 
 const focusedIndex = () =>
@@ -81,7 +81,7 @@ await page.waitForSelector(".fe-detail__head", { timeout: 8000 }).catch(() => {
 });
 
 // The columns menu: Escape closes it
-await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
 await page.waitForSelector(".fe-table__row");
 await page.getByRole("button", { name: /Columns/ }).click();
 await page.waitForSelector(".fe-menu");

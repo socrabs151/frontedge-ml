@@ -191,6 +191,39 @@ The list carries a **24-point sparkline** per series (the table draws a 24-pixel
 endpoint carries the full series for the charts. The provider still returns full series: the
 server downsamples them on the way out, so a page of 50 runs does not ship 50 × 60 points.
 
+### Eval evidence
+
+`compare_evals` returns an `EvalComparison`; every row is an `ExampleResult` with the evidence:
+`input`, `expected` (the gold answer), `reference_output`, `comparison_output`, the two scores and
+`changed`. `reference_output` and `comparison_output` are comparison-only: a dataset row leaves them
+empty. Providers that predate them keep setting `output`; the interface uses
+`comparison_output ?? output`, so an old comparison still renders.
+
+```python
+from frontedge.models import EvalComparison, ExampleResult
+
+return EvalComparison(
+    ...,
+    examples=[
+        ExampleResult(
+            id=row.id,
+            input=row.prompt,
+            expected=row.gold,
+            reference_output=row.baseline_answer,
+            comparison_output=row.candidate_answer,
+            reference_score=row.baseline_score,
+            comparison_score=row.candidate_score,
+            changed=row.baseline_answer != row.candidate_answer,
+        )
+    ],
+)
+```
+
+The examples tab filters by All / Changed / Improved / Worsened (improved and worsened follow
+`direction`, and are not offered when it is `none`), and the delta column sorts by the number, with
+null scores last. `null` renders as an en dash; an empty string renders as a word, so a provider
+does not have to invent a placeholder.
+
 ### Paging examples
 
 Run examples and dataset examples have their own endpoints, and both page. A provider can take the
