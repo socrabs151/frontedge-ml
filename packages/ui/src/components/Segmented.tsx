@@ -5,6 +5,8 @@ export interface SegmentedOption<T extends string> {
   value: T;
   label: ReactNode;
   title?: string;
+  /** A spoken name when the visible label is a number or an abbreviation. */
+  ariaLabel?: string;
 }
 
 interface SegmentedProps<T extends string> {
@@ -30,6 +32,7 @@ export function Segmented<T extends string>({
           type="button"
           role="radio"
           aria-checked={option.value === value}
+          aria-label={option.ariaLabel}
           title={option.title}
           className="fe-segmented__item"
           onClick={() => onChange(option.value)}

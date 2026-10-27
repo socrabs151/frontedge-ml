@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { en, ru, type StringKey } from "./strings";
+import { en, ru, type Dictionary, type StringKey } from "./strings";
 
 export type Lang = "en" | "ru";
 
@@ -33,35 +33,64 @@ function interpolate(template: string, params?: Record<string, string | number>)
   );
 }
 
+export interface I18nProviderProps {
+  children: ReactNode;
+  defaultLang?: Lang;
+  /** Controlled language. Pass `onLangChange` to keep the toggle working. */
+  lang?: Lang;
+  onLangChange?: (lang: Lang) => void;
+  /** Product strings layered over the package dictionary for each language. */
+  strings?: Partial<Record<Lang, Partial<Dictionary>>>;
+  /** Keep the choice in localStorage; ignored while `lang` is controlled. */
+  persist?: boolean;
+  /** Write `lang` onto `<html>`; a host that owns the document can turn this off. */
+  syncDocument?: boolean;
+}
+
 export function I18nProvider({
   children,
   defaultLang = "en",
-}: {
-  children: ReactNode;
-  defaultLang?: Lang;
-}) {
-  const [lang, setLangState] = useState<Lang>(() => {
-    const stored = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+  lang: controlledLang,
+  onLangChange,
+  strings,
+  persist = true,
+  syncDocument = true,
+}: I18nProviderProps) {
+  const [ownLang, setOwnLang] = useState<Lang>(() => {
+    const stored =
+      persist && typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     return stored === "ru" || stored === "en" ? stored : defaultLang;
   });
+  const lang = controlledLang ?? ownLang;
 
-  const setLang = useCallback((next: Lang) => {
-    localStorage.setItem(STORAGE_KEY, next);
-    setLangState(next);
-  }, []);
+  const setLang = useCallback(
+    (next: Lang) => {
+      if (controlledLang === undefined) {
+        if (persist) localStorage.setItem(STORAGE_KEY, next);
+        setOwnLang(next);
+      }
+      onLangChange?.(next);
+    },
+    [controlledLang, onLangChange, persist],
+  );
 
   useEffect(() => {
+    if (!syncDocument) return;
     document.documentElement.lang = lang;
     document.documentElement.dataset.lang = lang;
-  }, [lang]);
+  }, [lang, syncDocument]);
 
+  const dictionary = useMemo(
+    () => ({ ...dictionaries[lang], ...(strings?.[lang] ?? {}) }),
+    [lang, strings],
+  );
   const value = useMemo<I18nValue>(
     () => ({
       lang,
       setLang,
-      t: (key, params) => interpolate(dictionaries[lang][key], params),
+      t: (key, params) => interpolate(dictionary[key], params),
     }),
-    [lang, setLang],
+    [dictionary, lang, setLang],
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

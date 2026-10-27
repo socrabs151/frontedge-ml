@@ -1,5 +1,4 @@
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import * as Checkbox from "@radix-ui/react-checkbox";
 import { Check, Columns3 } from "lucide-react";
 import type { VisibilityState } from "@tanstack/react-table";
 import { useT } from "../i18n/I18nProvider";
@@ -51,11 +50,13 @@ export function ColumnsMenu({
                 }
                 onSelect={(event) => event.preventDefault()}
               >
-                <Checkbox.Root className="fe-checkbox" checked={visible}>
-                  <Checkbox.Indicator>
-                    <Check size={11} aria-hidden />
-                  </Checkbox.Indicator>
-                </Checkbox.Root>
+                <span
+                  className="fe-checkbox"
+                  data-state={visible ? "checked" : "unchecked"}
+                  aria-hidden
+                >
+                  {visible ? <Check size={11} aria-hidden /> : null}
+                </span>
                 <span className="fe-menu__label">{column.label}</span>
               </DropdownMenu.CheckboxItem>
             );

@@ -25,6 +25,14 @@ The following are **public contracts** and change only in a major release:
 - Multi-run comparison: a **Compare** mode in the runs list selects 2–4 runs (Space or Enter
   toggles a row), `#/compare?runs=…` is linkable, the metrics are overlaid on a shared axis with
   the run names in the legend, and the config matrix marks every parameter that differs.
+- `RunsTable` takes `height`, `loading` and `empty`: a host that is not a flex column can bound the
+  scroll area and own the loading/empty copy without reproducing the internal layout.
+- `I18nProvider` takes product `strings`, a controlled `lang` with `onLangChange`, `persist` and
+  `syncDocument`; the dictionary can be overridden per language, and a host can keep
+  `localStorage` and `<html lang>` to itself.
+- The columns menu is a single `menuitemcheckbox` with a presentational check (no nested checkbox),
+  the density radios have spoken names, table sparklines are decorative and the metric direction
+  has a screen-reader word; the unused Radix checkbox dependency is gone.
 - Eval evidence: the comparison rows carry `expected`, `reference_output` and `comparison_output`
   (with `output` as the compatibility fallback), so the table shows the gold answer and both run
   answers instead of only scores. The examples filter is All / Changed / Improved / Worsened

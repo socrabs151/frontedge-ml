@@ -614,6 +614,11 @@ The types come from the Python models: `frontedge gen --out src/generated` creat
 `client.ts`, which you can import instead of hand-written types. Pass `--base-path` if the
 interface is mounted under another prefix.
 
+`RunsTable` fills a flex column by default; pass `height` when the host is a plain block, and use
+`loading` / `empty` for host-owned states. `I18nProvider` accepts product `strings`, a controlled
+`lang`, `persist` and `syncDocument`, so a host can keep the language in its own store and leave
+`<html lang>` to its own layout.
+
 ### Calling the API from another origin
 
 The built interface is same-origin, but a separate app (a Vite dev server, another domain)

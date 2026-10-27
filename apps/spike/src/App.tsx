@@ -333,9 +333,9 @@ function Shell() {
               value={density}
               onChange={setDensity}
               options={[
-                { value: "compact", label: "28" },
-                { value: "default", label: "32" },
-                { value: "comfortable", label: "40" },
+                { value: "compact", label: "28", ariaLabel: t("density.compact") },
+                { value: "default", label: "32", ariaLabel: t("density.default") },
+                { value: "comfortable", label: "40", ariaLabel: t("density.comfortable") },
               ]}
             />
             <button

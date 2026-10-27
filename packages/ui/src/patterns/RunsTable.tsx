@@ -12,7 +12,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, Check, ChevronsUpDown } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { StatusBadge } from "../components/StatusBadge";
 import { useI18n } from "../i18n/I18nProvider";
@@ -66,6 +66,12 @@ export interface RunsTableProps {
   comparing?: boolean;
   selectedIds?: string[];
   onToggleCompare?: (run: Run) => void;
+  /** A bounded scroll area for a host that is not a flex column. */
+  height?: number | string;
+  /** A host-owned loading state, shown instead of the table. */
+  loading?: ReactNode;
+  /** A host-owned empty state, shown instead of the table. */
+  empty?: ReactNode;
 }
 
 const KNOWN_COLUMNS = [
@@ -115,6 +121,9 @@ export function RunsTable({
   comparing = false,
   selectedIds = [],
   onToggleCompare,
+  height,
+  loading,
+  empty,
 }: RunsTableProps) {
   const { t, lang } = useI18n();
   const [ownSorting, setOwnSorting] = useState<SortingState>([
@@ -294,6 +303,7 @@ export function RunsTable({
             <span title={directionTitle(direction)}>
               {spec?.label ?? t(`metric.${id}`)}{" "}
               <span aria-hidden>{arrow(direction)}</span>
+              <span className="sr-only">{directionTitle(direction)}</span>
             </span>
           );
         },
@@ -327,6 +337,7 @@ export function RunsTable({
           return (
             <span title={directionTitle(spec?.direction ?? "none")}>
               {spec?.label ?? id} <span aria-hidden>{arrow(spec?.direction ?? "none")}</span>
+              <span className="sr-only">{directionTitle(spec?.direction ?? "none")}</span>
             </span>
           );
         },
@@ -476,6 +487,13 @@ export function RunsTable({
     }
   };
 
+  if (loading !== undefined) {
+    return <div className="fe-table">{loading}</div>;
+  }
+  if (runs.length === 0 && empty !== undefined) {
+    return <div className="fe-table">{empty}</div>;
+  }
+
   const virtualItems = virtualizer.getVirtualItems();
   const paddingTop = virtualItems.length > 0 ? virtualItems[0]?.start ?? 0 : 0;
   const paddingBottom =
@@ -484,8 +502,12 @@ export function RunsTable({
       : 0;
 
   return (
-    <div className="fe-table">
-      <div className="fe-table__scroll" ref={scrollRef}>
+    <div className={clsx("fe-table", height !== undefined && "fe-table--bounded")}>
+      <div
+        className="fe-table__scroll"
+        ref={scrollRef}
+        style={height === undefined ? undefined : { height }}
+      >
         <table className="fe-table__table" style={{ minWidth: table.getTotalSize() }}>
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (

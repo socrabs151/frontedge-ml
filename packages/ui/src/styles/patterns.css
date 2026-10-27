@@ -272,6 +272,14 @@
   flex: 1;
 }
 
+.fe-table--bounded {
+  flex: none;
+}
+
+.fe-table--bounded .fe-table__scroll {
+  flex: none;
+}
+
 .fe-table__scroll {
   flex: 1;
   min-height: 0;

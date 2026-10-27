@@ -69,7 +69,7 @@ export function MetricCell({
       {hasSpark ? (
         // Pinned to the right edge: the sparklines of a column must share one baseline, and the
         // delta before them has a fixed width, so the values line up too.
-        <span className="fe-metric__spark">
+        <span className="fe-metric__spark" aria-hidden>
           <Sparkline
             values={series ?? []}
             color={color}

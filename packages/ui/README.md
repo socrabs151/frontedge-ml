@@ -61,6 +61,24 @@ import { I18nProvider } from "@frontedge-ml/ui";
 </I18nProvider>
 ```
 
+A host can bring product strings, control the language and own the document:
+
+```tsx
+<I18nProvider
+  lang={lang}
+  onLangChange={setLang}
+  persist={false}
+  syncDocument={false}
+  strings={{ en: { "column.status": "State" } }}
+>
+  <App />
+</I18nProvider>
+```
+
+`strings` is layered over the package dictionary per language; `persist` controls localStorage and
+`syncDocument` controls the `lang` attribute on `<html>`. The built-in languages remain English and
+Russian; the override is for product vocabulary, not a new locale.
+
 The package does not load fonts itself — add the ones you use:
 
 ```bash
@@ -106,6 +124,20 @@ The pattern takes the ids of the columns and the actions and builds the table it
 `resizable={false}` locks the table. The resizer is a focusable separator: arrows change the
 width by 8 px (Shift — 24), a double click resets one column. `onResetWidths` on `ColumnsMenu`
 adds a "Reset column widths" item (show it only when a width actually changed).
+
+`RunsTable` fills a flex column by default. When the host is a plain block, pass `height` so the
+scroll area is bounded and virtualisation keeps working; `loading` and `empty` take host-owned
+states:
+
+```tsx
+<RunsTable
+  runs={runs}
+  height={480}
+  loading={<p>Loading runs…</p>}
+  empty={<EmptyState title="No runs yet" text="Start a run to see it here." />}
+  {/* the other props */}
+/>
+```
 
 An unknown column id is built from the `metrics` dictionary of the run, so a project can show
 its own metrics without touching the package. `metricSpecs` (the `[[metrics]]` of

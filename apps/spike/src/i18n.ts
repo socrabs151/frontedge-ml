@@ -17,6 +17,9 @@ const en = {
   "nav.expand": "Expand the sidebar",
 
   "topbar.density": "Table density",
+  "density.compact": "Compact rows, 28 pixels",
+  "density.default": "Default rows, 32 pixels",
+  "density.comfortable": "Comfortable rows, 40 pixels",
   "topbar.themeToDark": "Switch to the dark theme",
   "topbar.themeToLight": "Switch to the light theme",
 
@@ -134,6 +137,9 @@ const ru: Record<AppStringKey, string> = {
   "nav.expand": "Развернуть меню",
 
   "topbar.density": "Плотность таблицы",
+  "density.compact": "Компактные строки, 28 пикселей",
+  "density.default": "Обычные строки, 32 пикселя",
+  "density.comfortable": "Просторные строки, 40 пикселей",
   "topbar.themeToDark": "Переключить на тёмную тему",
   "topbar.themeToLight": "Переключить на светлую тему",
 

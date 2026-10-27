@@ -19,55 +19,42 @@ const appDir = mkdtempSync(join(tmpdir(), "frontedge-consumer-"));
 const MAIN = `import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@frontedge-ml/ui/styles.css";
-import { RunsTable, StatusBadge, type Run } from "@frontedge-ml/ui";
+import { I18nProvider, RunsTable, StatusBadge, type Run } from "@frontedge-ml/ui";
 
 const startedAt = new Date(Date.now() - 42 * 60_000).toISOString();
-const runs: Run[] = [
-  {
-    id: "run-001",
-    name: "baseline",
-    status: "succeeded",
-    dataset: "demo",
-    gitSha: "",
-    startedAt,
-    durationMs: 130_000,
-    owner: "",
-    metrics: { accuracy: 0.9 },
-    series: { accuracy: [{ step: 0, value: 0.8 }, { step: 1, value: 0.9 }] },
-    metricDirection: { accuracy: "maximize" },
-    stages: [],
-  },
-  {
-    id: "run-002",
-    name: "candidate",
-    status: "failed",
-    dataset: "demo",
-    gitSha: "",
-    startedAt,
-    durationMs: 155_000,
-    owner: "",
-    metrics: { accuracy: 0.8 },
-    series: {},
-    metricDirection: { accuracy: "maximize" },
-    stages: [],
-  },
-];
+const runs: Run[] = Array.from({ length: 60 }, (_, index) => ({
+  id: \`run-\${index + 1}\`,
+  name: index === 0 ? "baseline" : \`candidate-\${index + 1}\`,
+  status: index === 1 ? "failed" : "succeeded",
+  dataset: "demo",
+  gitSha: "",
+  startedAt,
+  durationMs: 130_000 + index,
+  owner: "",
+  metrics: { accuracy: index === 0 ? 0.9 : 0.8 },
+  series: { accuracy: [{ step: 0, value: 0.8 }, { step: 1, value: 0.9 }] },
+  metricDirection: { accuracy: "maximize" },
+  stages: [],
+}));
 
 function App() {
   return (
-    <div className="fe-root" style={{ padding: 16 }}>
-      <StatusBadge status="succeeded" />
-      <RunsTable
-        runs={runs}
-        now={Date.now()}
-        rowHeight={32}
-        columnVisibility={{}}
-        onColumnVisibilityChange={() => {}}
-        onOpenRun={() => {}}
-        columnIds={["name", "status", "dataset", "accuracy"]}
-        metricSpecs={[{ id: "accuracy", label: "Accuracy", direction: "maximize" }]}
-      />
-    </div>
+    <I18nProvider strings={{ en: { "column.status": "State" } }}>
+      <div className="fe-root" style={{ padding: 16 }}>
+        <StatusBadge status="succeeded" />
+        <RunsTable
+          runs={runs}
+          now={Date.now()}
+          rowHeight={32}
+          height={320}
+          columnVisibility={{}}
+          onColumnVisibilityChange={() => {}}
+          onOpenRun={() => {}}
+          columnIds={["name", "status", "dataset", "accuracy"]}
+          metricSpecs={[{ id: "accuracy", label: "Accuracy", direction: "maximize" }]}
+        />
+      </div>
+    </I18nProvider>
   );
 }
 
@@ -189,10 +176,16 @@ try {
   await page.waitForSelector(".fe-table__row", { timeout: 15000 });
   const rows = await page.locator(".fe-table__row").count();
   const accuracy = await page.locator(".fe-metric__value").first().textContent();
+  const stateHeader = await page.getByRole("columnheader", { name: /State/ }).count();
+  const scrollBox = await page.locator(".fe-table__scroll").boundingBox();
   await browser.close();
 
-  if (rows < 2) throw new Error(`expected 2 rows, got ${rows}`);
+  if (rows < 2) throw new Error(`expected at least 2 rows, got ${rows}`);
   if (!accuracy?.includes("0.900")) throw new Error(`unexpected metric cell: ${accuracy}`);
+  if (stateHeader === 0) throw new Error("the product dictionary override did not reach the header");
+  if (!scrollBox || scrollBox.height < 200 || scrollBox.height > 321) {
+    throw new Error(`the table height is not bounded: ${scrollBox?.height}`);
+  }
   if (errors.length > 0) throw new Error(`console errors:\n- ${errors.join("\n- ")}`);
 
   console.log(
