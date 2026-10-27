@@ -127,6 +127,7 @@ async function checkDeepLink() {
   const opened = await page.evaluate(() => location.hash);
 
   await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForSelector(".fe-detail__head", { timeout: 15000 });
   const survived = (await page.locator(".fe-detail__head").count()) === 1;
   const afterReload = await page.evaluate(() => location.hash);
 

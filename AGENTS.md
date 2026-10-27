@@ -24,6 +24,7 @@ pnpm check:contrast               # WCAG contrast of every token pair, both them
 pnpm build:ui                     # build the interface and copy it into the Python package
 pnpm gen:types                    # regenerate the TypeScript types from the Python models
 pnpm demo                         # the demo on FastAPI: http://127.0.0.1:8000/frontedge
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/demo.ps1 restart  # Windows: detached demo, no blocked call
 uv sync --all-packages            # the Python workspace
 uv run --package frontedge pytest python/frontedge/tests -q
 uv run --package frontedge frontedge check examples/demo-ml/frontedge.toml
