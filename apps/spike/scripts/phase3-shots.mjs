@@ -47,10 +47,10 @@ await page.waitForSelector(".fe-table--eval", { timeout: 15000 });
 await shoot("20-evals-light-1440");
 serious += await audit("eval diff light");
 
-// differences only
-await page.getByLabel("Differences only").check();
+// changed rows
+await page.getByRole("radio", { name: "Changed" }).click();
 await shoot("21-evals-only-diff-1440");
-await page.getByLabel("Differences only").uncheck();
+await page.getByRole("radio", { name: "All" }).click();
 
 // number format: percentage
 await page.getByRole("radio", { name: "73%" }).click();
