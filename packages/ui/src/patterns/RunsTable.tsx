@@ -4,6 +4,7 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
+  type CellContext,
   type ColumnDef,
   type ColumnSizingState,
   type SortingState,
@@ -72,6 +73,10 @@ export interface RunsTableProps {
   loading?: ReactNode;
   /** A host-owned empty state, shown instead of the table. */
   empty?: ReactNode;
+  /** Replace a cell's content; the column keeps its width, resize and sorting. */
+  cellRenderers?: Record<string, (run: Run) => ReactNode>;
+  /** Replace a header's content. */
+  headerRenderers?: Record<string, () => ReactNode>;
 }
 
 const KNOWN_COLUMNS = [
@@ -124,6 +129,8 @@ export function RunsTable({
   height,
   loading,
   empty,
+  cellRenderers = {},
+  headerRenderers = {},
 }: RunsTableProps) {
   const { t, lang } = useI18n();
   const [ownSorting, setOwnSorting] = useState<SortingState>([
@@ -360,11 +367,22 @@ export function RunsTable({
       }) as ColumnDef<Run, unknown>;
 
     const ids = columnIds && columnIds.length > 0 ? columnIds : [...KNOWN_COLUMNS];
+    const canSort = (id: string) =>
+      Boolean(fixed[id]) ||
+      metricSpecs.some((spec) => spec.id === id) ||
+      runs.some((run) => Object.prototype.hasOwnProperty.call(run.metrics, id));
     const built = ids.map((id) => {
       const def = fixed[id] ?? custom(id);
       const spec = columnSpecs.find((item) => item.id === id);
+      const cell = cellRenderers[id];
+      const header = headerRenderers[id];
       return {
         ...def,
+        header: header ?? def.header,
+        cell: cell
+          ? (info: CellContext<Run, unknown>) => cell(info.row.original)
+          : def.cell,
+        enableSorting: cell && !canSort(id) ? false : def.enableSorting,
         size: spec?.width ?? def.size,
         enableResizing: resizable && spec?.resizable !== false,
       } as ColumnDef<Run, unknown>;
@@ -404,14 +422,17 @@ export function RunsTable({
   }, [
     baseline,
     baselineId,
+    cellRenderers,
     columnIds,
     columnSpecs,
     comparing,
+    headerRenderers,
     lang,
     metricSpecs,
     now,
     resizable,
     rowActions,
+    runs,
     selectedIds,
   ]);
 

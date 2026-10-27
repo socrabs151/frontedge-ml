@@ -50,8 +50,12 @@ function App() {
           columnVisibility={{}}
           onColumnVisibilityChange={() => {}}
           onOpenRun={() => {}}
-          columnIds={["name", "status", "dataset", "accuracy"]}
+          columnIds={["name", "status", "dataset", "model", "accuracy"]}
           metricSpecs={[{ id: "accuracy", label: "Accuracy", direction: "maximize" }]}
+          headerRenderers={{ model: () => "Model" }}
+          cellRenderers={{
+            model: (run) => <span className="model">{run.dataset}</span>,
+          }}
         />
       </div>
     </I18nProvider>
@@ -177,12 +181,17 @@ try {
   const rows = await page.locator(".fe-table__row").count();
   const accuracy = await page.locator(".fe-metric__value").first().textContent();
   const stateHeader = await page.getByRole("columnheader", { name: /State/ }).count();
+  const modelHeader = await page.getByRole("columnheader", { name: /Model/ }).count();
+  const modelCells = await page.locator(".model").count();
   const scrollBox = await page.locator(".fe-table__scroll").boundingBox();
   await browser.close();
 
   if (rows < 2) throw new Error(`expected at least 2 rows, got ${rows}`);
   if (!accuracy?.includes("0.900")) throw new Error(`unexpected metric cell: ${accuracy}`);
   if (stateHeader === 0) throw new Error("the product dictionary override did not reach the header");
+  if (modelHeader === 0 || modelCells === 0) {
+    throw new Error("the custom header/cell renderer did not render");
+  }
   if (!scrollBox || scrollBox.height < 200 || scrollBox.height > 321) {
     throw new Error(`the table height is not bounded: ${scrollBox?.height}`);
   }

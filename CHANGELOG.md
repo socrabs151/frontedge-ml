@@ -14,6 +14,15 @@ The following are **public contracts** and change only in a major release:
   `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
+## [Unreleased]
+
+### Added
+
+- `RunsTable` takes `cellRenderers` and `headerRenderers`: a host can add a link, a model name or
+  an action column by id without forking the table. The column keeps its width, resize lock and
+  visibility; a custom id that is not a metric is not sortable. The consumer smoke renders a
+  custom column with a product dictionary override.
+
 ## [0.2.0] — 2026-10-25
 
 ### Added

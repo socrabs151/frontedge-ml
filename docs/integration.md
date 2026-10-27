@@ -615,9 +615,11 @@ The types come from the Python models: `frontedge gen --out src/generated` creat
 interface is mounted under another prefix.
 
 `RunsTable` fills a flex column by default; pass `height` when the host is a plain block, and use
-`loading` / `empty` for host-owned states. `I18nProvider` accepts product `strings`, a controlled
-`lang`, `persist` and `syncDocument`, so a host can keep the language in its own store and leave
-`<html lang>` to its own layout.
+`loading` / `empty` for host-owned states. `cellRenderers` and `headerRenderers` replace a cell or
+a header by column id, so a link or a model name does not require forking the table; an id that is
+neither built-in nor a metric is not sortable. `I18nProvider` accepts product `strings`, a
+controlled `lang`, `persist` and `syncDocument`, so a host can keep the language in its own store
+and leave `<html lang>` to its own layout.
 
 ### Calling the API from another origin
 

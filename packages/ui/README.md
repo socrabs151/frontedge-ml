@@ -139,6 +139,19 @@ states:
 />
 ```
 
+For a column that is not a metric — a link, a model name, an action — pass a cell and a header
+renderer. The column keeps its width, resize lock and visibility; an id that is neither a built-in
+column nor a metric is not sortable.
+
+```tsx
+<RunsTable
+  columnIds={["name", "status", "model", "accuracy"]}
+  headerRenderers={{ model: () => "Model" }}
+  cellRenderers={{ model: (run) => <a href={`/models/${run.name}`}>{run.name}</a> }}
+  {/* the other props */}
+/>
+```
+
 An unknown column id is built from the `metrics` dictionary of the run, so a project can show
 its own metrics without touching the package. `metricSpecs` (the `[[metrics]]` of
 `frontedge.toml`) supplies the label, the number of digits and the direction; without it the
