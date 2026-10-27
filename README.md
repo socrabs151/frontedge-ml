@@ -43,7 +43,7 @@ Frontedge is that layer, packaged.
 | **Run detail** | metrics over steps, the run configuration and its diff against the baseline, example-level evaluation, live logs over SSE, artifacts, provenance, and the reason a run failed |
 | **Compare** | 2–4 runs on one shared axis, a config matrix that marks the parameters that differ, and a linkable `#/compare?runs=…` view |
 | **Eval diff** | two runs compared example by example: examples as rows, columns grouped by role, reference run pinned left |
-| **Dataset** | versions, examples, a datasheet (motivation, composition, collection, intended use) and provenance |
+| **Dataset** | versions, a paged example table with a drill-down into input/answer/expected/score, a datasheet (motivation, composition, collection, intended use) and provenance |
 | **A design system** | tokens, primitives and ML patterns — density, dark theme, keyboard navigation, WCAG-checked contrast, English with a Russian toggle |
 
 ![Run detail](docs/images/run-detail.png)

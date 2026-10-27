@@ -440,6 +440,10 @@
   cursor: pointer;
 }
 
+.fe-table__row--selectable {
+  cursor: pointer;
+}
+
 .fe-table__row:hover .fe-table__td {
   background: var(--fe-surface-hover);
 }

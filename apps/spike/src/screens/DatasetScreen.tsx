@@ -1,9 +1,12 @@
 import {
+  Button,
   DatasetTable,
+  EMPTY,
   EmptyState,
   LoadingRows,
   ProvenanceList,
   Tabs,
+  formatMetric,
   useI18n,
 } from "@frontedge-ml/ui";
 import { RefreshCw } from "lucide-react";
@@ -25,6 +28,7 @@ export function DatasetScreen() {
   const [examples, setExamples] = useState<ExampleResult[]>([]);
   const [examplesTotal, setExamplesTotal] = useState(0);
   const [examplesOffset, setExamplesOffset] = useState(0);
+  const [selectedExample, setSelectedExample] = useState<ExampleResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState("examples");
   const [search, setSearch] = useState("");
@@ -126,19 +130,61 @@ export function DatasetScreen() {
               onChange={(event) => {
                 setSearch(event.target.value);
                 setExamplesOffset(0);
+                setSelectedExample(null);
               }}
             />
           </div>
+          {selectedExample ? (
+            <section className="fe-example-detail" aria-label={t("datasets.exampleDetail")}>
+              <header className="fe-example-detail__head">
+                <h3 className="fe-example-detail__title fe-mono">{selectedExample.id}</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedExample(null)}
+                >
+                  {t("datasets.close")}
+                </Button>
+              </header>
+              <dl className="fe-example-detail__grid">
+                <div>
+                  <dt>{t("column.input")}</dt>
+                  <dd>{selectedExample.input || EMPTY}</dd>
+                </div>
+                <div>
+                  <dt>{t("column.answer")}</dt>
+                  <dd>{selectedExample.output || EMPTY}</dd>
+                </div>
+                <div>
+                  <dt>{t("column.expected")}</dt>
+                  <dd>{selectedExample.expected || EMPTY}</dd>
+                </div>
+                <div>
+                  <dt>{t("column.score")}</dt>
+                  <dd className="fe-num">
+                    {formatMetric(selectedExample.referenceScore, 3, lang)}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          ) : null}
           {examplesTotal === 0 ? (
             <p className="fe-note">{t("datasets.noExamples", { query: search })}</p>
           ) : (
             <>
-              <DatasetTable examples={examples} />
+              <DatasetTable
+                examples={examples}
+                selectedId={selectedExample?.id}
+                onSelect={setSelectedExample}
+              />
               <Pager
                 offset={examplesOffset}
                 total={examplesTotal}
                 pageSize={EXAMPLE_PAGE}
-                onChange={setExamplesOffset}
+                onChange={(offset) => {
+                  setExamplesOffset(offset);
+                  setSelectedExample(null);
+                }}
               />
             </>
           )}
@@ -178,6 +224,7 @@ export function DatasetScreen() {
               onClick={() => {
                 setSelectedId(dataset.id);
                 setExamplesOffset(0);
+                setSelectedExample(null);
               }}
             >
               <span className="fe-datasets__name">{dataset.name}</span>

@@ -114,6 +114,8 @@ const en = {
 
   "datasets.examplesSearch": "Find an example by text",
   "datasets.noExamples": "No examples match {query}.",
+  "datasets.exampleDetail": "Example detail",
+  "datasets.close": "Close",
   "datasets.datasheet": "Datasheet",
   "datasets.provenance": "Provenance",
   "datasets.loadError": "Could not load the datasets",
@@ -236,6 +238,8 @@ const ru: Record<AppStringKey, string> = {
 
   "datasets.examplesSearch": "Найти Example по тексту",
   "datasets.noExamples": "По запросу «{query}» Example нет.",
+  "datasets.exampleDetail": "Детали Example",
+  "datasets.close": "Закрыть",
   "datasets.datasheet": "Datasheet",
   "datasets.provenance": "Provenance",
   "datasets.loadError": "Не удалось загрузить Datasets",

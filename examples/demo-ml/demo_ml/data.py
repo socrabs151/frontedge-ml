@@ -49,6 +49,14 @@ STATUS_WEIGHTS: list[tuple[RunStatus, float]] = [
 STAGE_ORDER = [StageName.prepare, StageName.train, StageName.eval, StageName.publish]
 
 
+FAILURE_ERRORS = [
+    "CUDA out of memory while allocating 12.4 GiB",
+    "Process exited with code 1: tokenizer mismatch",
+    "Validation loss became NaN at step 2410",
+    "Worker heartbeat lost after 15 minutes",
+]
+
+
 def _pick_status(random_: random.Random) -> RunStatus:
     roll = random_.random()
     acc = 0.0
@@ -153,6 +161,17 @@ def make_runs(count: int = 200) -> list[Run]:
         if status is RunStatus.failed:
             tags.append("regression")
 
+        error = None
+        exit_code = None
+        if status is RunStatus.failed:
+            error = FAILURE_ERRORS[index % len(FAILURE_ERRORS)]
+            exit_code = 1 if index % 2 == 0 else 137
+        elif status is RunStatus.lost:
+            error = "Worker heartbeat lost; the orchestrator released the GPU"
+        elif status is RunStatus.cancelled:
+            error = "Cancelled by the user"
+            exit_code = 130
+
         runs.append(
             Run(
                 id=f"run-{index:03d}",
@@ -166,6 +185,8 @@ def make_runs(count: int = 200) -> list[Run]:
                 owner=OWNERS[index % len(OWNERS)],
                 tags=tags,
                 seed=1000 + index * 7,
+                error=error,
+                exit_code=exit_code,
                 params={
                     "learning_rate": [3e-4, 1e-4, 5e-5, 2e-4][index % 4],
                     "batch_size": [128, 256, 512][index % 3],

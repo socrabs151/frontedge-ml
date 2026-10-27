@@ -22,6 +22,10 @@ The following are **public contracts** and change only in a major release:
   an action column by id without forking the table. The column keeps its width, resize lock and
   visibility; a custom id that is not a metric is not sortable. The consumer smoke renders a
   custom column with a product dictionary override.
+- Dataset examples open a drill-down from a click or Enter: full input, answer, expected and
+  score, with the selected row marked and a close action. The browser gate audits the panel.
+- The demo gives failed, lost and cancelled runs a real error and exit code, so failure triage is
+  visible instead of an empty reason.
 
 ## [0.2.0] — 2026-10-25
 
