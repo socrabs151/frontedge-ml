@@ -14,7 +14,7 @@ The following are **public contracts** and change only in a major release:
   `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
-## [Unreleased]
+## [0.2.0] — 2026-10-25
 
 ### Added
 
