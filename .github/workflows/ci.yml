@@ -219,6 +219,12 @@ jobs:
           FE_BASE_URL: http://127.0.0.1:8000/frontedge
         run: node apps/spike/scripts/phase3-shots.mjs
 
+      - name: Eval scale
+        env:
+          FE_BASE_URL: http://127.0.0.1:8000/frontedge
+          FE_EVAL_BUDGET_MS: "5000"
+        run: node apps/spike/scripts/eval-scale.mjs
+
       - name: Language audit
         env:
           FE_BASE_URL: http://127.0.0.1:8000/frontedge

@@ -32,6 +32,7 @@ uv run --package frontedge frontedge schema --out frontedge.schema.json
 uv run --package frontedge frontedge init /tmp/dashboard   # a project that runs at once
 node apps/spike/scripts/verify.mjs         # screenshots + axe (a running dev server is required)
 node apps/spike/scripts/keyboard-check.mjs # keyboard pass over the table
+node apps/spike/scripts/eval-scale.mjs     # 1 000-row eval comparison, needs a running demo
 pnpm check:lang                            # language audit: English repo and interface, switched by the toggle
 ```
 

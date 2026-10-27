@@ -24,6 +24,9 @@ The following are **public contracts** and change only in a major release:
   custom column with a product dictionary override.
 - Dataset examples open a drill-down from a click or Enter: full input, answer, expected and
   score, with the selected row marked and a close action. The browser gate audits the panel.
+- The eval comparison table takes `height` and bounds its scroll, so a long comparison keeps the
+  aggregate row visible instead of growing the page. `apps/spike/scripts/eval-scale.mjs` renders a
+  synthetic 1 000-row comparison through the real screen (locally ~1.2 s) and is a CI check.
 - The demo gives failed, lost and cancelled runs a real error and exit code, so failure triage is
   visible instead of an empty reason.
 

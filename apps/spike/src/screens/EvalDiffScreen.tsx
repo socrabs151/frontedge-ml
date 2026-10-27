@@ -129,7 +129,12 @@ export function EvalDiffScreen({
           />
         </div>
 
-        <EvalCompareTable comparison={current} filter={activeFilter} format={format} />
+        <EvalCompareTable
+          comparison={current}
+          filter={activeFilter}
+          format={format}
+          height="max(320px, calc(100vh - 340px))"
+        />
         <p className="fe-note">
           {t("evals.aggregateNote", {
             aggregate:

@@ -889,6 +889,16 @@
   min-width: 1120px;
 }
 
+.fe-table--eval tfoot {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+}
+
+.fe-table--eval tfoot .fe-table__td {
+  position: static;
+}
+
 .fe-table__td--evidence {
   white-space: normal;
   overflow: visible;

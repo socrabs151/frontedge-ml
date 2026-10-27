@@ -51,6 +51,8 @@ export interface EvalCompareTableProps {
   /** Kept for callers that only need the changed rows; ``filter`` is the full form. */
   onlyDiff?: boolean;
   format?: DeltaFormat;
+  /** A bounded scroll area; the footer stays visible for a long comparison. */
+  height?: number | string;
 }
 
 /**
@@ -65,6 +67,7 @@ export function EvalCompareTable({
   filter,
   onlyDiff = false,
   format = "value",
+  height,
 }: EvalCompareTableProps) {
   const { t, lang } = useI18n();
   const direction: MetricDirection = comparison.direction;
@@ -114,12 +117,13 @@ export function EvalCompareTable({
   };
 
   return (
-    <div className="fe-table fe-table--eval">
+    <div className={clsx("fe-table fe-table--eval", height !== undefined && "fe-table--bounded")}>
       <div
         className="fe-table__scroll"
         role="region"
         aria-label={t("eval.tableLabel")}
         tabIndex={0}
+        style={height === undefined ? undefined : { height }}
       >
         <table className="fe-table__table">
           <colgroup>
