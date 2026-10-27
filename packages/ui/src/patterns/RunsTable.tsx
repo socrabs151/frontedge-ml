@@ -467,12 +467,19 @@ export function RunsTable({
       const clamped = Math.max(0, Math.min(rows.length - 1, next));
       setActiveRowIndex(clamped);
       virtualizer.scrollToIndex(clamped, { align: "auto" });
-      window.setTimeout(() => {
+      // WebKit may commit the virtual row later than Chromium; wait for it instead of
+      // dropping focus on a row that is still outside the rendered window.
+      const focusWhenReady = (attempt: number) => {
         const node = scrollRef.current?.querySelector<HTMLTableRowElement>(
           `[data-row-index="${clamped}"]`,
         );
-        node?.focus();
-      }, 30);
+        if (node) {
+          node.focus();
+          return;
+        }
+        if (attempt < 20) window.setTimeout(() => focusWhenReady(attempt + 1), 25);
+      };
+      window.setTimeout(() => focusWhenReady(0), 0);
     };
 
     switch (event.key) {

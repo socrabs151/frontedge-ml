@@ -30,6 +30,11 @@ The following are **public contracts** and change only in a major release:
 - The demo gives failed, lost and cancelled runs a real error and exit code, so failure triage is
   visible instead of an empty reason.
 
+### Fixed
+
+- Keyboard navigation waits for the virtual row to render before focusing it. WebKit commits a
+  row later than Chromium, and Home/PageUp/PageDown used to drop focus after End.
+
 ## [0.2.0] — 2026-10-25
 
 ### Added
