@@ -206,8 +206,10 @@ Design document: [docs/specs/2026-10-20-frontedge-design.md](docs/specs/2026-10-
 ## Status
 
 The packages are published on PyPI (`frontedge`) and npm (`@frontedge-ml/ui`). The screens, the
-design system, the Python package and the type generator are covered by gates; the next step is
-the provider-side scale work (pagination of examples, streaming artifacts) and run configuration.
+design system, the Python package and the type generator are covered by gates. The current stage
+is public-beta hardening: provider boundaries, accessibility and the remaining onboarding work.
+
+Issues and questions: https://github.com/socrabs151/frontedge-ml/issues
 
 ## License
 

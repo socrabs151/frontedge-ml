@@ -206,8 +206,10 @@ uv run --package frontedge frontedge check examples/demo-ml/frontedge.toml
 ## Статус
 
 Пакеты опубликованы на PyPI (`frontedge`) и npm (`@frontedge-ml/ui`). Экраны, дизайн-система,
-Python-пакет и генератор типов закрыты гейтами; следующий шаг — масштаб на стороне провайдера
-(пагинация примеров, стриминг артефактов) и конфигурация прогона.
+Python-пакет и генератор типов закрыты гейтами. Текущий этап — укрепление public beta: границы
+провайдера, доступность и оставшийся онбординг.
+
+Вопросы и issues: https://github.com/socrabs151/frontedge-ml/issues
 
 ## Лицензия
 

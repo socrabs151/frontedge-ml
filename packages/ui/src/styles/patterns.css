@@ -914,6 +914,12 @@
   cursor: pointer;
 }
 
+/* A collapsed answer keeps two lines, so one long row cannot make the table jump. */
+.fe-eval__evidence:not([open]) summary {
+  max-height: 2.8em;
+  overflow: hidden;
+}
+
 .fe-eval__evidence[open] summary {
   margin-bottom: var(--fe-space-1);
 }
