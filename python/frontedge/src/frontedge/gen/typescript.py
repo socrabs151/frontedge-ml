@@ -155,6 +155,7 @@ import type {{
   LogLine,
   Run,
   RunOption,
+  RunPayload,
   UiConfig,
 }} from "./types";
 
@@ -179,7 +180,7 @@ export interface RunsQuery {{
 }}
 
 export interface RunsPage {{
-  items: Run[];
+  items: RunPayload[];
   total: number;
 }}
 
@@ -210,6 +211,16 @@ export interface FrontedgeMeta {{
   capabilities: FrontedgeCapabilities;
 }}
 
+/** An HTTP failure with the status a caller can branch on (404, 502, ...). */
+export class FrontedgeRequestError extends Error {{
+  readonly status: number;
+  constructor(message: string, status: number) {{
+    super(message);
+    this.name = "FrontedgeRequestError";
+    this.status = status;
+  }}
+}}
+
 export function createClient(options: FrontedgeClientOptions = {{
 }}) {{
   const basePath = options.basePath ?? "{base_path}";
@@ -226,14 +237,13 @@ export function createClient(options: FrontedgeClientOptions = {{
     }});
 
   // The server explains a provider mistake in `detail`; show that instead of a bare status.
-  async function failure(response: Response, path: string): Promise<Error> {{
+  async function failure(response: Response, path: string): Promise<FrontedgeRequestError> {{
     const body = (await response.json().catch(() => null)) as {{ detail?: unknown }} | null;
     const detail = typeof body?.detail === "string" ? body.detail : null;
-    return new Error(
-      detail
-        ? `frontedge: ${{detail}}`
-        : `frontedge: ${{response.status}} ${{response.statusText}} (${{path}})`,
-    );
+    const message = detail
+      ? `frontedge: ${{detail}}`
+      : `frontedge: ${{response.status}} ${{response.statusText}} (${{path}})`;
+    return new FrontedgeRequestError(message, response.status);
   }}
 
   async function json<T>(path: string): Promise<T> {{
@@ -276,7 +286,7 @@ export function createClient(options: FrontedgeClientOptions = {{
       if (!response.ok) {{
         throw await failure(response, "/runs");
       }}
-      const items = (await response.json()) as Run[];
+      const items = (await response.json()) as RunPayload[];
       const total = Number(response.headers.get("X-Frontedge-Total") ?? items.length);
       return {{ items, total }};
     }},
@@ -328,7 +338,8 @@ export function createClient(options: FrontedgeClientOptions = {{
       const total = Number(response.headers.get("X-Frontedge-Total") ?? items.length);
       return {{ items, total }};
     }},
-    getRun: (runId: string) => json<Run>(`/runs/${{encodeURIComponent(runId)}}`),
+    getRun: (runId: string) =>
+      json<RunPayload>(`/runs/${{encodeURIComponent(runId)}}`),
     artifactUrl: (artifactId: string) =>
       `${{basePath}}/artifacts/${{encodeURIComponent(artifactId)}}/content`,
     listEvals: () => json<EvalSummary[]>("/evals"),
@@ -349,7 +360,7 @@ export function createClient(options: FrontedgeClientOptions = {{
         {{ headers: {{ accept: "text/event-stream" }} }},
       );
       if (!response.ok || !response.body) {{
-        throw new Error(`frontedge: could not open the log stream (${{runId}})`);
+        throw await failure(response, `/runs/${{runId}}/logs`);
       }}
       const reader = response.body.getReader();
       const decoder = new TextDecoder();

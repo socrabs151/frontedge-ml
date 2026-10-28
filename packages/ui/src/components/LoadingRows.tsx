@@ -1,14 +1,12 @@
 import { useT } from "../i18n/I18nProvider";
 
-export function LoadingRows({
-  rows = 8,
-  height = 32,
-  label,
-}: {
+export interface LoadingRowsProps {
   rows?: number;
   height?: number;
   label?: string;
-}) {
+}
+
+export function LoadingRows({ rows = 8, height = 32, label }: LoadingRowsProps) {
   const t = useT();
   return (
     <div className="fe-skeleton" role="status" aria-live="polite" aria-label={label}>

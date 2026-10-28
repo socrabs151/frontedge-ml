@@ -87,9 +87,7 @@ jobs:
           curl -sf http://127.0.0.1:8099/frontedge/ | grep -q 'id="root"'
 
       - name: Check generated types are up to date
-        run: |
-          uv run --package frontedge frontedge gen --out packages/ui/src/generated
-          git diff --exit-code packages/ui/src/generated
+        run: uv run --package frontedge frontedge gen --check --out packages/ui/src/generated
 
   python-311:
     runs-on: ubuntu-latest

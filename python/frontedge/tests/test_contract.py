@@ -40,6 +40,34 @@ def test_a_minimal_run_is_valid() -> None:
     assert run.stages == []
 
 
+def test_a_naive_timestamp_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        Run(
+            id="run-1",
+            name="first",
+            status=RunStatus.succeeded,
+            started_at=datetime(2026, 1, 1, 12),
+        )
+    aware = Run(
+        id="run-1",
+        name="first",
+        status=RunStatus.succeeded,
+        started_at=datetime(2026, 1, 1, 12, tzinfo=UTC),
+    )
+    assert aware.started_at is not None
+    assert aware.started_at.tzinfo is not None
+
+
+def test_unknown_run_fields_are_rejected() -> None:
+    with pytest.raises(ValidationError):
+        Run(
+            id="run-1",
+            name="first",
+            status=RunStatus.succeeded,
+            durration_ms=5,  # type: ignore[call-arg]
+        )
+
+
 def test_a_negative_duration_is_rejected() -> None:
     with pytest.raises(ValueError):
         Run(id="run-1", name="first", status=RunStatus.succeeded, duration_ms=-1)
@@ -85,7 +113,6 @@ def make_example(**overrides: Any) -> frontedge.Example:
         "input": "question",
         "output": "answer",
         "score": 0.5,
-        "changed": False,
     }
     payload.update(overrides)
     return frontedge.Example(**payload)
@@ -797,6 +824,22 @@ class TestHttp:
         assert annotated.status_code == 200
         assert named.status_code == 200
 
+    def test_a_run_id_with_a_slash_is_addressable(self) -> None:
+        class Nested:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run(id="entity/project/run-7")]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                if run_id == "entity/project/run-7":
+                    return make_run(id=run_id)
+                return None
+
+        response = client_for(Nested()).get("/frontedge/api/runs/entity%2Fproject%2Frun-7")
+        assert response.status_code == 200
+        assert response.json()["logStreamUrl"].endswith(
+            "/api/runs/entity%2Fproject%2Frun-7/logs/stream"
+        )
+
     def test_an_unexpected_provider_error_is_a_named_502(self) -> None:
         class Broken:
             async def list_runs(self, request: Any) -> list[Run]:
@@ -809,6 +852,19 @@ class TestHttp:
         assert response.status_code == 502
         assert "list_runs" in response.json()["detail"]
         assert "database is down" in response.json()["detail"]
+
+    def test_without_limit_the_api_returns_a_page_not_everything(self) -> None:
+        class Many:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run(id=f"run-{index:03d}") for index in range(201)]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return None
+
+        response = client_for(Many()).get("/frontedge/api/runs")
+        assert response.status_code == 200
+        assert len(response.json()) == 200
+        assert response.headers["X-Frontedge-Total"] == "201"
 
     def test_runs_reject_invalid_selection(self) -> None:
         client = client_for()

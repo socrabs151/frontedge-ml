@@ -44,9 +44,25 @@ export function RunRibbon({
     );
   }
 
+  const summary = measured
+    .map(
+      (stage) =>
+        `${stage.name}: ${stage.status}, ${formatDuration(
+          toTime(stage.endedAt!) - toTime(stage.startedAt),
+          lang,
+        )}`,
+    )
+    .join("; ");
+
   return (
     <div className={clsx("fe-ribbon", className)}>
-      <div className="fe-ribbon__bar" style={{ height }}>
+      <div
+        className="fe-ribbon__bar"
+        style={{ height }}
+        role="img"
+        aria-label={summary}
+        title={summary}
+      >
         {measured.map((stage) => {
           const duration = toTime(stage.endedAt!) - toTime(stage.startedAt);
           const share = (duration / total) * 100;

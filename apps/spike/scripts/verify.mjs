@@ -132,6 +132,47 @@ async function checkBaselinePin() {
   return ok ? 0 : 1;
 }
 
+/** A deleted or mistyped run is "not found", not a data-source outage with "Clear filters". */
+async function checkMissingRun() {
+  await page.goto(`${BASE}/#/runs/does-not-exist`, { waitUntil: "domcontentloaded" });
+  await page.getByText("This run does not exist").waitFor({ timeout: 15000 });
+  const clear = await page.getByRole("button", { name: /Clear filters/ }).count();
+  const retry = await page.getByRole("button", { name: /Try again/ }).count();
+  const ok = clear === 0 && retry === 0;
+  console.log(
+    ok
+      ? "error state: a missing run is explained without the filters copy"
+      : `error state: missing-run screen still offers clear=${clear} retry=${retry}`,
+  );
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".fe-table__row");
+  return ok ? 0 : 1;
+}
+
+/** At 768 px the sidebar gives its width to the table instead of squeezing it. */
+async function checkNarrow() {
+  await page.setViewportSize({ width: 768, height: 800 });
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".fe-table__row");
+  const sidebar = await page
+    .locator(".sidebar")
+    .evaluate((node) => Math.round(node.getBoundingClientRect().width));
+  const scrollable = await page.evaluate(() => {
+    const table = document.querySelector(".fe-table__scroll");
+    return table ? table.scrollWidth > table.clientWidth : false;
+  });
+  const ok = sidebar <= 70 && scrollable;
+  console.log(
+    ok
+      ? "narrow: the sidebar collapses and the table scrolls horizontally"
+      : `narrow: sidebar=${sidebar}px scrollable=${scrollable}`,
+  );
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  await page.waitForSelector(".fe-table__row");
+  return ok ? 0 : 1;
+}
+
 let seriousTotal = 0;
 /** A run is linkable: the hash changes on open and the same link survives a reload. */
 async function checkDeepLink() {
@@ -225,6 +266,8 @@ seriousTotal += await audit("runs light");
 layoutProblems += await checkMetricCells();
 layoutProblems += await checkColumnReset();
 layoutProblems += await checkBaselinePin();
+layoutProblems += await checkMissingRun();
+layoutProblems += await checkNarrow();
 
 // dark theme
 await page.getByRole("button", { name: /dark theme/i }).click();

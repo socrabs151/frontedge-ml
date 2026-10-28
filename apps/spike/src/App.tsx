@@ -43,7 +43,11 @@ function splitHash(hash: string): { route: Route; params: URLSearchParams } {
   else if (name === "compare") {
     route = {
       name: "compare",
-      ids: (new URLSearchParams(search).get("runs") ?? "").split(",").filter(Boolean),
+      // The comparison is designed for 2–4 runs; a long pasted link is clamped, not drawn.
+      ids: (new URLSearchParams(search).get("runs") ?? "")
+        .split(",")
+        .filter(Boolean)
+        .slice(0, 4),
     };
   } else if (name === "evals") route = { name: "evals" };
   else if (name === "datasets") route = { name: "datasets" };
@@ -445,6 +449,8 @@ function Shell() {
             <CompareScreen
               ids={route.ids}
               config={config}
+              runChoices={runChoices}
+              onIdsChange={(ids) => setRoute({ name: "compare", ids })}
               onBack={() => setRoute({ name: "runs" })}
             />
           ) : route.name === "evals" ? (

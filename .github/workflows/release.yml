@@ -40,8 +40,7 @@ jobs:
           test "$tag" = "$py" && test "$tag" = "$js"
       - run: pnpm build:ui
       - run: uv run --package frontedge pytest python/frontedge/tests -q
-      - run: uv run --package frontedge frontedge gen --out packages/ui/src/generated
-      - run: git diff --exit-code packages/ui/src/generated
+      - run: uv run --package frontedge frontedge gen --check --out packages/ui/src/generated
 
   publish-npm:
     needs: verify

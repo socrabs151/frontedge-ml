@@ -12,6 +12,7 @@ from email.utils import format_datetime, parsedate_to_datetime
 from itertools import count
 from pathlib import Path
 from typing import Any, Literal, cast
+from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
@@ -32,6 +33,7 @@ from ..models import (
     LogLine,
     Run,
     RunOption,
+    RunPayload,
     RunsPage,
     RunsQuery,
     RunStatus,
@@ -65,13 +67,6 @@ _log_ids = count(1)
 
 ActionHandler = Callable[[Request, dict[str, Any]], Awaitable[Any]]
 
-
-class RunPayload(Run):
-    """A run as the API returns it: the domain fields plus the resolved log stream URL."""
-
-    log_stream_url: str
-
-
 #: The list only draws a sparkline: 24 points are enough, and the payload stays small.
 SPARKLINE_POINTS = 24
 
@@ -103,6 +98,8 @@ _NOT_SORTABLE = {
 }
 #: A page bigger than this is a mistake or a bypass of pagination; the UI asks for 50.
 MAX_PAGE_SIZE = 1000
+#: A caller that omits ``limit`` gets a page, not the whole corpus.
+DEFAULT_PAGE_SIZE = 200
 _SCALARS = (str, int, float, bool, date, datetime)
 
 
@@ -276,7 +273,7 @@ def _run_payload(run: Run, path: str, *, sparkline: bool = False) -> RunPayload:
         **run.model_dump(exclude={"series", "baseline_series"}),
         series=series,
         baseline_series=baseline_series,
-        log_stream_url=f"{path}/api/runs/{run.id}/logs/stream",
+        log_stream_url=f"{path}/api/runs/{quote(run.id, safe='')}/logs/stream",
     )
 
 
@@ -355,7 +352,7 @@ def _build_router(
     async def list_runs(
         request: Request,
         response: Response,
-        limit: int | None = Query(default=None, ge=1, le=MAX_PAGE_SIZE),
+        limit: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
         offset: int = Query(default=0, ge=0),
         search: str | None = None,
         status: str | None = None,
@@ -461,7 +458,7 @@ def _build_router(
         return _run_payload(run, path)
 
     @router.get(
-        "/api/runs/{run_id}/examples",
+        "/api/runs/{run_id:path}/examples",
         tags=["frontedge"],
         response_model=list[Example],
     )
@@ -471,7 +468,7 @@ def _build_router(
         response: Response,
         run_id: str,
         offset: int = Query(default=0, ge=0),
-        limit: int | None = Query(default=None, ge=1, le=MAX_PAGE_SIZE),
+        limit: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
         changed: bool = False,
     ) -> list[Example]:
         """The examples of a run, a page at a time; the total is in X-Frontedge-Total."""
@@ -507,7 +504,7 @@ def _build_router(
         return items
 
     @router.get(
-        "/api/runs/{run_id}/logs/stream",
+        "/api/runs/{run_id:path}/logs/stream",
         tags=["frontedge"],
         response_class=StreamingResponse,
         responses={
@@ -534,6 +531,15 @@ def _build_router(
                 yield "log", _json_model(log_line(str(error), level="error"))
 
         return sse_response(events())
+
+    # A run id may contain a slash (``entity/project/run``): the path converter keeps it whole.
+    @router.get("/api/runs/{run_id:path}", tags=["frontedge"], response_model=RunPayload)
+    @_provider_errors
+    async def get_nested_run(request: Request, run_id: str) -> RunPayload:
+        run = as_model_or_none(await source.get_run(request, run_id), Run, "get_run")
+        if run is None:
+            raise HTTPException(status_code=404, detail="Run not found")
+        return _run_payload(run, path)
 
     # --- Artifacts --------------------------------------------------------
 
@@ -746,7 +752,7 @@ def _build_router(
         response: Response,
         dataset_id: str,
         offset: int = Query(default=0, ge=0),
-        limit: int | None = Query(default=None, ge=1, le=MAX_PAGE_SIZE),
+        limit: int = Query(default=DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
         search: str | None = None,
     ) -> list[ExampleResult]:
         """A page of the dataset examples; X-Frontedge-Total carries the filtered total."""

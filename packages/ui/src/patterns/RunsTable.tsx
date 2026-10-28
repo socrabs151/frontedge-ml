@@ -17,6 +17,7 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 import clsx from "clsx";
 import { FreshnessBadge } from "../components/FreshnessBadge";
 import { StatusBadge } from "../components/StatusBadge";
+import { useNow } from "../hooks/useNow";
 import { useI18n } from "../i18n/I18nProvider";
 import {
   EMPTY,
@@ -35,6 +36,8 @@ export interface RowAction {
   id: string;
   label: string;
   danger?: boolean;
+  /** The action is hidden when the run status makes it meaningless. */
+  visible?: (run: Run) => boolean;
   onClick: (run: Run) => void;
 }
 
@@ -43,11 +46,14 @@ export interface RunsTableProps {
   baselineId?: string;
   /** The baseline when it is not on the loaded page: deltas must not silently disappear. */
   baselineRun?: Run;
-  now: number;
-  rowHeight: number;
-  columnVisibility: VisibilityState;
-  onColumnVisibilityChange: (visibility: VisibilityState) => void;
-  onOpenRun: (run: Run) => void;
+  /** Defaults to a 30-second clock; pass your own value for a frozen timestamp. */
+  now?: number;
+  /** Only a virtualizer estimate: the row height comes from ``--fe-row-h``. */
+  rowHeight?: number;
+  /** Omit both to let the table keep its own column visibility. */
+  columnVisibility?: VisibilityState;
+  onColumnVisibilityChange?: (visibility: VisibilityState) => void;
+  onOpenRun?: (run: Run) => void;
   /** Actions in a row - declared by the project, not by the library. */
   rowActions?: RowAction[];
   /** Column order and set: known ids or metric names. */
@@ -112,9 +118,9 @@ export function RunsTable({
   runs,
   baselineId,
   baselineRun,
-  now,
-  rowHeight,
-  columnVisibility,
+  now: nowProp,
+  rowHeight = 32,
+  columnVisibility: controlledVisibility,
   onColumnVisibilityChange,
   onOpenRun,
   rowActions = [],
@@ -136,6 +142,11 @@ export function RunsTable({
   headerRenderers = {},
 }: RunsTableProps) {
   const { t, lang } = useI18n();
+  const clock = useNow();
+  const now = nowProp ?? clock;
+  const [ownVisibility, setOwnVisibility] = useState<VisibilityState>({});
+  const columnVisibility = controlledVisibility ?? ownVisibility;
+  const updateVisibility = onColumnVisibilityChange ?? setOwnVisibility;
   const [ownSorting, setOwnSorting] = useState<SortingState>([
     { id: "startedAt", desc: true },
   ]);
@@ -412,7 +423,7 @@ export function RunsTable({
           enableResizing: false,
           cell: (info) => (
             <span className="fe-table__actions">
-              {rowActions.map((action) => (
+              {rowActions.filter((action) => !action.visible || action.visible(info.row.original)).map((action) => (
                 <button
                   key={action.id}
                   type="button"
@@ -461,7 +472,7 @@ export function RunsTable({
     onSortingChange: updateSorting,
     onColumnVisibilityChange: (updater) => {
       const next = typeof updater === "function" ? updater(columnVisibility) : updater;
-      onColumnVisibilityChange(next);
+      updateVisibility(next);
     },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -520,8 +531,8 @@ export function RunsTable({
         event.preventDefault();
         const run = rows[index]?.original;
         if (!run) break;
-        if (comparing && onToggleCompare) onToggleCompare(run);
-        else onOpenRun(run);
+                    if (comparing && onToggleCompare) onToggleCompare(run);
+                    else onOpenRun?.(run);
         break;
       }
       default:
@@ -642,6 +653,8 @@ export function RunsTable({
               return (
                 <tr
                   key={row.id}
+                  ref={virtualizer.measureElement}
+                  data-index={virtualRow.index}
                   data-row-index={virtualRow.index}
                   className={clsx(
                     "fe-table__row",
@@ -655,7 +668,7 @@ export function RunsTable({
                   onFocus={() => setActiveRowIndex(virtualRow.index)}
                   onClick={() => {
                     if (comparing && onToggleCompare) onToggleCompare(run);
-                    else onOpenRun(run);
+                    else onOpenRun?.(run);
                   }}
                   onKeyDown={(event) => onRowKeyDown(event, virtualRow.index)}
                 >

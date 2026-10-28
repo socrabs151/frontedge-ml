@@ -8,7 +8,7 @@ export interface TabItem {
   content: ReactNode;
 }
 
-interface TabsProps {
+export interface TabsProps {
   items: TabItem[];
   value: string;
   onValueChange: (value: string) => void;

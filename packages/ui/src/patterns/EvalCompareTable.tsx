@@ -126,6 +126,7 @@ export function EvalCompareTable({
         style={height === undefined ? undefined : { height }}
       >
         <table className="fe-table__table">
+          <caption className="sr-only">{t("eval.tableLabel")}</caption>
           <colgroup>
             <col style={{ width: "88px" }} />
             <col style={{ width: "20%" }} />
@@ -232,8 +233,8 @@ export function EvalCompareTable({
                       </span>
                     ) : null}
                   </td>
-                  <td className="fe-table__td fe-table__td--clip" title={example.input}>
-                    {example.input}
+                  <td className="fe-table__td fe-table__td--evidence">
+                    {evidence(example.input)}
                   </td>
                   <td className="fe-table__td fe-table__td--evidence">
                     {evidence(example.expected)}

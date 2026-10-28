@@ -135,6 +135,10 @@ and the exit code of the process in `exit_code`; both reach the client as `error
 `dataset`, `git_sha`, `owner`, `started_at` and `duration_ms` may be omitted: they default to an
 empty value and the interface shows an en dash — a queued run has no time yet.
 
+Every timestamp is timezone-aware. A naive `datetime` is rejected at the boundary with a 502,
+because the browser would otherwise shift it silently: build times with `datetime.now(UTC)` or
+keep the offset from the source.
+
 `Run.params` is optional: a JSON object with the configuration (learning rate, batch size,
 optimizer, a nested scheduler, and so on). The run detail has a **Config** tab; with a baseline
 selected the tab is a diff and every row says `changed`, `added` or `removed` next to the two
@@ -325,18 +329,19 @@ from `request.app` cannot be checked this way — start the server and call `/ap
 ## 4. What gets mounted
 
 `frontedge.mount()` takes the provider and, optionally, `evals=`, `datasets=`, `actions=`,
-`config=`, `path=` (the prefix the interface is mounted under, `/frontedge` by default) and
-`title=`. `frontedge.runs()` is the same router without the eval and dataset screens.
+`config=`, `path=` (the prefix the interface is mounted under, `/frontedge` by default),
+`title=` and `dependencies=` (FastAPI dependencies for every route, including the static
+interface). `frontedge.runs()` is the same router without the eval and dataset screens.
 
 `title` is the browser tab: it is substituted into the served HTML (escaped) and used as the
 router title in the OpenAPI document.
 
 | Method and path | What it returns |
 |---|---|
-| `GET /frontedge/api/runs` | a list of runs; accepts `limit`, `offset`, `search`, `status`, `dataset`, `tag` and answers with the `X-Frontedge-Total` header |
+| `GET /frontedge/api/runs` | a list of runs; accepts `limit` (default 200), `offset`, `search`, `status`, `dataset`, `tag` and answers with the `X-Frontedge-Total` header |
 | `GET /frontedge/api/runs/options` | a compact list for the pickers (`id`, `name`, `status`), `limit` up to 1000, `search` |
-| `GET /frontedge/api/runs/{id}` | one run |
-| `GET /frontedge/api/runs/{id}/examples` | a page of the run examples (`offset`, `limit`, `changed`); the total is in `X-Frontedge-Total` |
+| `GET /frontedge/api/runs/{id}` | one run; an id may contain a slash (`entity/project/run`) and is URL-encoded |
+| `GET /frontedge/api/runs/{id}/examples` | a page of the run examples (`offset`, `limit` default 200, `changed`); the total is in `X-Frontedge-Total` |
 | `GET /frontedge/api/runs/{id}/logs/stream` | a log stream (SSE, `event: log`) |
 | `GET /frontedge/api/artifacts/{id}/content` | the bytes of an artifact (needs `read_artifact`) |
 | `GET /frontedge/api/evals` | a list of evaluations (if `evals=` is connected) |
@@ -361,7 +366,7 @@ have to guess from the configuration:
 ```json
 {
   "name": "frontedge",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "statuses": ["queued", "running", "succeeded", "failed", "cancelled", "lost"],
   "freshness": ["live", "fresh", "stale", "partial"],
   "metricDirections": ["maximize", "minimize", "none"],
@@ -384,7 +389,9 @@ Download link is left out when artifact content is not served.
 ### 4.2 A broken provider
 
 A provider that returns the wrong type is not a server bug, so the library answers **502** with a
-`detail` that names the method and the position:
+`detail` that names the method and the position. A naive timestamp, an unknown field or any other
+provider exception is also a 502 with the method name; a failure in the middle of a log stream is
+an `error` event in that stream.
 
 ```json
 { "detail": "list_runs item 3 returned dict, expected Run" }
@@ -556,6 +563,7 @@ async def stop_run(request: Request, payload: dict) -> ActionResult:
 id = "stop"
 label = "Stop"
 placement = "run"        # run | runs | evals | datasets
+statuses = ["running", "queued"]  # omit for every status
 danger = true            # a red button
 description = "Stops the run and frees the GPU"
 ```
@@ -577,6 +585,7 @@ its `message` is shown under the header.
 
 - `placement = "run"` — a button in the header of the run screen;
 - `placement = "runs"` — a button in every row of the list;
+- `statuses` — the action is hidden when the run status is not in the list; empty means all;
 - `payload` — what the interface puts into the request: for `run` it is `{"runId": "..."}`, for
   `runs` it is the `runId` of the selected row.
 
@@ -626,11 +635,22 @@ The types come from the Python models: `frontedge gen --out src/generated` creat
 interface is mounted under another prefix.
 
 `RunsTable` fills a flex column by default; pass `height` when the host is a plain block, and use
-`loading` / `empty` for host-owned states. `cellRenderers` and `headerRenderers` replace a cell or
-a header by column id, so a link or a model name does not require forking the table; an id that is
-neither built-in nor a metric is not sortable. `I18nProvider` accepts product `strings`, a
-controlled `lang`, `persist` and `syncDocument`, so a host can keep the language in its own store
-and leave `<html lang>` to its own layout.
+`loading` / `empty` for host-owned states. Only `runs` is required: `now` ticks on its own,
+`rowHeight` is a virtualizer estimate and the actual row height comes from `--fe-row-h`, and
+column visibility is kept internally unless `columnVisibility` / `onColumnVisibilityChange` are
+given. `cellRenderers` and `headerRenderers` replace a cell or a header by column id, so a link or
+a model name does not require forking the table; an id that is neither built-in nor a metric is
+not sortable. `I18nProvider` accepts product `strings`, a controlled `lang`, `persist` and
+`syncDocument`, so a host can keep the language in its own store and leave `<html lang>` to its
+own layout.
+
+`FrontedgeRoot` puts `.fe-root`, `data-theme` and `data-density` on one element; `useNow()` gives
+a relative-time clock. Override `--fe-accent` and the hover, wash, selected-row, running-status
+and focus-ring tokens follow it. A custom accent is still the host's contrast responsibility.
+
+The generated client reports network failures as `FrontedgeRequestError` with the HTTP `status`,
+so a host can tell a missing run (404) from a provider failure (502). `frontedge gen --check`
+exits 1 when `types.ts` or `client.ts` is stale; use it in CI instead of committing on drift.
 
 ### Calling the API from another origin
 

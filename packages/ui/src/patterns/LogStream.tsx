@@ -14,16 +14,14 @@ const LEVEL_LABEL: Record<string, string> = {
 const levelClass = (level: string) => level.replace(/[^a-z0-9-]/gi, "").toLowerCase();
 const levelLabel = (level: string) => LEVEL_LABEL[level] ?? level.toUpperCase();
 
-/** Live log stream: severity as a text prefix, tail follow, and a way back to the bottom. */
-export function LogStream({
-  lines,
-  live = false,
-  height = 320,
-}: {
+export interface LogStreamProps {
   lines: LogLine[];
   live?: boolean;
   height?: number;
-}) {
+}
+
+/** Live log stream: severity as a text prefix, tail follow, and a way back to the bottom. */
+export function LogStream({ lines, live = false, height = 320 }: LogStreamProps) {
   const t = useT();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [pinned, setPinned] = useState(true);

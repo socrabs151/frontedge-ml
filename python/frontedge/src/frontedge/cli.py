@@ -34,6 +34,7 @@ from .models import (
     MetricPoint,
     Run,
     RunOption,
+    RunPayload,
     RunsPage,
     RunsQuery,
     Stage,
@@ -50,6 +51,7 @@ from .providers import (
 
 MODELS: list[type[BaseModel]] = [
     Run,
+    RunPayload,
     RunOption,
     Stage,
     MetricPoint,
@@ -263,12 +265,30 @@ def _gen(args: argparse.Namespace) -> int:
             models.append(getattr(module, class_name))
 
     out = Path(args.out)
+    generated = {
+        "types.ts": generate_types(models),
+        "client.ts": generate_client(base_path=args.base_path),
+    }
+    if getattr(args, "check", False):
+        stale = [
+            name
+            for name, text in generated.items()
+            if not (out / name).is_file()
+            or (out / name).read_bytes() != text.encode("utf-8")
+        ]
+        if stale:
+            print(
+                f"frontedge: generated files are stale: {', '.join(stale)}",
+                file=sys.stderr,
+            )
+            return 1
+        print(f"frontedge: generated files in {out} are current")
+        return 0
+
     out.mkdir(parents=True, exist_ok=True)
     # LF even on Windows: the generated files are compared byte-for-byte in CI.
-    (out / "types.ts").write_text(generate_types(models), encoding="utf-8", newline="\n")
-    (out / "client.ts").write_text(
-        generate_client(base_path=args.base_path), encoding="utf-8", newline="\n"
-    )
+    for name, text in generated.items():
+        (out / name).write_text(text, encoding="utf-8", newline="\n")
     print(f"frontedge: types and client written to {out}")
     return 0
 
@@ -705,6 +725,11 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="*",
         default=None,
         help="custom models: module:ClassName (default — built-in)",
+    )
+    gen.add_argument(
+        "--check",
+        action="store_true",
+        help="exit 1 when the generated files are missing or stale",
     )
 
     init = sub.add_parser("init", help="create a minimal FastAPI project with the interface")

@@ -4,6 +4,7 @@ import {
   EMPTY,
   EmptyState,
   ExamplesTable,
+  FrontedgeRequestError,
   FreshnessBadge,
   LoadingRows,
   LogStream,
@@ -45,13 +46,20 @@ export function RunDetailScreen({
   const [examplesTotal, setExamplesTotal] = useState(0);
   const [examplesOffset, setExamplesOffset] = useState(0);
   const [logs, setLogs] = useState<LogLine[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; notFound: boolean } | null>(null);
+  const [logError, setLogError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [logAttempt, setLogAttempt] = useState(0);
   const [tab, setTab] = useState("metrics");
   const [onlyDiff, setOnlyDiff] = useState(false);
   const [actionNote, setActionNote] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const runActions = (config?.actions ?? []).filter((action) => action.placement === "run");
+  const actionsFor = (status: Run["status"]) =>
+    runActions.filter(
+      (action) => !action.statuses?.length || action.statuses.includes(status),
+    );
 
   const onAction = async (actionId: string) => {
     setPendingAction(actionId);
@@ -70,7 +78,6 @@ export function RunDetailScreen({
     let cancelled = false;
     setError(null);
     setRun(null);
-    setLogs([]);
     setExamples([]);
     setExamplesTotal(0);
     setExamplesOffset(0);
@@ -81,9 +88,25 @@ export function RunDetailScreen({
         if (!cancelled) setRun(loaded);
       })
       .catch((cause) => {
-        if (!cancelled) setError(errorMessage(cause));
+        if (!cancelled) {
+          const status = cause instanceof FrontedgeRequestError ? cause.status : undefined;
+          setError({
+            message: errorMessage(cause),
+            notFound: status === 404 || /not found/i.test(errorMessage(cause)),
+          });
+        }
       });
 
+    return () => {
+      cancelled = true;
+    };
+  }, [runId, attempt]);
+
+  // A log stream failure is a log-panel state, not a reason to replace the whole run.
+  useEffect(() => {
+    let cancelled = false;
+    setLogs([]);
+    setLogError(null);
     const stream = source.streamLogs(runId);
     void (async () => {
       try {
@@ -92,14 +115,13 @@ export function RunDetailScreen({
           setLogs((current) => [...current, line]);
         }
       } catch (cause) {
-        if (!cancelled) setError(errorMessage(cause));
+        if (!cancelled) setLogError(errorMessage(cause));
       }
     })();
-
     return () => {
       cancelled = true;
     };
-  }, [runId]);
+  }, [runId, logAttempt]);
 
   useEffect(() => {
     let cancelled = false;
@@ -128,12 +150,27 @@ export function RunDetailScreen({
         <div className="fe-panel">
           <EmptyState
             icon={<RefreshCw size={20} aria-hidden />}
-            title={t("runs.loadError")}
-            text={t("runs.loadErrorHint", { error })}
+            title={error.notFound ? t("detail.notFound") : t("runs.loadError")}
+            text={
+              error.notFound
+                ? t("detail.notFoundHint", { id: runId })
+                : t("runs.loadErrorHint", { error: error.message })
+            }
             action={
-              <Button variant="secondary" size="sm" onClick={onBack}>
-                {t("runs.resetFilters")}
-              </Button>
+              <div className="fe-empty__actions">
+                {error.notFound ? null : (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setAttempt((value) => value + 1)}
+                  >
+                    {t("runs.retry")}
+                  </Button>
+                )}
+                <Button variant="secondary" size="sm" onClick={onBack}>
+                  {t("detail.back")}
+                </Button>
+              </div>
             }
           />
         </div>
@@ -280,7 +317,23 @@ export function RunDetailScreen({
       value: "logs",
       label: t("detail.logs"),
       count: logs.length,
-      content: <LogStream lines={logs} live={run.status === "running"} height={360} />,
+      content: (
+        <div>
+          {logError ? (
+            <div className="fe-inline-error" role="alert">
+              <span>{t("detail.logsError", { error: logError })}</span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setLogAttempt((value) => value + 1)}
+              >
+                {t("detail.reconnect")}
+              </Button>
+            </div>
+          ) : null}
+          <LogStream lines={logs} live={run.status === "running"} height={360} />
+        </div>
+      ),
     },
     {
       value: "artifacts",
@@ -333,7 +386,7 @@ export function RunDetailScreen({
           <FreshnessBadge value={run.freshness ?? "fresh"} />
         </div>
         <div className="fe-detail__actions">
-          {runActions.map((action) => (
+          {actionsFor(run.status).map((action) => (
             <Button
               key={action.id}
               variant={action.danger ? "danger" : "secondary"}

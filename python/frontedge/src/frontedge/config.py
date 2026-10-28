@@ -19,7 +19,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
-from .models import MetricDirection
+from .models import MetricDirection, RunStatus
 
 __all__ = [
     "ActionResult",
@@ -42,6 +42,9 @@ class ActionSpec(BaseModel):
     id: str
     label: str
     placement: Placement = "run"
+    #: Empty means every status. Stop is pointless on a failed run; restart is pointless on a
+    #: running one, so the project declares where the action applies.
+    statuses: list[RunStatus] = Field(default_factory=list)
     danger: bool = False
     description: str | None = None
 

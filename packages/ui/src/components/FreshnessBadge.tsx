@@ -7,8 +7,12 @@ const KEYS = {
   partial: "freshness.partial",
 } as const;
 
+export interface FreshnessBadgeProps {
+  value: string;
+}
+
 /** A dot plus the word: freshness is never colour alone. */
-export function FreshnessBadge({ value }: { value: string }) {
+export function FreshnessBadge({ value }: FreshnessBadgeProps) {
   const { t } = useI18n();
   const key = KEYS[value as keyof typeof KEYS];
   return (

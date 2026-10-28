@@ -18,13 +18,12 @@ export function statusMeta(status: RunStatus) {
   return STATUS[status];
 }
 
-export function StatusBadge({
-  status,
-  className,
-}: {
+export interface StatusBadgeProps {
   status: RunStatus;
   className?: string;
-}) {
+}
+
+export function StatusBadge({ status, className }: StatusBadgeProps) {
   const t = useT();
   const { key, tone, Icon } = STATUS[status];
   return (

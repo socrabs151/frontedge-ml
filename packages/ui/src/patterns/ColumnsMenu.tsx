@@ -8,18 +8,20 @@ export interface ColumnOption {
   label: string;
 }
 
-export function ColumnsMenu({
-  columns,
-  visibility,
-  onVisibilityChange,
-  onResetWidths,
-}: {
+export interface ColumnsMenuProps {
   columns: ColumnOption[];
   visibility: VisibilityState;
   onVisibilityChange: (visibility: VisibilityState) => void;
   /** Offered only when the user has changed a width. */
   onResetWidths?: () => void;
-}) {
+}
+
+export function ColumnsMenu({
+  columns,
+  visibility,
+  onVisibilityChange,
+  onResetWidths,
+}: ColumnsMenuProps) {
   const t = useT();
   const hiddenCount = columns.filter((column) => visibility[column.id] === false).length;
 

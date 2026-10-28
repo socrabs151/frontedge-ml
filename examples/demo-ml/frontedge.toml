@@ -59,6 +59,7 @@ chart = false
 id = "stop"
 label = "Stop"
 placement = "run"
+statuses = ["running", "queued"]
 danger = true
 description = "Stops the run and frees the GPU"
 
@@ -72,4 +73,5 @@ description = "Exports the run metrics to CSV"
 id = "rerun"
 label = "Rerun"
 placement = "runs"
+statuses = ["succeeded", "failed", "cancelled", "lost"]
 description = "Restarts the run with the same seed"

@@ -14,6 +14,37 @@ The following are **public contracts** and change only in a major release:
   `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
+## [0.4.0] — 2026-10-28
+
+### Added
+
+- Timestamps are timezone-aware end to end: a naive `datetime` is rejected with a 502 instead of
+  being shifted silently by the browser, and unknown model fields are rejected too.
+- `FrontedgeRoot` sets `.fe-root`, theme and density in one place; `useNow()` keeps relative times
+  ticking. `RunsTable` now needs only `runs`; `now`, `rowHeight` and column visibility have
+  sensible defaults, and the row height follows `--fe-row-h`.
+- Actions take `statuses`: Stop is not offered for a failed run and Restart is not offered for a
+  running one. Compare can add and remove runs on the screen and clamps a pasted URL to 2–4.
+- The metric chart is keyboard-inspectable, Segmented is a real arrow-key radio group, the stage
+  ribbon has a spoken summary, and the eval input is a disclosure instead of a clipped cell.
+- A missing run says so and offers no misleading “Clear filters”; a log-stream failure stays in
+  the log panel and can be reconnected without replacing the run.
+- `--fe-accent` now drives hover, wash, selected rows, the running status and the focus ring, and
+  the contrast gate checks muted text on a selected row. Component prop types are exported.
+- Run ids with a slash are addressable and `logStreamUrl` is URL-encoded; the generated client
+  has `RunPayload`, `logStreamUrl` and `FrontedgeRequestError.status`. `frontedge gen --check`
+  catches stale generated files.
+
+### Changed
+
+- An API request without `limit` returns a 200-row page, not the whole corpus.
+- `Stream logs` failures are an `error` event; the client exposes the HTTP status on a failure.
+
+### Fixed
+
+- Narrow windows collapse the sidebar, tables show a scrollbar, and a bounded table keeps a
+  usable minimum height. Russian labels no longer mix adjective and domain-term order.
+
 ## [0.3.0] — 2026-10-28
 
 ### Added

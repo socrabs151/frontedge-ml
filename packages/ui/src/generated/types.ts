@@ -56,6 +56,31 @@ export interface Run {
   artifacts?: Artifact[];
   provenance?: ProvenanceEntry[];
 }
+export interface RunPayload {
+  id: string;
+  name: string;
+  status: RunStatus;
+  freshness?: Freshness;
+  dataset?: string;
+  gitSha?: string;
+  startedAt?: string | null;
+  durationMs?: number | null;
+  owner?: string;
+  tags?: string[];
+  seed?: number | null;
+  params?: Record<string, unknown>;
+  error?: string | null;
+  exitCode?: number | null;
+  metrics?: Record<string, number>;
+  series?: Record<string, MetricPoint[]>;
+  baselineSeries?: Record<string, MetricPoint[]>;
+  metricDirection?: Record<string, MetricDirection>;
+  stages?: Stage[];
+  events?: MetricEvent[];
+  artifacts?: Artifact[];
+  provenance?: ProvenanceEntry[];
+  logStreamUrl: string;
+}
 export interface RunOption {
   id: string;
   name: string;
@@ -142,6 +167,7 @@ export interface ActionSpec {
   id: string;
   label: string;
   placement?: "runs" | "run" | "evals" | "datasets";
+  statuses?: RunStatus[];
   danger?: boolean;
   description?: string | null;
 }
@@ -189,6 +215,17 @@ export const frontedgeRoles = {
   "Run.error": "text",
   "Run.metrics": "metric",
   "Run.stages": "stage",
+  "RunPayload.id": "id",
+  "RunPayload.name": "text",
+  "RunPayload.status": "status",
+  "RunPayload.freshness": "freshness",
+  "RunPayload.dataset": "dataset",
+  "RunPayload.gitSha": "code",
+  "RunPayload.startedAt": "timestamp",
+  "RunPayload.durationMs": "duration",
+  "RunPayload.error": "text",
+  "RunPayload.metrics": "metric",
+  "RunPayload.stages": "stage",
   "MetricPoint.step": "series",
   "MetricPoint.value": "metric",
   "Artifact.id": "id",

@@ -1,6 +1,10 @@
 import type { ProvenanceEntry } from "../types";
 
-export function ProvenanceList({ entries }: { entries: ProvenanceEntry[] }) {
+export interface ProvenanceListProps {
+  entries: ProvenanceEntry[];
+}
+
+export function ProvenanceList({ entries }: ProvenanceListProps) {
   return (
     <dl className="fe-provenance">
       {entries.map((entry) => (

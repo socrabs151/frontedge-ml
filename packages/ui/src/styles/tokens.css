@@ -12,7 +12,8 @@
   --fe-surface-sunken: #f1f1ed;
   --fe-surface-overlay: #ffffff;
   --fe-surface-hover: #f4f4f0;
-  --fe-surface-selected: #eef2fd;
+  /* Selected rows follow a host accent instead of staying blue. */
+  --fe-surface-selected: color-mix(in srgb, var(--fe-accent) 6%, #ffffff);
 
   /* --- Borders ------------------------------------------------------- */
   --fe-border: #dadad2; /* separators: 1.41:1 against surface, 1.31:1 against canvas — they must stay visible */
@@ -28,8 +29,8 @@
 
   /* --- Accent (the only one) ---------------------------------------- */
   --fe-accent: #2f56d9;
-  --fe-accent-hover: #2647b8;
-  --fe-accent-wash: #eef2fd;
+  --fe-accent-hover: color-mix(in srgb, var(--fe-accent) 86%, #1a1a17);
+  --fe-accent-wash: color-mix(in srgb, var(--fe-accent) 8%, #ffffff);
   --fe-accent-text: #ffffff;
 
   /* --- Process statuses --------------------------------------------- */
@@ -37,13 +38,13 @@
   --fe-status-warning: #8a5d0f;
   --fe-status-danger: #b0402f;
   --fe-status-neutral: #6b6b62;
-  --fe-status-running: #2f56d9;
+  --fe-status-running: var(--fe-accent);
   --fe-status-danger-text: #ffffff;
   --fe-status-success-wash: #e9f4ee;
   --fe-status-warning-wash: #f8f1e2;
   --fe-status-danger-wash: #f9ecea;
   --fe-status-neutral-wash: #f0f0ec;
-  --fe-status-running-wash: #eef2fd;
+  --fe-status-running-wash: var(--fe-accent-wash);
 
   /* --- Data and charts --------------------------------------------- */
   --fe-data-ink: #8f8f88; /* axes, grid, 3.25:1 */
@@ -127,7 +128,7 @@
   --fe-surface-sunken: #0e0e0d;
   --fe-surface-overlay: #232320;
   --fe-surface-hover: #212120;
-  --fe-surface-selected: #1c2437;
+  --fe-surface-selected: color-mix(in srgb, var(--fe-accent) 6%, #1a1a18);
 
   --fe-border: rgba(255, 255, 255, 0.12);
   --fe-border-strong: rgba(255, 255, 255, 0.2);
@@ -136,25 +137,25 @@
   --fe-text-primary: #f2f2ee;
   --fe-text-secondary: #b6b6ad;
   --fe-text-tertiary: #8f8f88;
-  --fe-text-muted: #83837a;
+  --fe-text-muted: #8a8a81;
   --fe-text-inverse: #1a1a18;
 
   --fe-accent: #7d9cff;
-  --fe-accent-hover: #93aeff;
-  --fe-accent-wash: #1c2437;
+  --fe-accent-hover: color-mix(in srgb, var(--fe-accent) 86%, #ffffff);
+  --fe-accent-wash: color-mix(in srgb, var(--fe-accent) 12%, #1a1a18);
   --fe-accent-text: #12121a;
 
   --fe-status-success: #58a878;
   --fe-status-warning: #c08b2e;
   --fe-status-danger: #d4695a;
   --fe-status-neutral: #9a9a92;
-  --fe-status-running: #7d9cff;
+  --fe-status-running: var(--fe-accent);
   --fe-status-danger-text: #12121a;
   --fe-status-success-wash: #17251d;
   --fe-status-warning-wash: #2a2214;
   --fe-status-danger-wash: #2b1a17;
   --fe-status-neutral-wash: #232320;
-  --fe-status-running-wash: #1c2437;
+  --fe-status-running-wash: var(--fe-accent-wash);
 
   --fe-data-ink: #6f6f66;
   --fe-data-ink-soft: #2e2e2b;

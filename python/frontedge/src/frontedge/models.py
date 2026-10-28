@@ -7,11 +7,10 @@ contract: the type generator uses them to know how to render a field.
 
 from __future__ import annotations
 
-from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 from pydantic.alias_generators import to_camel
 
 __all__ = [
@@ -27,6 +26,7 @@ __all__ = [
     "ProvenanceEntry",
     "Run",
     "RunOption",
+    "RunPayload",
     "RunStatus",
     "Stage",
     "StageName",
@@ -94,7 +94,11 @@ LogLevel = str
 class FrontedgeModel(BaseModel):
     """Base model: JSON is served in camelCase, like in the TypeScript types."""
 
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        extra="forbid",
+    )
 
 
 class MetricPoint(FrontedgeModel):
@@ -113,8 +117,8 @@ class Stage(FrontedgeModel):
     #: ``StageName`` values are the canonical ones; any other step name is allowed.
     name: str
     status: RunStatus
-    started_at: datetime
-    ended_at: datetime | None = None
+    started_at: AwareDatetime
+    ended_at: AwareDatetime | None = None
 
 
 class Artifact(FrontedgeModel):
@@ -122,7 +126,7 @@ class Artifact(FrontedgeModel):
     name: str = Field(json_schema_extra=role("text"))
     kind: ArtifactKind = "report"
     size_bytes: int
-    created_at: datetime | None = None
+    created_at: AwareDatetime | None = None
     content_url: str | None = None
 
 
@@ -133,7 +137,7 @@ class ArtifactMeta(FrontedgeModel):
     filename: str | None = None
     media_type: str = "application/octet-stream"
     etag: str | None = None
-    last_modified: datetime | None = None
+    last_modified: AwareDatetime | None = None
 
 
 class ProvenanceEntry(FrontedgeModel):
@@ -154,7 +158,7 @@ class Run(FrontedgeModel):
     dataset: str = Field(default="", json_schema_extra=role("dataset"))
     git_sha: str = Field(default="", json_schema_extra=role("code"))
     #: A queued run may have neither: the interface shows an en dash instead of inventing time.
-    started_at: datetime | None = Field(default=None, json_schema_extra=role("timestamp"))
+    started_at: AwareDatetime | None = Field(default=None, json_schema_extra=role("timestamp"))
     duration_ms: int | None = Field(default=None, ge=0, json_schema_extra=role("duration"))
     owner: str = ""
     #: Free labels of the project ("production", "nightly"): filtered by, shown as chips.
@@ -174,6 +178,12 @@ class Run(FrontedgeModel):
     provenance: list[ProvenanceEntry] = Field(default_factory=list)
 
 
+class RunPayload(Run):
+    """A run as the API returns it: the domain fields plus the resolved log stream URL."""
+
+    log_stream_url: str
+
+
 class RunOption(FrontedgeModel):
     """A compact run entry for the baseline and comparison pickers: no series, no stages."""
 
@@ -181,7 +191,7 @@ class RunOption(FrontedgeModel):
     name: str
     status: RunStatus
     dataset: str = ""
-    started_at: datetime | None = None
+    started_at: AwareDatetime | None = None
     tags: list[str] = Field(default_factory=list)
 
 
@@ -198,7 +208,7 @@ class Example(FrontedgeModel):
 
 class LogLine(FrontedgeModel):
     id: int
-    at: datetime
+    at: AwareDatetime
     level: LogLevel
     text: str = Field(json_schema_extra=role("text"))
 
@@ -223,7 +233,7 @@ class EvalSummary(FrontedgeModel):
     direction: MetricDirection
     aggregate: Literal["mean", "fraction"]
     runs: int = 0
-    updated_at: datetime | None = None
+    updated_at: AwareDatetime | None = None
 
 
 class ExampleResult(FrontedgeModel):
@@ -317,7 +327,7 @@ class DatasetInfo(FrontedgeModel):
     name: str = Field(json_schema_extra=role("text"))
     version: str = Field(json_schema_extra=role("text"))
     examples_count: int
-    created_at: datetime | None = None
+    created_at: AwareDatetime | None = None
     tags: list[str]
     datasheet: list[ProvenanceEntry]
     provenance: list[ProvenanceEntry] = Field(default_factory=list)

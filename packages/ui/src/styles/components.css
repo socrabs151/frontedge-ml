@@ -638,3 +638,22 @@
   font-size: var(--fe-text-13);
   color: var(--fe-text-tertiary);
 }
+
+.fe-empty__actions {
+  display: flex;
+  gap: var(--fe-space-2);
+}
+
+.fe-inline-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fe-space-3);
+  margin-bottom: var(--fe-space-2);
+  padding: var(--fe-space-2) var(--fe-space-3);
+  border: 1px solid var(--fe-status-danger);
+  border-radius: var(--fe-radius-control);
+  background: var(--fe-status-danger-wash);
+  color: var(--fe-text-primary);
+  font-size: var(--fe-text-13);
+}

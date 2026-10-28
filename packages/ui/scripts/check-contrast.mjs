@@ -53,8 +53,37 @@ function hexToRgb(value) {
   ];
 }
 
-function relativeLuminance(value) {
-  const [r, g, b] = hexToRgb(value).map((channel) => {
+/**
+ * Resolves a token to RGB: hex, var(--fe-…) or color-mix(in srgb, A p%, B).
+ * The accent-derived tokens are mixes on purpose, so a host accent carries through;
+ * the gate has to evaluate them instead of skipping.
+ */
+function toRgb(value, tokens, seen = new Set()) {
+  if (!value) return null;
+  const text = value.trim();
+  if (text.startsWith("#")) return hexToRgb(text);
+  const variable = /^var\(--fe-([a-z0-9-]+)\)$/.exec(text);
+  if (variable) {
+    const name = variable[1];
+    if (seen.has(name)) return null;
+    const next = tokens.get(name);
+    return next ? toRgb(next, tokens, new Set([...seen, name])) : null;
+  }
+  const mix = /^color-mix\(in srgb,\s*(.+?)\s+(\d+(?:\.\d+)?)%,\s*(.+)\)$/.exec(text);
+  if (mix) {
+    const first = toRgb(mix[1], tokens, seen);
+    const second = toRgb(mix[3], tokens, seen);
+    if (!first || !second) return null;
+    const share = Number(mix[2]) / 100;
+    return first.map((channel, index) =>
+      Math.round(channel * share + second[index] * (1 - share)),
+    );
+  }
+  return null;
+}
+
+function relativeLuminance(rgb) {
+  const [r, g, b] = rgb.map((channel) => {
     const srgb = channel / 255;
     return srgb <= 0.03928 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4;
   });
@@ -83,6 +112,10 @@ const checks = [
   ["text-tertiary", "surface", 4.5, "metadata and column headers"],
   ["text-tertiary", "canvas", 4.5, "metadata on the canvas"],
   ["text-muted", "surface", 4.5, "placeholders and captions"],
+  ["text-muted", "surface-selected", 4.5, "muted text in a selected row"],
+  ["text-tertiary", "surface-selected", 4.5, "metadata in a selected row"],
+  ["text-secondary", "surface-selected", 4.5, "secondary text in a selected row"],
+  ["text-primary", "surface-selected", 4.5, "primary text in a selected row"],
   ["accent", "surface", 4.5, "accent as text"],
   ["accent", "canvas", 4.5, "accent on the canvas"],
   ["accent-text", "accent", 4.5, "text on the accent button"],
@@ -109,9 +142,9 @@ const rows = [];
 
 for (const [theme, tokens] of Object.entries(themes)) {
   for (const [fgName, bgName, min, label] of checks) {
-    const fg = tokens.get(fgName);
-    const bg = tokens.get(bgName);
-    if (!fg || !bg || !fg.startsWith("#") || !bg.startsWith("#")) {
+    const fg = toRgb(tokens.get(fgName), tokens);
+    const bg = toRgb(tokens.get(bgName), tokens);
+    if (!fg || !bg) {
       rows.push({ theme, label, fgName, bgName, ratio: null, min, status: "SKIP" });
       continue;
     }
@@ -141,9 +174,9 @@ console.log(
 
 for (const [theme, tokens] of Object.entries(themes)) {
   for (const [fgName, bgName, min] of LEGIBILITY) {
-    const fg = tokens.get(fgName);
-    const bg = tokens.get(bgName);
-    if (!fg || !bg || !fg.startsWith("#") || !bg.startsWith("#")) {
+    const fg = toRgb(tokens.get(fgName), tokens);
+    const bg = toRgb(tokens.get(bgName), tokens);
+    if (!fg || !bg) {
       console.log(`· [${theme.padEnd(5)}] separator ${fgName} — translucent, checked by eye`);
       continue;
     }

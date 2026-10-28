@@ -5,8 +5,8 @@ import {
   LoadingRows,
   MetricCompareChart,
 } from "@frontedge-ml/ui";
-import type { CompareSeries, MetricSpec, Run, UiConfig } from "@frontedge-ml/ui";
-import { ArrowLeft, RefreshCw } from "lucide-react";
+import type { CompareSeries, MetricSpec, Run, RunOption, UiConfig } from "@frontedge-ml/ui";
+import { ArrowLeft, RefreshCw, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAppT } from "../i18n";
 import { errorMessage, source } from "../data/source";
@@ -25,10 +25,14 @@ type Chart = { id: string; spec: MetricSpec | undefined; series: CompareSeries[]
 export function CompareScreen({
   ids,
   config,
+  runChoices,
+  onIdsChange,
   onBack,
 }: {
   ids: string[];
   config: UiConfig | null;
+  runChoices: RunOption[];
+  onIdsChange: (ids: string[]) => void;
   onBack: () => void;
 }) {
   const t = useAppT();
@@ -88,6 +92,32 @@ export function CompareScreen({
       .filter((item): item is Chart => item !== null);
   }, [config, runs, specById]);
 
+  const available = runChoices.filter((run) => !ids.includes(run.id));
+  const addRun = (id: string) => {
+    if (!id || ids.includes(id) || ids.length >= 4) return;
+    onIdsChange([...ids, id]);
+  };
+  const removeRun = (id: string) => onIdsChange(ids.filter((candidate) => candidate !== id));
+  const picker =
+    ids.length < 4 && available.length > 0 ? (
+      <label className="fe-field">
+        <span className="fe-field__label">{t("compare.add")}</span>
+        <select
+          className="fe-select"
+          value=""
+          onChange={(event) => addRun(event.target.value)}
+          aria-label={t("compare.add")}
+        >
+          <option value="">{t("compare.addPlaceholder")}</option>
+          {available.slice(0, 100).map((run) => (
+            <option key={run.id} value={run.id}>
+              {run.name}
+            </option>
+          ))}
+        </select>
+      </label>
+    ) : null;
+
   const crumbs = (
     <div className="fe-detail__crumbs">
       <button type="button" className="fe-linkbtn" onClick={onBack}>
@@ -107,9 +137,12 @@ export function CompareScreen({
             title={t("compare.empty")}
             text={t("compare.subtitle")}
             action={
-              <Button variant="secondary" size="sm" onClick={onBack}>
-                {t("nav.runs")}
-              </Button>
+              <div className="fe-empty__actions">
+                {picker}
+                <Button variant="secondary" size="sm" onClick={onBack}>
+                  {t("nav.runs")}
+                </Button>
+              </div>
             }
           />
         </div>
@@ -166,8 +199,17 @@ export function CompareScreen({
               aria-hidden
             />
             <span className="fe-mono">{run.name}</span>
+            <button
+              type="button"
+              className="fe-icon-btn"
+              aria-label={t("compare.remove", { run: run.name })}
+              onClick={() => removeRun(run.id)}
+            >
+              <X size={12} aria-hidden />
+            </button>
           </span>
         ))}
+        {picker}
       </div>
 
       <section className="fe-compare__section">

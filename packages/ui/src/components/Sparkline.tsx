@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { useT } from "../i18n/I18nProvider";
 
-interface SparklineProps {
+export interface SparklineProps {
   values: number[];
   color?: string;
   width?: number;

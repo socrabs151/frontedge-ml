@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-interface EmptyStateProps {
+export interface EmptyStateProps {
   icon?: ReactNode;
   title: string;
   text?: string;

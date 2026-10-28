@@ -213,9 +213,20 @@ export const mockSource: RunsSource = {
       runColumns: ["name", "status", "ribbon", "dataset", "startedAt", "durationMs", "accuracy", "loss"],
       evalTabs: [],
       actions: [
-        { id: "stop", label: "Stop", placement: "run", danger: true },
+        {
+          id: "stop",
+          label: "Stop",
+          placement: "run",
+          statuses: ["running", "queued"],
+          danger: true,
+        },
         { id: "export", label: "Export CSV", placement: "run" },
-        { id: "rerun", label: "Restart", placement: "runs" },
+        {
+          id: "rerun",
+          label: "Restart",
+          placement: "runs",
+          statuses: ["succeeded", "failed", "cancelled", "lost"],
+        },
       ],
     };
   },

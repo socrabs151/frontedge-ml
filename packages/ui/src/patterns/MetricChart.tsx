@@ -123,6 +123,13 @@ export function MetricChart({
   const line = (points: MetricPoint[]) =>
     points.map((point) => `${model.x(point.step).toFixed(1)},${model.y(point.value).toFixed(1)}`).join(" ");
 
+  const moveHover = (delta: number) => {
+    if (series.length === 0) return;
+    setHoverIndex((current) =>
+      Math.max(0, Math.min(series.length - 1, (current ?? 0) + delta)),
+    );
+  };
+
   const onMove = (event: React.MouseEvent<SVGSVGElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const offset = event.clientX - rect.left;
@@ -168,13 +175,50 @@ export function MetricChart({
       </div>
 
       <div ref={hostRef} className="fe-chart__host" style={{ height }}>
+        <span className="sr-only" aria-live="polite">
+          {hovered
+            ? t("metric.point", {
+                label,
+                step: hovered.step,
+                value: formatMetric(hovered.value, digits, lang),
+              })
+            : ""}
+        </span>
         <svg
           width={width}
           height={height}
           role="img"
-          aria-label={t("metric.overSteps", { label })}
+          tabIndex={0}
+          aria-label={
+            hovered
+              ? t("metric.point", {
+                  label,
+                  step: hovered.step,
+                  value: formatMetric(hovered.value, digits, lang),
+                })
+              : t("metric.overSteps", { label })
+          }
           onMouseMove={onMove}
           onMouseLeave={() => setHoverIndex(null)}
+          onFocus={() => setHoverIndex(0)}
+          onBlur={() => setHoverIndex(null)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+              event.preventDefault();
+              moveHover(1);
+            } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+              event.preventDefault();
+              moveHover(-1);
+            } else if (event.key === "Home") {
+              event.preventDefault();
+              setHoverIndex(0);
+            } else if (event.key === "End") {
+              event.preventDefault();
+              setHoverIndex(series.length - 1);
+            } else if (event.key === "Escape") {
+              setHoverIndex(null);
+            }
+          }}
         >
           {model.yTicks.map((tick) => (
             <g key={`y-${tick}`}>

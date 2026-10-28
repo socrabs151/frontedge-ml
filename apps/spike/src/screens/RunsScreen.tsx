@@ -152,6 +152,8 @@ export function RunsScreen({
           id: action.id,
           label: action.label,
           danger: action.danger,
+          visible: (run: Run) =>
+            !action.statuses?.length || action.statuses.includes(run.status),
           onClick: (run: Run) => {
             void source
               .runAction(action.id, { runId: run.id })

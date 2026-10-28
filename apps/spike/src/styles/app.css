@@ -552,3 +552,53 @@ body {
   color: var(--fe-text-tertiary);
   text-align: right;
 }
+
+/* --- Narrow screens --------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .sidebar__title,
+  .sidebar__label,
+  .sidebar__note {
+    display: none;
+  }
+
+  .sidebar__item {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .content {
+    padding: var(--fe-space-4) var(--fe-space-3);
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 0 var(--fe-space-3);
+  }
+
+  .topbar__project {
+    display: none;
+  }
+}
+
+.fe-table__scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--fe-border-strong) transparent;
+}
+
+.fe-table__scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.fe-table__scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--fe-radius-pill);
+  background: var(--fe-border-strong);
+  background-clip: content-box;
+}

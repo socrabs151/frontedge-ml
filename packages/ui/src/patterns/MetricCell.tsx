@@ -83,6 +83,17 @@ export function MetricCell({
   );
 }
 
+export interface MetricCardProps {
+  label: string;
+  value: number | undefined;
+  baseline?: number;
+  direction?: MetricDirection;
+  series?: number[];
+  color?: string;
+  digits?: number;
+  baselineLabel?: string;
+}
+
 export function MetricCard({
   label,
   value,
@@ -92,16 +103,7 @@ export function MetricCard({
   color = "var(--fe-data-series-1)",
   digits = 3,
   baselineLabel,
-}: {
-  label: string;
-  value: number | undefined;
-  baseline?: number;
-  direction?: MetricDirection;
-  series?: number[];
-  color?: string;
-  digits?: number;
-  baselineLabel?: string;
-}) {
+}: MetricCardProps) {
   const { t, lang } = useI18n();
   const baselineText = baselineLabel ?? t("tag.baseline");
   const hasBaseline = baseline !== undefined && Number.isFinite(baseline);

@@ -1,7 +1,7 @@
 import { Search as SearchIcon, X } from "lucide-react";
 import { useT } from "../i18n/I18nProvider";
 
-interface SearchProps {
+export interface SearchProps {
   value: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
