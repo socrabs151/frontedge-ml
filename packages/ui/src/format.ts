@@ -44,9 +44,10 @@ export function formatMetric(
 
 export function formatDelta(value: number, digits = 3, lang: Lang = "en"): string {
   if (value === 0) return "±0";
-  // A change below the precision of the value it sits next to reads as ±0: the tooltip keeps
-  // the exact number, and the column stays aligned.
-  if (Math.abs(value) < 0.5 * 10 ** -digits) return "±0";
+  // A real change below the shown precision is not zero: "<0.001" is honest, and the tooltip
+  // keeps the exact number. "±0" is reserved for an exact zero.
+  const threshold = 0.5 * 10 ** -digits;
+  if (Math.abs(value) < threshold) return `<${formatMetric(threshold, digits, lang)}`;
   const sign = value > 0 ? "+" : "−";
   return `${sign}${formatMetric(Math.abs(value), digits, lang)}`;
 }

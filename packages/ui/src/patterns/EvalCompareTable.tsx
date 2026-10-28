@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { useMemo, useState } from "react";
-import { EMPTY, formatMetric } from "../format";
+import { EMPTY, formatDelta, formatMetric } from "../format";
 import { useI18n, type Lang } from "../i18n/I18nProvider";
 import { describeDelta } from "./MetricCell";
 import type { EvalComparison, ExampleResult, MetricDirection } from "../types";
@@ -257,9 +257,7 @@ export function EvalCompareTable({
                       delta !== null && delta !== 0 && "fe-eval__delta",
                     )}
                   >
-                    {delta === null
-                      ? EMPTY
-                      : `${delta > 0 ? "+" : delta < 0 ? "−" : "±"}${formatMetric(Math.abs(delta), 3, lang)}`}
+                    {delta === null ? EMPTY : formatDelta(delta, 3, lang)}
                     {meta?.word ? (
                       <span className="fe-eval__word">{t(`delta.${meta.word}`)}</span>
                     ) : null}
@@ -288,8 +286,7 @@ export function EvalCompareTable({
                 {formatMetric(comparison.comparisonAggregate, 3, lang)}
               </td>
               <td className="fe-table__td fe-table__td--num fe-num fe-eval__delta">
-                {aggregateDelta > 0 ? "+" : aggregateDelta < 0 ? "−" : "±"}
-                {formatMetric(Math.abs(aggregateDelta), 3, lang)}
+                {formatDelta(aggregateDelta, 3, lang)}
                 {aggregateMeta.word ? (
                   <span className="fe-eval__word">{t(`delta.${aggregateMeta.word}`)}</span>
                 ) : null}

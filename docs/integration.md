@@ -330,8 +330,9 @@ from `request.app` cannot be checked this way — start the server and call `/ap
 
 `frontedge.mount()` takes the provider and, optionally, `evals=`, `datasets=`, `actions=`,
 `config=`, `path=` (the prefix the interface is mounted under, `/frontedge` by default),
-`title=` and `dependencies=` (FastAPI dependencies for every route, including the static
-interface). `frontedge.runs()` is the same router without the eval and dataset screens.
+`title=`, `dependencies=` (FastAPI dependencies for every route, including the static
+interface) and `provider_timeout=` (seconds, default 30; `None` disables the timeout).
+`frontedge.runs()` is the same router without the eval and dataset screens.
 
 `title` is the browser tab: it is substituted into the served HTML (escaped) and used as the
 router title in the OpenAPI document.
@@ -347,7 +348,7 @@ router title in the OpenAPI document.
 | `GET /frontedge/api/evals` | a list of evaluations (if `evals=` is connected) |
 | `GET /frontedge/api/evals/{id}/compare?reference=&comparison=` | a comparison of two runs |
 | `GET /frontedge/api/datasets` | a list of datasets (if `datasets=` is connected) |
-| `GET /frontedge/api/datasets/{id}` | a dataset with its examples |
+| `GET /frontedge/api/datasets/{id}` | a dataset with metadata only; examples come from the paged endpoint below |
 | `GET /frontedge/api/datasets/{id}/examples` | a page of the dataset examples (`offset`, `limit`, `search`); the total is in `X-Frontedge-Total` |
 | `GET /frontedge/api/config` | the interface configuration (see §5) |
 | `GET /frontedge/api/meta` | the status, freshness and metric-direction vocabularies, plus the capabilities (see below) |
@@ -391,7 +392,9 @@ Download link is left out when artifact content is not served.
 A provider that returns the wrong type is not a server bug, so the library answers **502** with a
 `detail` that names the method and the position. A naive timestamp, an unknown field or any other
 provider exception is also a 502 with the method name; a failure in the middle of a log stream is
-an `error` event in that stream.
+an `error` event in that stream. A provider that never answers is a **504** after
+`provider_timeout` seconds; the same limit applies to every log event, so a silent stream reports
+a timeout line instead of holding the connection forever.
 
 ```json
 { "detail": "list_runs item 3 returned dict, expected Run" }

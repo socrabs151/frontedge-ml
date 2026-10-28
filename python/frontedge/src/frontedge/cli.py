@@ -45,6 +45,7 @@ from .providers import (
     as_model_or_none,
     as_models,
     provider_accepts_query,
+    provider_has_examples,
     provider_has_logs,
     provider_reads_artifacts,
 )
@@ -557,7 +558,12 @@ async def _provider_report(args: argparse.Namespace) -> dict[str, Any]:
     """Call the provider the way the server will and validate every answer."""
     request = _dummy_request()
     errors: list[dict[str, str]] = []
-    report: dict[str, Any] = {"query": False, "logs": False, "artifacts": False}
+    report: dict[str, Any] = {
+        "query": False,
+        "logs": False,
+        "artifacts": False,
+        "examples": False,
+    }
 
     try:
         provider = adapt_provider(_load_object(args.provider))
@@ -586,7 +592,32 @@ async def _provider_report(args: argparse.Namespace) -> dict[str, Any]:
                     )
             else:
                 report["run"] = run.id
-    except ProviderError as error:
+                if provider_has_examples(provider):
+                    examples = as_models(
+                        await provider.list_examples(request, wanted),
+                        Example,
+                        "list_examples",
+                    )
+                    report["examples"] = len(examples)
+                if provider_has_logs(provider):
+                    stream = provider.stream_logs(request, wanted)
+                    try:
+                        first = await asyncio.wait_for(anext(stream), 2.0)
+                        as_model_or_none(first, LogLine, "stream_logs")
+                    except StopAsyncIteration:
+                        pass
+                    finally:
+                        close = getattr(stream, "aclose", None)
+                        if close is not None:
+                            await close()
+                if provider_reads_artifacts(provider) and run.artifacts:
+                    artifact = run.artifacts[0]
+                    content = await provider.read_artifact(request, artifact.id)
+                    if content is not None and not isinstance(content, (bytes, bytearray)):
+                        raise ProviderError(
+                            f"read_artifact returned {type(content).__name__}, expected bytes"
+                        )
+    except Exception as error:  # noqa: BLE001 - the check reports the message, not a traceback
         errors.append({"field": "runs", "message": str(error)})
 
     if args.evals:
@@ -595,7 +626,7 @@ async def _provider_report(args: argparse.Namespace) -> dict[str, Any]:
             report["evals"] = len(
                 as_models(await evals.list_evals(request), EvalSummary, "list_evals")
             )
-        except (ProviderError, AttributeError, ImportError) as error:
+        except Exception as error:  # noqa: BLE001 - the check reports the message
             errors.append({"field": "evals", "message": str(error)})
 
     if args.datasets:
@@ -618,7 +649,7 @@ async def _provider_report(args: argparse.Namespace) -> dict[str, Any]:
                             "message": f"returned None for {listed[0].id}",
                         }
                     )
-        except (ProviderError, AttributeError, ImportError) as error:
+        except Exception as error:  # noqa: BLE001 - the check reports the message
             errors.append({"field": "datasets", "message": str(error)})
 
     return {"ok": not errors, "errors": errors, **report}
@@ -635,6 +666,7 @@ def _print_provider_report(report: dict[str, Any]) -> None:
         print(f"  get_run: {report['run']}")
     print(f"  query: {flag('query')}")
     print(f"  logs: {flag('logs')}")
+    print(f"  examples: {flag('examples')}")
     print(f"  artifacts: {flag('artifacts')}")
     if report.get("evals") is not None:
         print(f"  evals: {report['evals']}")

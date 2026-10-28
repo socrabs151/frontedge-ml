@@ -840,6 +840,19 @@ class TestHttp:
             "/api/runs/entity%2Fproject%2Frun-7/logs/stream"
         )
 
+    def test_a_hanging_provider_is_a_504(self) -> None:
+        class Slow:
+            async def list_runs(self, request: Any) -> list[Run]:
+                await asyncio.sleep(0.05)
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return None
+
+        response = client_for(Slow(), provider_timeout=0.01).get("/frontedge/api/runs")
+        assert response.status_code == 504
+        assert "list_runs timed out" in response.json()["detail"]
+
     def test_an_unexpected_provider_error_is_a_named_502(self) -> None:
         class Broken:
             async def list_runs(self, request: Any) -> list[Run]:

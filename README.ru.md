@@ -165,7 +165,7 @@ import { RunsTable, StatusBadge } from "@frontedge-ml/ui";
 | [`frontedge`](python/frontedge) (PyPI) | Python-пакет: модели, провайдеры, роутеры, генератор типов |
 | [`@frontedge-ml/ui`](packages/ui) (npm) | дизайн-система: токены, примитивы, ML-паттерны, сгенерированные типы |
 
-TypeScript-типы генерируются из Python-моделей, поэтому разойтись не могут:
+TypeScript-типы генерируются из Python-моделей; CI запускает `frontedge gen --check`, поэтому расхождение валит сборку:
 
 ```bash
 pnpm gen:types     # pydantic -> types.ts + client.ts
@@ -188,11 +188,13 @@ pnpm gen:types     # pydantic -> types.ts + client.ts
 
 ```bash
 pnpm install
-pnpm dev                # спайк на http://localhost:5173
+pnpm dev                # спайк на mock-данных: http://localhost:5173
 pnpm demo               # демо на FastAPI: http://127.0.0.1:8000/frontedge
+PORT=8010 pnpm demo     # другой порт, если 8000 занят
 pnpm typecheck
 pnpm check:contrast     # контраст каждой пары токенов по WCAG 2.2, обе темы
 pnpm check:lang         # английский репозиторий и интерфейс, русский — только через тумблер
+pnpm check:lang -- --no-browser  # без браузерной проверки, если демо не запущено
 pnpm build:ui           # сборка интерфейса в Python-пакет
 uv sync --all-packages
 uv run --package frontedge pytest python/frontedge/tests -q

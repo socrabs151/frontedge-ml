@@ -165,7 +165,7 @@ user's repository, **[AGENTS.md](AGENTS.md)** has the same contract in short for
 | [`frontedge`](python/frontedge) (PyPI) | the Python package: models, providers, routers, the type generator |
 | [`@frontedge-ml/ui`](packages/ui) (npm) | the design system: tokens, primitives, ML patterns, generated types |
 
-TypeScript types are generated from the Python models, so the two can never drift:
+TypeScript types are generated from the Python models; CI runs `frontedge gen --check`, so drift fails the build:
 
 ```bash
 pnpm gen:types     # pydantic -> types.ts + client.ts
@@ -188,11 +188,13 @@ pnpm gen:types     # pydantic -> types.ts + client.ts
 
 ```bash
 pnpm install
-pnpm dev                # the spike app on http://localhost:5173
+pnpm dev                # the spike app on mock data: http://localhost:5173
 pnpm demo               # the demo on FastAPI: http://127.0.0.1:8000/frontedge
+PORT=8010 pnpm demo     # another port when 8000 is taken
 pnpm typecheck
 pnpm check:contrast     # WCAG contrast of every token pair, both themes
 pnpm check:lang         # English repository and interface, Russian only through the toggle
+pnpm check:lang -- --no-browser  # skip the browser pass when no demo is running
 pnpm build:ui           # build the interface into the Python package
 uv sync --all-packages
 uv run --package frontedge pytest python/frontedge/tests -q

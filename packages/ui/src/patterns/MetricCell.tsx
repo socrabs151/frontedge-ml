@@ -48,7 +48,7 @@ export function MetricCell({
   const deltaMeta = delta !== undefined ? describeDelta(delta, direction) : undefined;
   const deltaText = delta !== undefined ? formatDelta(delta, digits, lang) : "";
   // A change below the shown precision has no direction: "↑ ±0" contradicts itself.
-  const negligible = deltaText === "±0";
+  const negligible = deltaText === "±0" || deltaText.startsWith("<");
   const hasSpark = Boolean(withSparkline && series && series.length > 1);
 
   return (
@@ -110,7 +110,7 @@ export function MetricCard({
   const delta = hasBaseline && value !== undefined ? value - baseline : undefined;
   const deltaMeta = delta !== undefined ? describeDelta(delta, direction) : undefined;
   const deltaText = delta !== undefined ? formatDelta(delta, digits, lang) : "";
-  const negligible = deltaText === "±0";
+  const negligible = deltaText === "±0" || deltaText.startsWith("<");
 
   return (
     <div className="fe-metric-card">

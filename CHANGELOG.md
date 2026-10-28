@@ -14,6 +14,26 @@ The following are **public contracts** and change only in a major release:
   `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
+## [Unreleased]
+
+### Added
+
+- `mount(..., provider_timeout=30)` bounds a provider call and log-stream event; a hung provider
+  answers 504 and a silent stream gets an `error` line instead of an endless keepalive. `None`
+  disables the limit.
+- `frontedge check --provider` now exercises examples and logs, validates the first log line and
+  reports a broken optional method instead of calling it healthy from the attribute alone.
+
+### Changed
+
+- A real delta below the shown precision reads `<0.001`, not `±0`; exact zero keeps `±0`.
+- `pnpm demo` honours `PORT`; the development docs separate the mock spike from the FastAPI demo,
+  show `check:lang -- --no-browser`, and no longer claim generated types cannot drift.
+
+### Fixed
+
+- A sync provider method or any unexpected check error is reported as a message, not a traceback.
+
 ## [0.4.0] — 2026-10-28
 
 ### Added

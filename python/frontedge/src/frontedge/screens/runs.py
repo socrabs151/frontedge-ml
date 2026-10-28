@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import functools
 import hashlib
 import inspect
@@ -287,19 +288,51 @@ async def _empty_logs() -> AsyncIterator[tuple[str, Any]]:
     yield  # pragma: no cover
 
 
-def _provider_errors(endpoint: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
+async def _timed_stream(stream: AsyncIterator[Any], timeout: float | None) -> AsyncIterator[Any]:
+    """A silent provider must not keep an SSE connection open forever."""
+    iterator = stream.__aiter__()
+    while True:
+        try:
+            item = (
+                await asyncio.wait_for(anext(iterator), timeout)
+                if timeout is not None
+                else await anext(iterator)
+            )
+        except StopAsyncIteration:
+            return
+        yield item
+
+
+def _provider_errors(
+    endpoint: Callable[..., Awaitable[Any]],
+    *,
+    timeout: float | None = None,
+) -> Callable[..., Awaitable[Any]]:
     """A broken provider contract is a bad gateway, not an internal error.
 
     The detail names the method and the position, so the person who wired the provider can fix
-    it instead of reading a serializer traceback.
+    it instead of reading a serializer traceback. A provider that hangs is a 504 instead of
+    holding the request forever.
     """
 
     @functools.wraps(endpoint)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
-            return await endpoint(*args, **kwargs)
+            call = endpoint(*args, **kwargs)
+            if timeout is not None:
+                return await asyncio.wait_for(call, timeout)
+            return await call
         except HTTPException:
             raise
+        except TimeoutError as error:
+            raise HTTPException(
+                status_code=504,
+                detail=(
+                    f"{endpoint.__name__} timed out"
+                    if timeout is None
+                    else f"{endpoint.__name__} timed out after {timeout:g}s"
+                ),
+            ) from error
         except ProviderError as error:
             raise HTTPException(status_code=502, detail=str(error)) from error
         except Exception as error:
@@ -323,6 +356,7 @@ def _build_router(
     path: str = "/frontedge",
     title: str = "Frontedge",
     dependencies: Sequence[Any] | None = None,
+    provider_timeout: float | None = 30.0,
 ) -> APIRouter:
     """Router assembly. The function is deliberately not named ``mount``: the ``path``
     parameter must not shadow the function of the same name (that bug broke
@@ -340,6 +374,9 @@ def _build_router(
     )
     router = APIRouter(prefix=path, dependencies=list(dependencies or ()))
 
+    def guarded(endpoint: Callable[..., Awaitable[Any]]) -> Callable[..., Awaitable[Any]]:
+        return _provider_errors(endpoint, timeout=provider_timeout)
+
     # --- Runs -------------------------------------------------------------
 
     @router.get(
@@ -348,7 +385,7 @@ def _build_router(
         response_model=list[RunPayload],
         responses={200: {"headers": {"X-Frontedge-Total": {"schema": {"type": "integer"}}}}},
     )
-    @_provider_errors
+    @guarded
     async def list_runs(
         request: Request,
         response: Response,
@@ -417,7 +454,7 @@ def _build_router(
         tags=["frontedge"],
         response_model=list[RunOption],
     )
-    @_provider_errors
+    @guarded
     async def run_options(
         request: Request,
         limit: int = 200,
@@ -450,7 +487,7 @@ def _build_router(
         ]
 
     @router.get("/api/runs/{run_id}", tags=["frontedge"], response_model=RunPayload)
-    @_provider_errors
+    @guarded
     async def get_run(request: Request, run_id: str) -> RunPayload:
         run = as_model_or_none(await source.get_run(request, run_id), Run, "get_run")
         if run is None:
@@ -462,7 +499,7 @@ def _build_router(
         tags=["frontedge"],
         response_model=list[Example],
     )
-    @_provider_errors
+    @guarded
     async def list_examples(
         request: Request,
         response: Response,
@@ -514,7 +551,7 @@ def _build_router(
             }
         },
     )
-    @_provider_errors
+    @guarded
     async def stream_logs(request: Request, run_id: str) -> Response:
         if not provider_has_logs(source):
             return sse_response(_empty_logs())
@@ -524,8 +561,17 @@ def _build_router(
 
         async def events() -> AsyncIterator[tuple[str, Any]]:
             try:
-                async for line in source.stream_logs(request, run_id):
+                async for line in _timed_stream(
+                    source.stream_logs(request, run_id), provider_timeout
+                ):
                     yield "log", _json_model(as_model(line, LogLine, "stream_logs"))
+            except TimeoutError:
+                message = (
+                    f"log stream timed out after {provider_timeout:g}s"
+                    if provider_timeout is not None
+                    else "log stream timed out"
+                )
+                yield "log", _json_model(log_line(message, level="error"))
             except ProviderError as error:
                 # The response is already open: the only honest move is a visible error line.
                 yield "log", _json_model(log_line(str(error), level="error"))
@@ -534,7 +580,7 @@ def _build_router(
 
     # A run id may contain a slash (``entity/project/run``): the path converter keeps it whole.
     @router.get("/api/runs/{run_id:path}", tags=["frontedge"], response_model=RunPayload)
-    @_provider_errors
+    @guarded
     async def get_nested_run(request: Request, run_id: str) -> RunPayload:
         run = as_model_or_none(await source.get_run(request, run_id), Run, "get_run")
         if run is None:
@@ -670,7 +716,7 @@ def _build_router(
             }
         },
     )
-    @_provider_errors
+    @guarded
     async def artifact_content(request: Request, artifact_id: str) -> Response:
         """Artifact content — bytes or a stream, with ranges and revalidation."""
         return await _artifact_response(request, artifact_id)
@@ -679,14 +725,14 @@ def _build_router(
         "/api/artifacts/{artifact_id}/content",
         include_in_schema=False,
     )
-    @_provider_errors
+    @guarded
     async def artifact_head(request: Request, artifact_id: str) -> Response:
         return await _artifact_response(request, artifact_id)
 
     # --- Evals ------------------------------------------------------------
 
     @router.get("/api/evals", tags=["frontedge"], response_model=list[EvalSummary])
-    @_provider_errors
+    @guarded
     async def list_evals(request: Request) -> list[EvalSummary]:
         if evals is None:
             return []
@@ -697,7 +743,7 @@ def _build_router(
         tags=["frontedge"],
         response_model=EvalComparison,
     )
-    @_provider_errors
+    @guarded
     async def compare_evals(
         request: Request,
         eval_id: str,
@@ -718,7 +764,7 @@ def _build_router(
     # --- Datasets ---------------------------------------------------------
 
     @router.get("/api/datasets", tags=["frontedge"], response_model=list[DatasetInfo])
-    @_provider_errors
+    @guarded
     async def list_datasets(request: Request) -> list[DatasetInfo]:
         if datasets is None:
             return []
@@ -729,7 +775,7 @@ def _build_router(
         tags=["frontedge"],
         response_model=DatasetDetail,
     )
-    @_provider_errors
+    @guarded
     async def get_dataset(request: Request, dataset_id: str) -> DatasetDetail:
         if datasets is None:
             raise HTTPException(status_code=404, detail="Dataset screens are not connected")
@@ -746,7 +792,7 @@ def _build_router(
         tags=["frontedge"],
         response_model=list[ExampleResult],
     )
-    @_provider_errors
+    @guarded
     async def dataset_examples(
         request: Request,
         response: Response,
@@ -823,9 +869,18 @@ def _build_router(
         if handler is None or action_id not in declared:
             raise HTTPException(status_code=404, detail=f"Action is not declared: {action_id}")
         try:
-            result = await handler(request, payload or {})
+            call = handler(request, payload or {})
+            result = (
+                await asyncio.wait_for(call, provider_timeout)
+                if provider_timeout is not None
+                else await call
+            )
         except HTTPException:
             raise
+        except TimeoutError as error:
+            raise HTTPException(
+                status_code=504, detail=f"Action {action_id} timed out"
+            ) from error
         except Exception as error:  # noqa: BLE001 - the project's handler is a black box
             raise HTTPException(
                 status_code=502, detail=f"Action {action_id} failed: {error}"
@@ -857,6 +912,7 @@ def mount(
     path: str = "/frontedge",
     title: str = "Frontedge",
     dependencies: Sequence[Any] | None = None,
+    provider_timeout: float | None = 30.0,
 ) -> APIRouter:
     """Mount the Frontedge interface into the application.
 
@@ -869,6 +925,7 @@ def mount(
     ``config`` — interface configuration: a path to TOML/JSON, a dict or a ready object.
     ``dependencies`` — FastAPI dependencies applied to every route (auth, tenancy): the
     library itself has no authentication.
+    ``provider_timeout`` — seconds before a provider call is a 504; ``None`` disables it.
     """
     return _build_router(
         runs_provider,
@@ -879,6 +936,7 @@ def mount(
         path=path,
         title=title,
         dependencies=dependencies,
+        provider_timeout=provider_timeout,
     )
 
 
@@ -890,6 +948,7 @@ def runs(
     path: str = "/frontedge",
     title: str = "Frontedge",
     dependencies: Sequence[Any] | None = None,
+    provider_timeout: float | None = 30.0,
 ) -> APIRouter:
     """The runs screen only — a short form of :func:`mount`."""
     return _build_router(
@@ -899,6 +958,7 @@ def runs(
         path=path,
         title=title,
         dependencies=dependencies,
+        provider_timeout=provider_timeout,
     )
 
 
