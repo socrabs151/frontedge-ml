@@ -27,10 +27,11 @@ production.
 
 ## 2. Installation
 
-The wheel ships the built interface, so one command is enough:
+The wheel ships the built interface, so one command is enough. The `serve` extra adds uvicorn,
+the server used by the quick start:
 
 ```bash
-pip install frontedge
+pip install "frontedge[serve]"
 ```
 
 From a checkout (development) build the interface first and install the source package:
@@ -74,7 +75,16 @@ npm i @frontedge-ml/ui react react-dom
 ## 3. Provider: 20 lines
 
 A provider is a function or an object that returns runs. The library knows nothing about
-authentication: it hands you the `request`, you decide.
+authentication: it hands you the `request`, you decide. To guard every mounted route — including
+the static interface — pass FastAPI dependencies to `mount`:
+
+```python
+from fastapi import Depends
+
+app.include_router(
+    frontedge.mount(my_runs_provider, dependencies=[Depends(require_user)])
+)
+```
 
 ```python
 from datetime import UTC, datetime
@@ -118,8 +128,9 @@ app.include_router(frontedge.mount(my_runs_provider))
 | `list_examples(request, run_id)` | no | the Examples tab of a run stays empty |
 | `list_runs(request, query)` | no | the library filters and paginates the list itself |
 
-A failed run carries its reason in `error` and the exit code of the process in `exit_code`; both
-reach the client as `error` and `exitCode`.
+Only `id`, `name` and `status` are required: `metrics`, `series` and `stages` default to empty, so
+a queued run is a valid `Run` without invented values. A failed run carries its reason in `error`
+and the exit code of the process in `exit_code`; both reach the client as `error` and `exitCode`.
 
 `dataset`, `git_sha`, `owner`, `started_at` and `duration_ms` may be omitted: they default to an
 empty value and the interface shows an en dash — a queued run has no time yet.
@@ -178,9 +189,9 @@ app.include_router(frontedge.mount(MyProvider()))
 
 `stream_logs` is optional: without it the log stream stays empty. `read_artifact` is optional too.
 
-The query parameter is recognised by the name `query` (or `selection`), by the `RunsQuery`
-annotation, or as a positional second argument — a keyword-only switch such as
-`list_runs(request, *, include_archived=False)` is not mistaken for the selection. `sort` must
+The query parameter is recognised by the name `query` (or `selection`) or by the `RunsQuery`
+annotation. A second argument with any other name is a flag, not the selection —
+`list_runs(request, include_archived=False)` keeps receiving the request alone. `sort` must
 be a built-in column or a metric declared in `[[metrics]]`; `limit` is capped at 1000, and an
 unknown status, sort key or order is a 422 instead of an empty list or a 500.
 
@@ -350,7 +361,7 @@ have to guess from the configuration:
 ```json
 {
   "name": "frontedge",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "statuses": ["queued", "running", "succeeded", "failed", "cancelled", "lost"],
   "freshness": ["live", "fresh", "stale", "partial"],
   "metricDirections": ["maximize", "minimize", "none"],

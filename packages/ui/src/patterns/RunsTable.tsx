@@ -216,7 +216,11 @@ export function RunsTable({
         size: 72,
         enableSorting: false,
         cell: (info) => (
-          <RunRibbon stages={info.row.original.stages} events={info.row.original.events} height={6} />
+          <RunRibbon
+            stages={info.row.original.stages ?? []}
+            events={info.row.original.events}
+            height={6}
+          />
         ),
       }) as ColumnDef<Run, unknown>,
 
@@ -311,7 +315,7 @@ export function RunsTable({
 
     // The built-in metrics: value, delta against the baseline, sparkline.
     const metric = (id: "accuracy" | "loss", color: string) =>
-      columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
+      columnHelper.accessor((row) => row.metrics?.[id] ?? -Infinity, {
         id,
         header: () => {
           const spec = specFor(id);
@@ -330,8 +334,8 @@ export function RunsTable({
           const spec = specFor(id);
           return (
             <MetricCell
-              value={run.metrics[id]}
-              baseline={baseline?.metrics[id]}
+              value={run.metrics?.[id]}
+              baseline={baseline?.metrics?.[id]}
               direction={run.metricDirection?.[id] ?? spec?.direction ?? "none"}
               series={run.series?.[id]?.map((point) => point.value)}
               digits={spec?.digits ?? undefined}
@@ -347,7 +351,7 @@ export function RunsTable({
 
     // Any other metric of the project: the column is built from the data and the spec.
     const custom = (id: string) =>
-      columnHelper.accessor((row) => row.metrics[id] ?? -Infinity, {
+      columnHelper.accessor((row) => row.metrics?.[id] ?? -Infinity, {
         id,
         header: () => {
           const spec = specFor(id);
@@ -364,8 +368,8 @@ export function RunsTable({
           const spec = specFor(id);
           return (
             <MetricCell
-              value={run.metrics[id]}
-              baseline={baseline?.metrics[id]}
+              value={run.metrics?.[id]}
+              baseline={baseline?.metrics?.[id]}
               direction={run.metricDirection?.[id] ?? spec?.direction ?? "none"}
               series={run.series?.[id]?.map((point) => point.value)}
               digits={spec?.digits ?? undefined}
@@ -380,7 +384,7 @@ export function RunsTable({
     const canSort = (id: string) =>
       Boolean(fixed[id]) ||
       metricSpecs.some((spec) => spec.id === id) ||
-      runs.some((run) => Object.prototype.hasOwnProperty.call(run.metrics, id));
+      runs.some((run) => Object.prototype.hasOwnProperty.call(run.metrics ?? {}, id));
     const built = ids.map((id) => {
       const def = fixed[id] ?? custom(id);
       const spec = columnSpecs.find((item) => item.id === id);
@@ -547,6 +551,7 @@ export function RunsTable({
         style={height === undefined ? undefined : { height }}
       >
         <table className="fe-table__table" style={{ minWidth: table.getTotalSize() }}>
+          <caption className="sr-only">{t("table.runs")}</caption>
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>

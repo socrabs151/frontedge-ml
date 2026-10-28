@@ -37,6 +37,10 @@ async def event_stream(
         try:
             async for item in events:
                 await queue.put(item)
+        except Exception as error:
+            # A provider that fails mid-stream used to close silently. An ``error`` event lets
+            # the log panel show the reason instead of pretending the run ended normally.
+            await queue.put(("error", str(error)))
         finally:
             await queue.put(done)
 

@@ -47,11 +47,11 @@ export interface Run {
   params?: Record<string, unknown>;
   error?: string | null;
   exitCode?: number | null;
-  metrics: Record<string, number>;
-  series: Record<string, MetricPoint[]>;
+  metrics?: Record<string, number>;
+  series?: Record<string, MetricPoint[]>;
   baselineSeries?: Record<string, MetricPoint[]>;
   metricDirection?: Record<string, MetricDirection>;
-  stages: Stage[];
+  stages?: Stage[];
   events?: MetricEvent[];
   artifacts?: Artifact[];
   provenance?: ProvenanceEntry[];

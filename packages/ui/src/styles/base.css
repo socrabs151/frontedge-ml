@@ -37,7 +37,8 @@
   line-height: var(--fe-leading-normal);
 }
 
-[data-theme="dark"] .fe-root {
+[data-theme="dark"] .fe-root,
+.fe-root[data-theme="dark"] {
   color-scheme: dark;
 }
 

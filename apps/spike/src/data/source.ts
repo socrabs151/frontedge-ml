@@ -88,7 +88,7 @@ function sortValue(run: Run, key: string): string | number | null {
   if (key === "durationMs") return run.durationMs ?? null;
   if (key === "name" || key === "status" || key === "owner") return run[key] ?? null;
   if (key === "dataset") return run.dataset ?? null;
-  const metric = run.metrics[key];
+  const metric = run.metrics?.[key];
   return typeof metric === "number" ? metric : null;
 }
 

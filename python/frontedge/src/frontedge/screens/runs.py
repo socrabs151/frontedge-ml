@@ -6,7 +6,7 @@ import functools
 import hashlib
 import inspect
 import re
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from datetime import UTC, date, datetime
 from email.utils import format_datetime, parsedate_to_datetime
 from itertools import count
@@ -301,8 +301,17 @@ def _provider_errors(endpoint: Callable[..., Awaitable[Any]]) -> Callable[..., A
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return await endpoint(*args, **kwargs)
+        except HTTPException:
+            raise
         except ProviderError as error:
             raise HTTPException(status_code=502, detail=str(error)) from error
+        except Exception as error:
+            # A provider that raises anything else used to become an opaque 500. The method
+            # name and the message are what the integrator needs to fix the adapter.
+            raise HTTPException(
+                status_code=502,
+                detail=f"{endpoint.__name__} failed: {error}",
+            ) from error
 
     return wrapper
 
@@ -316,6 +325,7 @@ def _build_router(
     config: UiConfig | str | Path | dict[str, Any] | None = None,
     path: str = "/frontedge",
     title: str = "Frontedge",
+    dependencies: Sequence[Any] | None = None,
 ) -> APIRouter:
     """Router assembly. The function is deliberately not named ``mount``: the ``path``
     parameter must not shadow the function of the same name (that bug broke
@@ -331,7 +341,7 @@ def _build_router(
     served_config = ui_config.model_copy(
         update={"actions": [action for action in ui_config.actions if action.id in handlers]}
     )
-    router = APIRouter(prefix=path)
+    router = APIRouter(prefix=path, dependencies=list(dependencies or ()))
 
     # --- Runs -------------------------------------------------------------
 
@@ -840,6 +850,7 @@ def mount(
     config: UiConfig | str | Path | dict[str, Any] | None = None,
     path: str = "/frontedge",
     title: str = "Frontedge",
+    dependencies: Sequence[Any] | None = None,
 ) -> APIRouter:
     """Mount the Frontedge interface into the application.
 
@@ -850,6 +861,8 @@ def mount(
     dataset screens; without them the matching sections do not appear.
     ``actions`` — project action handlers: ``{"stop": async def stop(request, payload)}``.
     ``config`` — interface configuration: a path to TOML/JSON, a dict or a ready object.
+    ``dependencies`` — FastAPI dependencies applied to every route (auth, tenancy): the
+    library itself has no authentication.
     """
     return _build_router(
         runs_provider,
@@ -859,6 +872,7 @@ def mount(
         config=config,
         path=path,
         title=title,
+        dependencies=dependencies,
     )
 
 
@@ -869,10 +883,16 @@ def runs(
     config: UiConfig | str | Path | dict[str, Any] | None = None,
     path: str = "/frontedge",
     title: str = "Frontedge",
+    dependencies: Sequence[Any] | None = None,
 ) -> APIRouter:
     """The runs screen only — a short form of :func:`mount`."""
     return _build_router(
-        runs_provider, actions=actions, config=config, path=path, title=title
+        runs_provider,
+        actions=actions,
+        config=config,
+        path=path,
+        title=title,
+        dependencies=dependencies,
     )
 
 

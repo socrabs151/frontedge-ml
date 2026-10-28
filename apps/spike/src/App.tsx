@@ -257,21 +257,34 @@ function Shell() {
     return () => window.clearInterval(timer);
   }, [config, load]);
 
+  // An implicit baseline is chosen once and stays pinned: sorting or paging must not silently
+  // change what the deltas mean. An explicit pick (URL, config or the picker) still wins.
+  const [autoBaselineId, setAutoBaselineId] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (baselineId || autoBaselineId) return;
+    const candidate =
+      runChoices.find((run) => run.status === "succeeded") ??
+      runs?.find((run) => run.status === "succeeded");
+    if (candidate) setAutoBaselineId(candidate.id);
+  }, [baselineId, autoBaselineId, runChoices, runs]);
+
+  const effectiveBaselineId = baselineId ?? autoBaselineId;
+
   const pageBaseline = useMemo(() => {
     if (!runs) return undefined;
-    return runs.find((run) => run.id === baselineId) ?? runs.find((run) => run.status === "succeeded");
-  }, [runs, baselineId]);
+    return runs.find((run) => run.id === effectiveBaselineId);
+  }, [runs, effectiveBaselineId]);
 
   // The baseline may be outside the current page: fetch it once so the deltas stay honest.
   const [baselineRun, setBaselineRun] = useState<Run | undefined>(undefined);
   useEffect(() => {
-    if (!baselineId) {
+    if (!effectiveBaselineId) {
       setBaselineRun(undefined);
       return;
     }
     let cancelled = false;
     source
-      .getRun(baselineId)
+      .getRun(effectiveBaselineId)
       .then((run) => {
         if (!cancelled) setBaselineRun(run);
       })
@@ -281,7 +294,7 @@ function Shell() {
     return () => {
       cancelled = true;
     };
-  }, [baselineId]);
+  }, [effectiveBaselineId]);
 
   const baseline = baselineRun ?? pageBaseline;
 
@@ -413,7 +426,7 @@ function Shell() {
               updatedAt={updatedAt}
               query={query}
               onQueryChange={setQuery}
-              baselineId={baselineId ?? pageBaseline?.id}
+              baselineId={effectiveBaselineId}
               baselineRun={baselineRun}
               onBaselineChange={setBaselineId}
               config={config}

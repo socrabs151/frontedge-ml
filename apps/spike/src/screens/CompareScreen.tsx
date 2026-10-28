@@ -80,6 +80,7 @@ export function CompareScreen({
             name: run.name,
             color: colorAt(index),
             points: run.series?.[id] ?? [],
+            value: run.metrics?.[id],
           }))
           .filter((item) => item.points.length > 0);
         return series.length > 0 ? { id, spec: specById.get(id), series } : null;

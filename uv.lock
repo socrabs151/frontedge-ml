@@ -155,11 +155,16 @@ wheels = [
 
 [[package]]
 name = "frontedge"
-version = "0.2.0"
+version = "0.3.0"
 source = { editable = "python/frontedge" }
 dependencies = [
     { name = "fastapi" },
     { name = "pydantic" },
+]
+
+[package.optional-dependencies]
+serve = [
+    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -174,7 +179,9 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "pydantic", specifier = ">=2.9" },
+    { name = "uvicorn", marker = "extra == 'serve'", specifier = ">=0.32" },
 ]
+provides-extras = ["serve"]
 
 [package.metadata.requires-dev]
 dev = [

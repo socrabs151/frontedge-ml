@@ -24,10 +24,11 @@ export function DatasetTable({
       <div
         className="fe-table__scroll"
         role="region"
-        aria-label={t("column.input")}
+        aria-label={t("table.datasets")}
         tabIndex={0}
       >
         <table className="fe-table__table">
+          <caption className="sr-only">{t("table.datasets")}</caption>
           <thead>
             <tr>
               <th scope="col" className="fe-table__th fe-table__th--sticky">

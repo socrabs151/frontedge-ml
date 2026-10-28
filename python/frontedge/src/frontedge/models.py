@@ -155,7 +155,7 @@ class Run(FrontedgeModel):
     git_sha: str = Field(default="", json_schema_extra=role("code"))
     #: A queued run may have neither: the interface shows an en dash instead of inventing time.
     started_at: datetime | None = Field(default=None, json_schema_extra=role("timestamp"))
-    duration_ms: int | None = Field(default=None, json_schema_extra=role("duration"))
+    duration_ms: int | None = Field(default=None, ge=0, json_schema_extra=role("duration"))
     owner: str = ""
     #: Free labels of the project ("production", "nightly"): filtered by, shown as chips.
     tags: list[str] = Field(default_factory=list)
@@ -164,11 +164,11 @@ class Run(FrontedgeModel):
     params: dict[str, Any] = Field(default_factory=dict)
     error: str | None = Field(default=None, json_schema_extra=role("text"))
     exit_code: int | None = None
-    metrics: dict[str, float] = Field(json_schema_extra=role("metric"))
-    series: dict[str, list[MetricPoint]]
+    metrics: dict[str, float] = Field(default_factory=dict, json_schema_extra=role("metric"))
+    series: dict[str, list[MetricPoint]] = Field(default_factory=dict)
     baseline_series: dict[str, list[MetricPoint]] = Field(default_factory=dict)
     metric_direction: dict[str, MetricDirection] = Field(default_factory=dict)
-    stages: list[Stage] = Field(json_schema_extra=role("stage"))
+    stages: list[Stage] = Field(default_factory=list, json_schema_extra=role("stage"))
     events: list[MetricEvent] = Field(default_factory=list)
     artifacts: list[Artifact] = Field(default_factory=list)
     provenance: list[ProvenanceEntry] = Field(default_factory=list)

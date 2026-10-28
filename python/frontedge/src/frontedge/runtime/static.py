@@ -60,7 +60,7 @@ def static_router(mount: str = "/frontedge", title: str = "Frontedge") -> APIRou
         if not index.is_file():
             raise HTTPException(
                 status_code=503,
-                detail="Interface is not built: run `pnpm build` and copy dist to frontedge/static",
+                detail="Interface is not built: run `pnpm build:ui` (see docs/integration.md §2)",
             )
         html = (
             index.read_text(encoding="utf-8")

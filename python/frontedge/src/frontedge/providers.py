@@ -261,9 +261,9 @@ class _ProviderAdapter:
 def _accepts_query_at(target: Any, position: int, query_model: Any) -> bool:
     """Whether a method takes the selection at ``position`` (positional, not a switch).
 
-    Arity alone is wrong: ``list_runs(request, *, include_archived=False)`` would be
-    called with a query it never expected. The argument is recognised by its name, by
-    the query annotation, or as an extra positional argument (the historical shape).
+    Arity alone is wrong: ``list_runs(request, include_archived=False)`` would be called
+    with a query it never expected. The argument is recognised by its name (``query`` or
+    ``selection``) or by the query annotation; an arbitrary second argument is a flag.
     """
     import inspect
 
@@ -288,7 +288,9 @@ def _accepts_query_at(target: Any, position: int, query_model: Any) -> bool:
         return True
     if isinstance(annotation, str) and query_model.__name__ in annotation:
         return True
-    return True
+    # An arbitrary second argument (a positional flag) is not the selection: treating it as
+    # RunsQuery would silently stop filtering.
+    return False
 
 
 def _accepts_query(target: Any) -> bool:

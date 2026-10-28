@@ -14,9 +14,24 @@ The following are **public contracts** and change only in a major release:
   `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
-## [Unreleased]
+## [0.3.0] — 2026-10-28
 
 ### Added
+
+- `frontedge[serve]` installs uvicorn, so the quick start (`pip install "frontedge[serve]"`,
+  `frontedge init`, `uvicorn app:app`) works without a second install.
+- `frontedge.mount(..., dependencies=[Depends(...)])` guards every mounted route, including the
+  static interface; the library still owns no authentication policy.
+- A `Run` needs only `id`, `name` and `status`; `metrics`, `series` and `stages` default to empty,
+  and a negative `duration_ms` is rejected at the boundary.
+- The implicit baseline is pinned after the first load: sorting or paging no longer changes what
+  the deltas mean, and the footer keeps naming the same run.
+- `Tooltip` carries its own provider, so a host that renders one without a surrounding
+  `TooltipProvider` no longer crashes.
+- Tables expose accessible names (`Runs table`, `Dataset examples`), and the compare legend shows
+  the run's reported metric value, the same number as the table.
+- A bounded table keeps at least 200 px of rows at a short viewport instead of collapsing to a
+  sliver.
 
 - `RunsTable` takes `cellRenderers` and `headerRenderers`: a host can add a link, a model name or
   an action column by id without forking the table. The column keeps its width, resize lock and
@@ -40,8 +55,15 @@ The following are **public contracts** and change only in a major release:
 
 - Keyboard navigation waits for the virtual row to render before focusing it. WebKit commits a
   row later than Chromium, and Home/PageUp/PageDown used to drop focus after End.
+- Any provider exception is a 502 whose `detail` names the method and the message, not an opaque
+  500; a provider that fails mid-stream emits an `error` event instead of closing silently.
+- A second `list_runs` argument is treated as the selection only by its name or annotation: a
+  positional flag such as `include_archived=False` no longer stops filtering.
+- `frontedge gen` writes LF on Windows, so the generated files do not drift in CI.
+- The static 503 names `pnpm build:ui`, and the document-cache test skips on a source tree like the
+  other interface tests.
 
-## [0.2.0] — 2026-10-25
+## [0.2.0] — 2026-10-27
 
 ### Added
 

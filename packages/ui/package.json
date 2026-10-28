@@ -1,6 +1,6 @@
 {
   "name": "@frontedge-ml/ui",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Design system and ML interface patterns for the frontedge frontend layer: runs, metrics, evals and datasets",
   "keywords": [
     "ml",

@@ -8,6 +8,8 @@ export interface CompareSeries {
   name: string;
   color: string;
   points: MetricPoint[];
+  /** The run's reported metric value: the legend and the table must agree. */
+  value?: number;
 }
 
 export interface MetricCompareChartProps {
@@ -159,12 +161,13 @@ export function MetricCompareChart({
         <span className="fe-chart__title">{label}</span>
         {series.map((item) => {
           const last = item.points[item.points.length - 1];
+          const shown = item.value ?? last?.value;
           return (
             <span key={item.id} className="fe-chart__key">
               <span className="fe-chart__swatch" style={{ background: item.color }} aria-hidden />
               {item.name}
-              {last ? (
-                <span className="fe-chart__value">{formatMetric(last.value, digits, lang)}</span>
+              {shown !== undefined ? (
+                <span className="fe-chart__value">{formatMetric(shown, digits, lang)}</span>
               ) : null}
             </span>
           );

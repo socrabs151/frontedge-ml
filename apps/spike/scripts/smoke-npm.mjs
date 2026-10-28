@@ -19,7 +19,7 @@ const appDir = mkdtempSync(join(tmpdir(), "frontedge-consumer-"));
 const MAIN = `import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@frontedge-ml/ui/styles.css";
-import { I18nProvider, RunsTable, StatusBadge, type Run } from "@frontedge-ml/ui";
+import { I18nProvider, RunsTable, StatusBadge, Tooltip, type Run } from "@frontedge-ml/ui";
 
 const startedAt = new Date(Date.now() - 42 * 60_000).toISOString();
 const runs: Run[] = Array.from({ length: 60 }, (_, index) => ({
@@ -42,6 +42,9 @@ function App() {
     <I18nProvider strings={{ en: { "column.status": "State" } }}>
       <div className="fe-root" style={{ padding: 16 }}>
         <StatusBadge status="succeeded" />
+        <Tooltip label="No external provider needed">
+          <button type="button">Tip</button>
+        </Tooltip>
         <RunsTable
           runs={runs}
           now={Date.now()}

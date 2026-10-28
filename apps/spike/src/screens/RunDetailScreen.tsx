@@ -170,20 +170,20 @@ export function RunDetailScreen({
    * has a series.
    */
   const metricIds =
-    specs.length > 0 ? specs.map((spec) => spec.id) : Object.keys(run.metrics).sort();
+    specs.length > 0 ? specs.map((spec) => spec.id) : Object.keys(run.metrics ?? {}).sort();
   const metrics = metricIds.map((id, index) => {
     const spec = specById.get(id);
-    const series = run.series[id] ?? [];
+    const series = run.series?.[id] ?? [];
     return {
       id,
       label: spec?.label ?? knownLabels[id] ?? id,
-      value: run.metrics[id],
-      baseline: baseline?.metrics[id],
+      value: run.metrics?.[id],
+      baseline: baseline?.metrics?.[id],
       direction: run.metricDirection?.[id] ?? spec?.direction ?? "none",
       digits: spec?.digits ?? undefined,
       color: `var(--fe-data-series-${(index % 8) + 1})`,
       series,
-      baselineSeries: baseline?.series[id] ?? [],
+      baselineSeries: baseline?.series?.[id] ?? [],
       chart: spec?.chart !== false && series.length > 1,
     };
   });
@@ -397,7 +397,7 @@ export function RunDetailScreen({
         ) : null}
       </div>
 
-      <RunTimeline stages={run.stages} />
+      <RunTimeline stages={run.stages ?? []} />
 
       <Tabs items={items} value={tab} onValueChange={setTab} ariaLabel={t("detail.metrics")} />
     </div>

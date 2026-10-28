@@ -234,7 +234,7 @@ app.include_router(
 INIT_README = """\
 # My Frontedge dashboard
 
-1. Install Frontedge and uvicorn: `pip install frontedge uvicorn`.
+1. Install Frontedge with the server extra: `pip install "frontedge[serve]"`.
 2. Run the app from this directory: `uvicorn app:app --reload`.
 3. Open http://127.0.0.1:8000/frontedge.
 
@@ -264,8 +264,11 @@ def _gen(args: argparse.Namespace) -> int:
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "types.ts").write_text(generate_types(models), encoding="utf-8")
-    (out / "client.ts").write_text(generate_client(base_path=args.base_path), encoding="utf-8")
+    # LF even on Windows: the generated files are compared byte-for-byte in CI.
+    (out / "types.ts").write_text(generate_types(models), encoding="utf-8", newline="\n")
+    (out / "client.ts").write_text(
+        generate_client(base_path=args.base_path), encoding="utf-8", newline="\n"
+    )
     print(f"frontedge: types and client written to {out}")
     return 0
 

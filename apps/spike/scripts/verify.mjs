@@ -117,6 +117,21 @@ async function checkColumnReset() {
   return ok ? 0 : 1;
 }
 
+/** Sorting must not silently pick another baseline: the footer keeps naming the same run. */
+async function checkBaselinePin() {
+  await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+  const note = page.locator(".fe-table__footer-note");
+  await note.waitFor({ timeout: 15000 });
+  const before = (await note.textContent())?.trim();
+  const sort = page.getByRole("button", { name: /Accuracy/ }).first();
+  await sort.click();
+  await page.waitForTimeout(400);
+  const after = (await note.textContent())?.trim();
+  const ok = Boolean(before) && before === after;
+  console.log(ok ? "baseline: pinned across sort" : `baseline: changed across sort (${before} -> ${after})`);
+  return ok ? 0 : 1;
+}
+
 let seriousTotal = 0;
 /** A run is linkable: the hash changes on open and the same link survives a reload. */
 async function checkDeepLink() {
@@ -209,6 +224,7 @@ await shoot("01-runs-light-1440");
 seriousTotal += await audit("runs light");
 layoutProblems += await checkMetricCells();
 layoutProblems += await checkColumnReset();
+layoutProblems += await checkBaselinePin();
 
 // dark theme
 await page.getByRole("button", { name: /dark theme/i }).click();

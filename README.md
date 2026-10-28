@@ -53,7 +53,7 @@ Frontedge is that layer, packaged.
 The package is on PyPI and ships the built interface:
 
 ```bash
-pip install frontedge
+pip install "frontedge[serve]"
 ```
 
 Then scaffold a dashboard — it runs with the sample data before you write a line:

@@ -1,6 +1,6 @@
 [project]
 name = "frontedge"
-version = "0.2.0"
+version = "0.3.0"
 description = "Frontend layer for ML engineering: mount ready-made screens into any FastAPI app"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -23,6 +23,9 @@ dependencies = [
     "fastapi>=0.115",
     "pydantic>=2.9",
 ]
+
+[project.optional-dependencies]
+serve = ["uvicorn>=0.32"]
 
 [project.urls]
 Homepage = "https://github.com/socrabs151/frontedge-ml"

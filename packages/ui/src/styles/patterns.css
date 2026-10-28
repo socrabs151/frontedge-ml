@@ -278,6 +278,8 @@
 
 .fe-table--bounded .fe-table__scroll {
   flex: none;
+  /* A deliberately short host must still show rows and scroll, not collapse to 40px. */
+  min-height: 200px;
 }
 
 .fe-table__scroll {

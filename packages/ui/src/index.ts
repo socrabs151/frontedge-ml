@@ -1,5 +1,6 @@
 export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./components/Button";
 export { Tooltip, TooltipProvider } from "./components/Tooltip";
+export type { TooltipProps } from "./components/Tooltip";
 export { StatusBadge, statusMeta } from "./components/StatusBadge";
 export { FreshnessBadge } from "./components/FreshnessBadge";
 export { Segmented, type SegmentedOption } from "./components/Segmented";

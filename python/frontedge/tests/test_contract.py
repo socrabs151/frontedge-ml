@@ -33,6 +33,33 @@ requires_interface = pytest.mark.skipif(
 )
 
 
+def test_a_minimal_run_is_valid() -> None:
+    run = Run(id="run-1", name="first", status=RunStatus.queued)
+    assert run.metrics == {}
+    assert run.series == {}
+    assert run.stages == []
+
+
+def test_a_negative_duration_is_rejected() -> None:
+    with pytest.raises(ValueError):
+        Run(id="run-1", name="first", status=RunStatus.succeeded, duration_ms=-1)
+
+
+def test_dependencies_guard_mount_routes() -> None:
+    from fastapi import Depends
+
+    calls: list[str] = []
+
+    def guard() -> None:
+        calls.append("guard")
+
+    app = FastAPI()
+    app.include_router(frontedge.mount(runs_provider, dependencies=[Depends(guard)]))
+    client = TestClient(app)
+    assert client.get("/frontedge/api/meta").status_code == 200
+    assert calls
+
+
 def make_run(**overrides: Any) -> Run:
     payload: dict[str, Any] = {
         "id": "run-000",
@@ -147,6 +174,7 @@ class TestStaticCache:
         assert response.status_code == 200
         assert response.headers["cache-control"] == "public, max-age=31536000, immutable"
 
+    @requires_interface
     def test_the_document_is_not_cached(self) -> None:
         response = client_for().get("/frontedge/")
         assert response.headers["cache-control"] == "no-cache"
@@ -728,6 +756,25 @@ class TestHttp:
         assert response.status_code == 200
         assert [run["id"] for run in response.json()] == ["run-failed"]
 
+    def test_a_positional_flag_is_not_a_query(self) -> None:
+        """``list_runs(request, include_archived=False)`` keeps working and still filters."""
+
+        class PositionalFlag:
+            async def list_runs(
+                self, request: Any, include_archived: bool = False
+            ) -> list[Run]:
+                return [
+                    make_run(),
+                    make_run(id="run-failed", status=RunStatus.failed),
+                ]
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return None
+
+        response = client_for(PositionalFlag()).get("/frontedge/api/runs?status=failed")
+        assert response.status_code == 200
+        assert [run["id"] for run in response.json()] == ["run-failed"]
+
     def test_query_is_detected_by_annotation_and_name(self) -> None:
         from frontedge.models import RunsQuery
 
@@ -749,6 +796,19 @@ class TestHttp:
         named = client_for(Named()).get("/frontedge/api/runs")
         assert annotated.status_code == 200
         assert named.status_code == 200
+
+    def test_an_unexpected_provider_error_is_a_named_502(self) -> None:
+        class Broken:
+            async def list_runs(self, request: Any) -> list[Run]:
+                raise RuntimeError("database is down")
+
+            async def get_run(self, request: Any, run_id: str) -> Run | None:
+                return None
+
+        response = client_for(Broken()).get("/frontedge/api/runs")
+        assert response.status_code == 502
+        assert "list_runs" in response.json()["detail"]
+        assert "database is down" in response.json()["detail"]
 
     def test_runs_reject_invalid_selection(self) -> None:
         client = client_for()

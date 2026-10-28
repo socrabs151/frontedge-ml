@@ -49,6 +49,8 @@ export const en = {
   "column.deltaToBaseline": "Δ to baseline",
   "column.directionOwned": "The metric owner sets the direction",
   "table.resizeColumn": "Resize the {column} column",
+  "table.runs": "Runs table",
+  "table.datasets": "Dataset examples",
 
   "tag.baseline": "baseline",
   "footer.runs": "runs",
@@ -155,6 +157,8 @@ export const ru: Dictionary = {
   "column.deltaToBaseline": "Δ к Baseline",
   "column.directionOwned": "Направление метрики задаёт владелец",
   "table.resizeColumn": "Изменить ширину колонки {column}",
+  "table.runs": "Таблица Runs",
+  "table.datasets": "Примеры Dataset",
 
   "tag.baseline": "baseline",
   "footer.runs": "Runs",
