@@ -40,6 +40,8 @@ export interface Run {
   dataset?: string;
   gitSha?: string;
   startedAt?: string | null;
+  createdAt?: string | null;
+  finishedAt?: string | null;
   durationMs?: number | null;
   owner?: string;
   tags?: string[];
@@ -64,6 +66,8 @@ export interface RunPayload {
   dataset?: string;
   gitSha?: string;
   startedAt?: string | null;
+  createdAt?: string | null;
+  finishedAt?: string | null;
   durationMs?: number | null;
   owner?: string;
   tags?: string[];
@@ -211,6 +215,8 @@ export const frontedgeRoles = {
   "Run.dataset": "dataset",
   "Run.gitSha": "code",
   "Run.startedAt": "timestamp",
+  "Run.createdAt": "timestamp",
+  "Run.finishedAt": "timestamp",
   "Run.durationMs": "duration",
   "Run.error": "text",
   "Run.metrics": "metric",
@@ -222,6 +228,8 @@ export const frontedgeRoles = {
   "RunPayload.dataset": "dataset",
   "RunPayload.gitSha": "code",
   "RunPayload.startedAt": "timestamp",
+  "RunPayload.createdAt": "timestamp",
+  "RunPayload.finishedAt": "timestamp",
   "RunPayload.durationMs": "duration",
   "RunPayload.error": "text",
   "RunPayload.metrics": "metric",

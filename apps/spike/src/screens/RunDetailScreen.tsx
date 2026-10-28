@@ -17,7 +17,7 @@ import {
 } from "@frontedge-ml/ui";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { formatMetric, useI18n } from "@frontedge-ml/ui";
+import { formatAbsoluteTime, formatMetric, useI18n } from "@frontedge-ml/ui";
 import type { Example, LogLine, Run, UiConfig } from "@frontedge-ml/ui";
 import { useAppT } from "../i18n";
 import { Pager } from "../components/Pager";
@@ -443,6 +443,18 @@ export function RunDetailScreen({
           <span className="fe-muted">{t("detail.seed")}</span>{" "}
           <span className="fe-mono fe-num">{run.seed}</span>
         </span>
+        {run.createdAt ? (
+          <span className="fe-detail__meta-item">
+            <span className="fe-muted">{t("detail.created")}</span>{" "}
+            <span className="fe-num">{formatAbsoluteTime(Date.parse(run.createdAt), lang)}</span>
+          </span>
+        ) : null}
+        {run.finishedAt ? (
+          <span className="fe-detail__meta-item">
+            <span className="fe-muted">{t("detail.finished")}</span>{" "}
+            <span className="fe-num">{formatAbsoluteTime(Date.parse(run.finishedAt), lang)}</span>
+          </span>
+        ) : null}
         {run.tags && run.tags.length > 0 ? (
           <span className="fe-detail__meta-item">
             <span className="fe-muted">{t("column.tags")}</span>{" "}

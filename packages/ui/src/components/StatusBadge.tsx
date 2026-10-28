@@ -26,10 +26,11 @@ export interface StatusBadgeProps {
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const t = useT();
   const { key, tone, Icon } = STATUS[status];
+  const label = t(`status.${key}`);
   return (
-    <span className={clsx("fe-status", `fe-status--${tone}`, className)}>
+    <span className={clsx("fe-status", `fe-status--${tone}`, className)} title={label}>
       <Icon className="fe-status__icon" size={13} strokeWidth={2.25} aria-hidden />
-      {t(`status.${key}`)}
+      <span className="fe-status__label">{label}</span>
     </span>
   );
 }

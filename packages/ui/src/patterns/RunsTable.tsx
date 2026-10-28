@@ -217,14 +217,14 @@ export function RunsTable({
       freshness: columnHelper.accessor("freshness", {
         id: "freshness",
         header: () => t("column.freshness"),
-        size: 96,
+        size: 108,
         cell: (info) => <FreshnessBadge value={info.getValue() ?? "fresh"} />,
       }) as ColumnDef<Run, unknown>,
 
       ribbon: columnHelper.display({
         id: "ribbon",
         header: () => t("column.stages"),
-        size: 72,
+        size: 80,
         enableSorting: false,
         cell: (info) => (
           <RunRibbon
@@ -257,7 +257,7 @@ export function RunsTable({
       dataset: columnHelper.accessor("dataset", {
         id: "dataset",
         header: () => t("column.dataset"),
-        size: 110,
+        size: 120,
         cell: (info) => {
           const value = info.getValue();
           return (
@@ -300,7 +300,7 @@ export function RunsTable({
       durationMs: columnHelper.accessor("durationMs", {
         id: "durationMs",
         header: () => t("column.duration"),
-        size: 76,
+        size: 104,
         cell: (info) => {
           const value = info.getValue();
           return (

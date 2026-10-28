@@ -28,6 +28,8 @@ The following are **public contracts** and change only in a major release:
 - `styles.css` is still the whole design system, and `tokens.css`, `base.css`, `components.css`
   and `patterns.css` are available as ordered subpath imports for a host that wants to trim it.
 - A log reconnect may send `Last-Event-ID`; the server resumes after that id.
+- `Run.created_at` and `Run.finished_at` are optional timestamps; the run detail shows them when
+  the provider sends them.
 
 ### Changed
 
@@ -35,6 +37,9 @@ The following are **public contracts** and change only in a major release:
 - `pnpm demo` honours `PORT`; the development docs separate the mock spike from the FastAPI demo,
   show `check:lang -- --no-browser`, and no longer claim generated types cannot drift.
 - Typography tokens are `rem`, so the host root font size scales the interface.
+- Dataset, duration, freshness and ribbon columns have wider defaults; the column resizer sits
+  inside its header. Russian headers wrap and a clipped status has a title, so no table cell
+  overflows its width.
 
 ### Fixed
 

@@ -196,6 +196,19 @@
   flex: none;
 }
 
+.fe-status__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-lang="ru"] .fe-table__th {
+  height: auto;
+  min-height: 28px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* Data freshness dot: colour plus a label, never colour alone. */
 .fe-freshness {
   display: inline-flex;

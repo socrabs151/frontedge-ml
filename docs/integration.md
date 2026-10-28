@@ -132,8 +132,9 @@ Only `id`, `name` and `status` are required: `metrics`, `series` and `stages` de
 a queued run is a valid `Run` without invented values. A failed run carries its reason in `error`
 and the exit code of the process in `exit_code`; both reach the client as `error` and `exitCode`.
 
-`dataset`, `git_sha`, `owner`, `started_at` and `duration_ms` may be omitted: they default to an
-empty value and the interface shows an en dash — a queued run has no time yet.
+`dataset`, `git_sha`, `owner`, `started_at`, `created_at`, `finished_at` and `duration_ms` may be
+omitted: they default to an empty value and the interface shows an en dash — a queued run has no
+time yet. The run detail shows created and finished when the provider sends them.
 
 Every timestamp is timezone-aware. A naive `datetime` is rejected at the boundary with a 502,
 because the browser would otherwise shift it silently: build times with `datetime.now(UTC)` or

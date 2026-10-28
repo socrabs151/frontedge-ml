@@ -6,7 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--fe-space-1);
-  min-width: 60px;
+  min-width: 0;
 }
 
 .fe-ribbon__bar {
@@ -317,7 +317,7 @@
 .fe-table__resizer {
   position: absolute;
   top: 0;
-  right: -4px;
+  right: 0;
   bottom: 0;
   z-index: 4;
   width: 8px;

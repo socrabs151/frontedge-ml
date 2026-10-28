@@ -159,6 +159,8 @@ class Run(FrontedgeModel):
     git_sha: str = Field(default="", json_schema_extra=role("code"))
     #: A queued run may have neither: the interface shows an en dash instead of inventing time.
     started_at: AwareDatetime | None = Field(default=None, json_schema_extra=role("timestamp"))
+    created_at: AwareDatetime | None = Field(default=None, json_schema_extra=role("timestamp"))
+    finished_at: AwareDatetime | None = Field(default=None, json_schema_extra=role("timestamp"))
     duration_ms: int | None = Field(default=None, ge=0, json_schema_extra=role("duration"))
     owner: str = ""
     #: Free labels of the project ("production", "nightly"): filtered by, shown as chips.
