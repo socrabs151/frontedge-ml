@@ -167,6 +167,12 @@ jobs:
           FE_BROWSER: ${{ matrix.browser }}
         run: node apps/spike/scripts/keyboard-check.mjs
 
+      - name: Stop the demo
+        if: always()
+        run: |
+          pkill -f "frontedge-demo-ml" || true
+          pkill -f "demo-ml" || true
+
   browser:
     runs-on: ubuntu-latest
     steps:
@@ -230,3 +236,9 @@ jobs:
 
       - name: Consumer smoke (React 18)
         run: node apps/spike/scripts/smoke-npm.mjs
+
+      - name: Stop the demo
+        if: always()
+        run: |
+          pkill -f "frontedge-demo-ml" || true
+          pkill -f "demo-ml" || true
