@@ -368,7 +368,7 @@ have to guess from the configuration:
 ```json
 {
   "name": "frontedge",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "statuses": ["queued", "running", "succeeded", "failed", "cancelled", "lost"],
   "freshness": ["live", "fresh", "stale", "partial"],
   "metricDirections": ["maximize", "minimize", "none"],

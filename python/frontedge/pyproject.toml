@@ -1,6 +1,6 @@
 [project]
 name = "frontedge"
-version = "0.4.0"
+version = "0.5.0"
 description = "Frontend layer for ML engineering: mount ready-made screens into any FastAPI app"
 readme = "README.md"
 requires-python = ">=3.11"
