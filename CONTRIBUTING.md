@@ -16,7 +16,7 @@ uv sync --all-packages
 pnpm typecheck
 pnpm check:contrast
 pnpm build:ui
-pnpm check:lang --no-browser
+pnpm check:lang -- --no-browser
 uv run --package frontedge pytest python/frontedge/tests -q
 ```
 

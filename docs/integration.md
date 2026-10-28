@@ -162,6 +162,42 @@ class MyProvider:
 app.include_router(frontedge.mount(MyProvider()))
 ```
 
+### From SQLAlchemy
+
+The package does not depend on a database library: install `sqlalchemy[asyncio]` and the driver
+in the host (`asyncpg` for Postgres; SQLite uses `aiosqlite`). A small async provider is enough:
+
+```python
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+class SqlRuns:
+    def __init__(self, sessions: async_sessionmaker[AsyncSession]):
+        self.sessions = sessions
+
+    async def list_runs(self, request):
+        async with self.sessions() as session:
+            rows = (await session.scalars(
+                select(RunRow)
+                .where(RunRow.owner_id == request.state.user_id)
+                .order_by(RunRow.started_at.desc())
+                .limit(50)
+            )).all()
+        return [
+            frontedge.Run(
+                id=row.id, name=row.name, status=frontedge.RunStatus(row.status),
+                dataset=row.dataset, started_at=row.started_at, duration_ms=row.duration_ms,
+                metrics={"accuracy": row.accuracy}, stages=[],
+            )
+            for row in rows
+        ]
+
+    async def get_run(self, request, run_id):
+        async with self.sessions() as session:
+            row = await session.get(RunRow, run_id)
+        return None if row is None else frontedge.Run(...)   # same mapping
+```
+
 ### Filtering on the server side
 
 If `list_runs` takes a second argument, the library hands the selection over to you instead of

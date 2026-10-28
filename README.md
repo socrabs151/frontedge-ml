@@ -209,7 +209,7 @@ The packages are published on PyPI (`frontedge`) and npm (`@frontedge-ml/ui`). T
 design system, the Python package and the type generator are covered by gates. The current stage
 is public-beta hardening: provider boundaries, accessibility and the remaining onboarding work.
 
-Issues and questions: https://github.com/socrabs151/frontedge-ml/issues
+[Contributing](CONTRIBUTING.md) · [Issues](https://github.com/socrabs151/frontedge-ml/issues)
 
 ## License
 

@@ -209,7 +209,7 @@ uv run --package frontedge frontedge check examples/demo-ml/frontedge.toml
 Python-пакет и генератор типов закрыты гейтами. Текущий этап — укрепление public beta: границы
 провайдера, доступность и оставшийся онбординг.
 
-Вопросы и issues: https://github.com/socrabs151/frontedge-ml/issues
+[Участие](CONTRIBUTING.md) · [Issues](https://github.com/socrabs151/frontedge-ml/issues)
 
 ## Лицензия
 

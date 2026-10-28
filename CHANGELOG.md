@@ -14,6 +14,13 @@ The following are **public contracts** and change only in a major release:
   `page_size`);
 - the HTTP paths under `/frontedge/api`.
 
+## [Unreleased]
+
+### Changed
+
+- The integration guide includes a short SQLAlchemy async provider, the README links
+  `CONTRIBUTING.md`, and the contributing command uses the documented `-- --no-browser` form.
+
 ## [0.5.0] — 2026-10-28
 
 ### Added
