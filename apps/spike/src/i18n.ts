@@ -273,7 +273,9 @@ export type UiStringKey = keyof typeof uiEn;
 
 export function useAppT() {
   const { lang } = useI18n();
-  const dictionary = dictionaries[lang] as Record<AppStringKey | UiStringKey, string>;
+  const dictionary =
+    (dictionaries as Record<string, Record<AppStringKey | UiStringKey, string>>)[lang] ??
+    dictionaries.en;
   return (key: AppStringKey | UiStringKey, params?: Record<string, string | number>) => {
     const template = dictionary[key];
     if (!params) return template;

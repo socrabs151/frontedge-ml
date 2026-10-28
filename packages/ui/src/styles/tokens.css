@@ -67,14 +67,16 @@
   --fe-font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --fe-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
 
-  --fe-text-11: 11px;
-  --fe-text-12: 12px;
-  --fe-text-13: 13px;
-  --fe-text-14: 14px;
-  --fe-text-16: 16px;
-  --fe-text-20: 20px;
-  --fe-text-28: 28px;
-  --fe-text-36: 36px;
+  /* rem, so the host's root font size scales the interface. */
+  --fe-text-10: 0.625rem;
+  --fe-text-11: 0.6875rem;
+  --fe-text-12: 0.75rem;
+  --fe-text-13: 0.8125rem;
+  --fe-text-14: 0.875rem;
+  --fe-text-16: 1rem;
+  --fe-text-20: 1.25rem;
+  --fe-text-28: 1.75rem;
+  --fe-text-36: 2.25rem;
 
   --fe-leading-tight: 1.2;
   --fe-leading-snug: 1.35;

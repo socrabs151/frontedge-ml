@@ -425,7 +425,8 @@ so the message reaches the person who wired the provider.
   `Cache-Control: public, max-age=31536000, immutable`; `index.html` is `no-cache`. A reverse proxy
   may keep these headers as they are.
 - The log stream is server-sent events: disable proxy buffering for
-  `/frontedge/api/runs/*/logs/stream` (nginx: `proxy_buffering off`).
+  `/frontedge/api/runs/*/logs/stream` (nginx: `proxy_buffering off`). A reconnect may send
+  `Last-Event-ID`; the server skips lines with an id at or below it.
 - Python 3.11+ is required; the wheel ships the built interface, so the host needs no Node at
   runtime.
 
@@ -650,6 +651,12 @@ own layout.
 `FrontedgeRoot` puts `.fe-root`, `data-theme` and `data-density` on one element; `useNow()` gives
 a relative-time clock. Override `--fe-accent` and the hover, wash, selected-row, running-status
 and focus-ring tokens follow it. A custom accent is still the host's contrast responsibility.
+
+`I18nProvider` accepts any BCP 47 `lang` and partial `strings` for it; missing keys fall back to
+English, so a host can ship a third language without translating the whole package. `plural()`
+picks the locale form for a count. Typography tokens are `rem`, so the host root font size scales
+the interface. `styles.css` is the whole design system; a large host may import `tokens.css`,
+`base.css`, `components.css` and `patterns.css` in that order and drop what it does not use.
 
 The generated client reports network failures as `FrontedgeRequestError` with the HTTP `status`,
 so a host can tell a missing run (404) from a provider failure (502). `frontedge gen --check`

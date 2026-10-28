@@ -5,7 +5,15 @@ import type { Lang } from "./i18n/I18nProvider";
 export const EMPTY = "–";
 
 function localeOf(lang: Lang): string {
-  return lang === "ru" ? "ru-RU" : "en-US";
+  if (lang === "ru") return "ru-RU";
+  if (lang === "en") return "en-US";
+  // A host may add a third BCP 47 language; Intl understands the tag itself.
+  try {
+    new Intl.NumberFormat(lang);
+    return lang;
+  } catch {
+    return "en-US";
+  }
 }
 
 /** An ISO string from the API → milliseconds. Dates arrive from Python as ISO 8601. */

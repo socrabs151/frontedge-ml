@@ -23,12 +23,18 @@ The following are **public contracts** and change only in a major release:
   disables the limit.
 - `frontedge check --provider` now exercises examples and logs, validates the first log line and
   reports a broken optional method instead of calling it healthy from the attribute alone.
+- `I18nProvider` accepts any BCP 47 language with partial strings (missing keys fall back to
+  English), and `plural()` selects the locale form for a count.
+- `styles.css` is still the whole design system, and `tokens.css`, `base.css`, `components.css`
+  and `patterns.css` are available as ordered subpath imports for a host that wants to trim it.
+- A log reconnect may send `Last-Event-ID`; the server resumes after that id.
 
 ### Changed
 
 - A real delta below the shown precision reads `<0.001`, not `±0`; exact zero keeps `±0`.
 - `pnpm demo` honours `PORT`; the development docs separate the mock spike from the FastAPI demo,
   show `check:lang -- --no-browser`, and no longer claim generated types cannot drift.
+- Typography tokens are `rem`, so the host root font size scales the interface.
 
 ### Fixed
 

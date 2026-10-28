@@ -2,16 +2,22 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from "react";
 import { en, ru, type Dictionary, type StringKey } from "./strings";
 
-export type Lang = "en" | "ru";
+export type BuiltinLang = "en" | "ru";
+/** A BCP 47 tag: the package ships en/ru, a host may add a third language. */
+export type Lang = string;
+/** A package key or a product key supplied through ``strings``. */
+export type TranslationKey = StringKey | (string & {});
 
 const STORAGE_KEY = "fe-lang";
 
-const dictionaries = { en, ru } as const;
+const dictionaries: Record<BuiltinLang, Dictionary> = { en, ru };
+
+export type StringOverrides = Partial<Dictionary> & Record<string, string>;
 
 export interface I18nValue {
   lang: Lang;
   setLang: (lang: Lang) => void;
-  t: (key: StringKey, params?: Record<string, string | number>) => string;
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
 }
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -23,14 +29,34 @@ const I18nContext = createContext<I18nValue | null>(null);
 const fallback: I18nValue = {
   lang: "en",
   setLang: () => {},
-  t: (key, params) => interpolate(en[key], params),
+  t: (key, params) =>
+    interpolate(en[key as StringKey] ?? String(key), params),
 };
 
-function interpolate(template: string, params?: Record<string, string | number>): string {
+function interpolate(
+  template: string,
+  params?: Record<string, string | number>,
+): string {
   if (!params) return template;
   return template.replace(/\{(\w+)\}/g, (match, name: string) =>
     name in params ? String(params[name]) : match,
   );
+}
+
+export interface PluralForms {
+  one: string;
+  few?: string;
+  many?: string;
+  other?: string;
+}
+
+/** Locale-aware plural forms for a product label: one, few and many. */
+export function plural(lang: Lang, count: number, forms: PluralForms): string {
+  const category = new Intl.PluralRules(lang).select(count);
+  if (category === "one") return forms.one;
+  if (category === "few" && forms.few) return forms.few;
+  if (category === "many" && forms.many) return forms.many;
+  return forms.other ?? forms.many ?? forms.one;
 }
 
 export interface I18nProviderProps {
@@ -39,8 +65,8 @@ export interface I18nProviderProps {
   /** Controlled language. Pass `onLangChange` to keep the toggle working. */
   lang?: Lang;
   onLangChange?: (lang: Lang) => void;
-  /** Product strings layered over the package dictionary for each language. */
-  strings?: Partial<Record<Lang, Partial<Dictionary>>>;
+  /** Product strings layered over the package dictionary; a third language falls back to English. */
+  strings?: Partial<Record<Lang, StringOverrides>>;
   /** Keep the choice in localStorage; ignored while `lang` is controlled. */
   persist?: boolean;
   /** Write `lang` onto `<html>`; a host that owns the document can turn this off. */
@@ -59,7 +85,7 @@ export function I18nProvider({
   const [ownLang, setOwnLang] = useState<Lang>(() => {
     const stored =
       persist && typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    return stored === "ru" || stored === "en" ? stored : defaultLang;
+    return stored || defaultLang;
   });
   const lang = controlledLang ?? ownLang;
 
@@ -80,15 +106,15 @@ export function I18nProvider({
     document.documentElement.dataset.lang = lang;
   }, [lang, syncDocument]);
 
-  const dictionary = useMemo(
-    () => ({ ...dictionaries[lang], ...(strings?.[lang] ?? {}) }),
-    [lang, strings],
-  );
+  const dictionary = useMemo<Record<string, string>>(() => {
+    const builtin = dictionaries[lang as BuiltinLang] ?? en;
+    return { ...en, ...builtin, ...(strings?.[lang] ?? {}) };
+  }, [lang, strings]);
   const value = useMemo<I18nValue>(
     () => ({
       lang,
       setLang,
-      t: (key, params) => interpolate(dictionary[key], params),
+      t: (key, params) => interpolate(dictionary[key] ?? String(key), params),
     }),
     [dictionary, lang, setLang],
   );

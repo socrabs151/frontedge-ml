@@ -62,7 +62,7 @@ export interface RunsSource {
     datasetId: string,
     query?: { offset?: number; limit?: number; search?: string },
   ): Promise<{ items: ExampleResult[]; total: number }>;
-  streamLogs(runId: string): AsyncGenerator<LogLine>;
+  streamLogs(runId: string, lastEventId?: number): AsyncGenerator<LogLine>;
   listEvals(): Promise<EvalSummary[]>;
   compareEval(
     evalId: string,
@@ -173,8 +173,9 @@ export const mockSource: RunsSource = {
     const limit = query.limit ?? items.length;
     return { items: items.slice(offset, offset + limit), total: items.length };
   },
-  async *streamLogs() {
+  async *streamLogs(_runId, lastEventId) {
     for (const line of mockLogs) {
+      if (lastEventId !== undefined && line.id <= lastEventId) continue;
       yield line;
     }
   },
@@ -263,7 +264,7 @@ export const apiSource: RunsSource = {
   getRun: (runId) => client.getRun(runId),
   examples: (runId, query) => client.examples(runId, query),
   datasetExamples: (datasetId, query) => client.datasetExamples(datasetId, query),
-  streamLogs: (runId) => client.streamLogs(runId),
+  streamLogs: (runId, lastEventId) => client.streamLogs(runId, lastEventId),
   listEvals: () => client.listEvals(),
   compareEval: (evalId, reference, comparison) => client.compareEval(evalId, reference, comparison),
   listDatasets: () => client.listDatasets(),

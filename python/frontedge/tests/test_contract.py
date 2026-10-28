@@ -1369,6 +1369,29 @@ class TestProviderContract:
         assert response.status_code == 200
         assert "stream_logs returned str, expected LogLine" in response.text
 
+    def test_last_event_id_resumes_the_log_stream(self) -> None:
+        class Logs:
+            async def list_runs(self, request: Any) -> list[Run]:
+                return [make_run()]
+
+            async def get_run(self, request: Any, run_id: str) -> Run:
+                return make_run()
+
+            async def stream_logs(self, request: Any, run_id: str) -> Any:
+                for index, text in enumerate(["one", "two", "three"], start=1):
+                    yield frontedge.LogLine(
+                        id=index, at=datetime.now(UTC), level="info", text=text
+                    )
+
+        response = client_for(Logs()).get(
+            "/frontedge/api/runs/run-000/logs/stream",
+            headers={"last-event-id": "2"},
+        )
+        assert response.status_code == 200
+        assert '"id": 3' in response.text
+        assert '"id": 1' not in response.text
+        assert '"id": 2' not in response.text
+
     def test_artifact_of_the_wrong_type_is_a_bad_gateway(self) -> None:
         class BrokenArtifact:
             async def list_runs(self, request: Any) -> list[Run]:

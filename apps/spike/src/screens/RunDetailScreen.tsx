@@ -16,7 +16,7 @@ import {
   Tabs,
 } from "@frontedge-ml/ui";
 import { ArrowLeft, Download, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatMetric, useI18n } from "@frontedge-ml/ui";
 import type { Example, LogLine, Run, UiConfig } from "@frontedge-ml/ui";
 import { useAppT } from "../i18n";
@@ -50,6 +50,7 @@ export function RunDetailScreen({
   const [logError, setLogError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [logAttempt, setLogAttempt] = useState(0);
+  const lastLog = useRef<{ runId: string; id: number }>({ runId, id: 0 });
   const [tab, setTab] = useState("metrics");
   const [onlyDiff, setOnlyDiff] = useState(false);
   const [actionNote, setActionNote] = useState<string | null>(null);
@@ -105,13 +106,19 @@ export function RunDetailScreen({
   // A log stream failure is a log-panel state, not a reason to replace the whole run.
   useEffect(() => {
     let cancelled = false;
-    setLogs([]);
+    const resume =
+      logAttempt > 0 && lastLog.current.runId === runId ? lastLog.current.id : 0;
+    if (resume === 0) {
+      setLogs([]);
+      lastLog.current = { runId, id: 0 };
+    }
     setLogError(null);
-    const stream = source.streamLogs(runId);
+    const stream = source.streamLogs(runId, resume || undefined);
     void (async () => {
       try {
         for await (const line of stream) {
           if (cancelled) return;
+          lastLog.current = { runId, id: line.id };
           setLogs((current) => [...current, line]);
         }
       } catch (cause) {

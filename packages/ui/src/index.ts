@@ -24,9 +24,14 @@ export {
   I18nProvider,
   useI18n,
   useT,
+  plural,
+  type BuiltinLang,
   type I18nProviderProps,
   type I18nValue,
   type Lang,
+  type PluralForms,
+  type StringOverrides,
+  type TranslationKey,
 } from "./i18n/I18nProvider";
 export { en, ru, type Dictionary, type StringKey } from "./i18n/strings";
 

@@ -210,10 +210,15 @@ export function createClient(options: FrontedgeClientOptions = {
     runAction: (actionId: string, payload: Record<string, unknown> = {}) =>
       send<ActionResult>(`/actions/${encodeURIComponent(actionId)}`, payload),
     meta: () => json<FrontedgeMeta>("/meta"),
-    async *streamLogs(runId: string): AsyncGenerator<LogLine> {
+    async *streamLogs(runId: string, lastEventId?: number): AsyncGenerator<LogLine> {
       const response = await request(
         `${basePath}/runs/${encodeURIComponent(runId)}/logs/stream`,
-        { headers: { accept: "text/event-stream" } },
+        {
+          headers: {
+            accept: "text/event-stream",
+            ...(lastEventId === undefined ? {} : { "last-event-id": String(lastEventId) }),
+          },
+        },
       );
       if (!response.ok || !response.body) {
         throw await failure(response, `/runs/${runId}/logs`);

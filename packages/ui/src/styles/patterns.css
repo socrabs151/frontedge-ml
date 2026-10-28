@@ -717,7 +717,7 @@
 .fe-chart__label {
   fill: var(--fe-data-ink);
   font-family: var(--fe-font-mono);
-  font-size: 10px;
+  font-size: var(--fe-text-10);
 }
 
 .fe-chart__tip {
@@ -872,7 +872,7 @@
   border-radius: 3px;
   background: var(--fe-accent-wash);
   color: var(--fe-accent);
-  font-size: 10px;
+  font-size: var(--fe-text-10);
   font-weight: var(--fe-weight-semibold);
 }
 

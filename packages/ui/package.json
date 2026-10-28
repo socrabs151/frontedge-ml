@@ -34,6 +34,10 @@
       "require": "./dist/index.cjs"
     },
     "./styles.css": "./dist/styles.css",
+    "./tokens.css": "./dist/tokens.css",
+    "./base.css": "./dist/base.css",
+    "./components.css": "./dist/components.css",
+    "./patterns.css": "./dist/patterns.css",
     "./package.json": "./package.json"
   },
   "style": "./dist/styles.css",

@@ -559,12 +559,21 @@ def _build_router(
         if run is None:
             raise HTTPException(status_code=404, detail="Run not found")
 
+        resume = request.headers.get("last-event-id")
+        try:
+            last_event_id = int(resume) if resume is not None else None
+        except ValueError:
+            last_event_id = None
+
         async def events() -> AsyncIterator[tuple[str, Any]]:
             try:
                 async for line in _timed_stream(
                     source.stream_logs(request, run_id), provider_timeout
                 ):
-                    yield "log", _json_model(as_model(line, LogLine, "stream_logs"))
+                    model = as_model(line, LogLine, "stream_logs")
+                    if last_event_id is not None and model.id <= last_event_id:
+                        continue
+                    yield "log", _json_model(model)
             except TimeoutError:
                 message = (
                     f"log stream timed out after {provider_timeout:g}s"
